@@ -60,6 +60,17 @@ body{padding-bottom:env(safe-area-inset-bottom,0)}
 
 .home-sub{padding:20px 20px 4px;font-size:13px;color:var(--text-secondary)}
 
+.insight-card{margin:10px 20px 0;display:none}
+.insight-card.visible{display:block}
+.insight-inner{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;border-left:3px solid var(--text-muted)}
+.insight-inner.positive{border-left-color:var(--green)}
+.insight-inner.warning{border-left-color:var(--orange)}
+.insight-inner.info{border-left-color:var(--blue)}
+.insight-text{flex:1;font-size:12px;line-height:1.5;color:var(--text-secondary)}
+.insight-text strong{color:var(--text-primary);font-weight:600}
+.insight-dismiss{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;transition:var(--transition)}
+.insight-dismiss:active{color:var(--text-primary)}
+
 .workout-list{padding:8px 20px 100px;display:flex;flex-direction:column;gap:8px}
 .workout-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:var(--transition)}
 .workout-card:active{transform:scale(0.985);background:var(--bg-card-hover)}
@@ -176,8 +187,8 @@ body{padding-bottom:env(safe-area-inset-bottom,0)}
 .chart-time-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:6px 14px;font-family:var(--font-display);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition)}
 .chart-time-btn.active{background:var(--accent);color:var(--bg-primary);border-color:var(--accent)}
 .chart-time-btn:active{transform:scale(0.95)}
-.chart-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;min-height:200px}
-.chart-container canvas{width:100%!important;height:180px!important}
+.chart-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;min-height:240px}
+.chart-container canvas{width:100%!important;height:220px!important}
 .chart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;color:var(--text-muted);font-size:13px;text-align:center}
 
 /* Settings */
@@ -271,6 +282,7 @@ input[type=number]{-moz-appearance:textfield}
 <div id="screen-home" class="screen active">
   <div class="header"><h1>Workout Tracker</h1><div><button class="icon-btn" id="btn-settings">⚙</button></div></div>
   <div class="home-sub" id="home-sub"></div>
+  <div id="insight-card" class="insight-card"></div>
   <div id="workout-list" class="workout-list"></div>
 </div>
 
@@ -317,7 +329,17 @@ input[type=number]{-moz-appearance:textfield}
   <div class="settings-list">
     <div class="settings-item"><div><div class="settings-item-label">Dark Mode</div><div class="settings-item-desc">Toggle theme</div></div><div id="theme-toggle" class="toggle active"></div></div>
     <div class="settings-item" style="flex-direction:column;align-items:stretch;gap:10px;">
-      <div class="settings-item-label">Data</div>
+      <div class="settings-item-label">Cloud Sync</div>
+      <div class="settings-item-desc" style="margin-top:-6px">Connect to Google Sheets for automatic backup</div>
+      <input type="text" class="modal-input" id="sync-url-input" placeholder="Paste your Apps Script URL here" style="margin:0;font-size:12px">
+      <div style="display:flex;gap:8px">
+        <button class="export-btn" id="btn-save-sync-url" style="flex:1">Save URL</button>
+        <button class="export-btn" id="btn-sync-now" style="flex:1">Sync Now</button>
+      </div>
+      <div id="sync-status" style="font-size:11px;color:var(--text-muted);font-family:var(--font-display)"></div>
+    </div>
+    <div class="settings-item" style="flex-direction:column;align-items:stretch;gap:10px;">
+      <div class="settings-item-label">Local Data</div>
       <div style="display:flex;gap:8px"><button class="export-btn" id="btn-export" style="flex:1">Export</button><button class="import-btn" id="btn-import-trigger" style="flex:1">Import</button><input type="file" id="import-file" accept=".json" style="display:none"></div>
       <button class="danger-btn" id="btn-clear-data">Clear All Data</button>
     </div>
@@ -336,7 +358,7 @@ input[type=number]{-moz-appearance:textfield}
 var DEFAULT_WORKOUTS={"Legs":["Seated Machine Leg Curl","Calf Raise - Seated","Seated Machine Leg Extension","Calf Raise - Standing","Bulgarian Split Squats","Romanian Deadlift - Dumbbell","Squat - Dumbbell"],"Upper Pull":["Lat Pulldown Machine (Uni Lateral)","Chest Supported Seated Row (Grip 1)","Chest Supported Seated Row (Grip 2)","Lat Pull Down - Front","Cable Face Pulls","Shrugs - Dumbbell","Hammer Curl - Dumbbell","Faceaway Cable Curl","Bicep Curl - Barbell"],"Upper Push":["Smith Machine Incline Bench Press","Incline Chest Press Machine","Dips","Machine Chest Flys","Triceps Pulldown - Rope","Tricep Extension - Standing - Rope - Pulley Machine","Lateral Shoulder Raise - Dumbbell","Front Shoulder Raise - Dumbbell","Kettlebell Shoulder Raise"]};
 
 function getData(){try{return JSON.parse(localStorage.getItem('ironlog_data'))||{sessions:[]};}catch(e){return{sessions:[]};}}
-function saveData(d){localStorage.setItem('ironlog_data',JSON.stringify(d));}
+function saveData(d){localStorage.setItem('ironlog_data',JSON.stringify(d));cloudPush();}
 function getWorkouts(){var d=getData();return d.workouts||JSON.parse(JSON.stringify(DEFAULT_WORKOUTS));}
 function saveWorkouts(w){var d=getData();d.workouts=w;saveData(d);}
 function getSessions(){return getData().sessions||[];}
@@ -348,6 +370,79 @@ function getDraft(n){try{var d=JSON.parse(localStorage.getItem('ironlog_draft'))
 function clearDraft(){localStorage.removeItem('ironlog_draft');}
 function getDraftInfo(){try{return JSON.parse(localStorage.getItem('ironlog_draft'));}catch(e){return null;}}
 
+// ═══════ CLOUD SYNC ═══════
+function getSyncUrl(){return localStorage.getItem('ironlog_sync_url')||'';}
+function setSyncUrl(url){localStorage.setItem('ironlog_sync_url',url);}
+
+var pushTimer=null;
+function cloudPush(){
+  var url=getSyncUrl();if(!url)return;
+  // Debounce: wait 2 seconds after last save before pushing
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(function(){
+    var data=getData();
+    fetch(url,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain'}})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.success){
+        var el=document.getElementById('sync-status');
+        if(el) el.textContent='Last synced: '+new Date().toLocaleTimeString();
+      }
+    })
+    .catch(function(err){console.log('Sync push failed:',err);});
+  },2000);
+}
+
+function cloudPull(callback){
+  var url=getSyncUrl();
+  if(!url){if(callback)callback(false);return;}
+  fetch(url)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data&&data.sessions){
+      // Merge: cloud data wins if it has more sessions, otherwise keep local
+      var local=getData();
+      if(data.sessions.length>=local.sessions.length){
+        localStorage.setItem('ironlog_data',JSON.stringify(data));
+        if(callback)callback(true);
+      } else {
+        // Local has more data, push it up instead
+        cloudPush();
+        if(callback)callback(false);
+      }
+    } else {
+      if(callback)callback(false);
+    }
+  })
+  .catch(function(err){
+    console.log('Sync pull failed:',err);
+    if(callback)callback(false);
+  });
+}
+
+function manualSync(){
+  var url=getSyncUrl();
+  if(!url){showToast('Set a sync URL first','var(--orange)');return;}
+  var el=document.getElementById('sync-status');
+  el.textContent='Syncing...';
+  cloudPull(function(pulled){
+    if(pulled){
+      el.textContent='Restored from cloud — '+new Date().toLocaleTimeString();
+      showToast('Data synced from cloud!');
+      renderHome();
+    } else {
+      // Push local to cloud
+      var data=getData();
+      fetch(url,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain'}})
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(res.success){el.textContent='Pushed to cloud — '+new Date().toLocaleTimeString();showToast('Data synced to cloud!');}
+        else{el.textContent='Sync failed';showToast('Sync failed','var(--red)');}
+      })
+      .catch(function(){el.textContent='Sync failed';showToast('Sync failed — check URL','var(--red)');});
+    }
+  });
+}
 // All-time PR cache
 function getAllPRs(){
   var prs={};
@@ -424,9 +519,104 @@ function updateWorkoutMeta(){
 }
 
 // ═══════ HOME ═══════
+function generateInsight(sessions,workouts){
+  if(!sessions.length) return null;
+  var now=new Date();var weekAgo=new Date(now);weekAgo.setDate(weekAgo.getDate()-7);
+  var thisWeekSessions=sessions.filter(function(s){return new Date(s.date)>=weekAgo;});
+
+  // 1. Check for recent PRs this week
+  var allPRs={};var weekPRs=[];
+  sessions.forEach(function(s,sIdx){
+    Object.keys(s.exercises).forEach(function(ex){
+      s.exercises[ex].forEach(function(set){
+        var prev=allPRs[ex]||0;
+        if(set.kg>prev){
+          allPRs[ex]=set.kg;
+          if(new Date(s.date)>=weekAgo) weekPRs.push({ex:ex,kg:set.kg});
+        }
+      });
+    });
+  });
+  if(weekPRs.length>0){
+    var best=weekPRs[weekPRs.length-1];
+    return {type:'positive',text:'<strong>New PR this week</strong> — '+best.ex+' hit '+best.kg+' kg'};
+  }
+
+  // 2. Check streak
+  var recentDays={};
+  sessions.forEach(function(s){
+    var d=new Date(s.date);
+    if(d>=weekAgo) recentDays[d.toDateString()]=true;
+  });
+  var streakCount=Object.keys(recentDays).length;
+  if(streakCount>=3){
+    return {type:'positive',text:'<strong>'+streakCount+' sessions this week</strong> — solid consistency, keep it going'};
+  }
+
+  // 3. Check for stale workout types (>7 days)
+  var workoutNames=Object.keys(workouts);
+  var stalest=null;var staleDays=0;
+  workoutNames.forEach(function(name){
+    var last=null;
+    for(var i=sessions.length-1;i>=0;i--){if(sessions[i].workout===name){last=sessions[i];break;}}
+    if(last){
+      var days=Math.floor((now-new Date(last.date))/86400000);
+      if(days>7&&days>staleDays){staleDays=days;stalest=name;}
+    } else {
+      if(999>staleDays){staleDays=999;stalest=name;}
+    }
+  });
+  if(stalest&&staleDays>=999){
+    return {type:'info',text:'<strong>'+stalest+'</strong> hasn\'t been logged yet — give it a go'};
+  }
+  if(stalest&&staleDays>7){
+    return {type:'warning',text:'<strong>'+stalest+'</strong> hasn\'t been logged in '+staleDays+' days'};
+  }
+
+  // 4. Check volume progression on most recent session
+  if(sessions.length>=2){
+    var latest=sessions[sessions.length-1];
+    var prevOfType=null;
+    for(var i=sessions.length-2;i>=0;i--){if(sessions[i].workout===latest.workout){prevOfType=sessions[i];break;}}
+    if(prevOfType){
+      function vol(sets){return sets.reduce(function(s,x){return s+x.kg*x.reps;},0);}
+      var exNames=Object.keys(latest.exercises);var up=0;var down=0;
+      exNames.forEach(function(ex){
+        if(prevOfType.exercises[ex]){
+          var cv=vol(latest.exercises[ex]);var pv=vol(prevOfType.exercises[ex]);
+          if(cv>pv)up++;else if(cv<pv)down++;
+        }
+      });
+      if(up>down&&up>0){
+        return {type:'positive',text:'<strong>'+latest.workout+' volume trending up</strong> — '+up+' exercise'+(up!==1?'s':'')+' improved last session'};
+      }
+      if(down>up&&down>0){
+        return {type:'warning',text:'<strong>'+latest.workout+' volume dropped</strong> on '+down+' exercise'+(down!==1?'s':'')+' last session — push harder next time'};
+      }
+    }
+  }
+
+  return null;
+}
+
 function renderHome(){
   var sessions=getSessions();
   document.getElementById('home-sub').textContent=sessions.length===0?'Ready for your first workout?':sessions.length+' workout'+(sessions.length!==1?'s':'')+' logged';
+
+  // Insight card
+  var insightEl=document.getElementById('insight-card');
+  var insight=generateInsight(sessions,getWorkouts());
+  if(insight&&!sessionStorage.getItem('insight_dismissed')){
+    insightEl.className='insight-card visible';
+    insightEl.innerHTML='<div class="insight-inner '+insight.type+'"><div class="insight-text">'+insight.text+'</div><button class="insight-dismiss" id="insight-close">×</button></div>';
+    document.getElementById('insight-close').addEventListener('click',function(){
+      insightEl.className='insight-card';sessionStorage.setItem('insight_dismissed','1');
+    });
+  } else {
+    insightEl.className='insight-card';
+    insightEl.innerHTML='';
+  }
+
   var workouts=getWorkouts(),container=document.getElementById('workout-list'),draftInfo=getDraftInfo();
   container.innerHTML='';
   Object.keys(workouts).forEach(function(name){
@@ -492,7 +682,7 @@ function renderExercises(){
         var isPR=kgVal>0&&kgVal>currentPR;
         return'<div class="set-row" data-set-idx="'+si+'">'+
           '<div class="set-num">'+(si+1)+'</div>'+
-          '<div class="kg-wrapper'+(isPR?' has-pr':'')+'"><input type="number" class="set-input js-kg" placeholder="kg" value="'+escapeAttr(s.kg)+'" inputmode="decimal" step="any"><div class="pr-bar">🏆 New PR</div></div>'+
+          '<div class="kg-wrapper'+(isPR?' has-pr':'')+'"><input type="number" class="set-input js-kg" placeholder="kg" value="'+escapeAttr(s.kg)+'" inputmode="decimal" step="any"><div class="pr-bar">New PR</div></div>'+
           '<input type="number" class="set-input js-reps" placeholder="reps" value="'+escapeAttr(s.reps)+'" inputmode="numeric" step="1">'+
           '<button class="remove-set-btn js-remove-set" data-set-idx="'+si+'">×</button>'+
         '</div>';
@@ -789,15 +979,20 @@ function renderChart(){
   if(progressChartInstance)progressChartInstance.destroy();
 
   var datasets=[
-    {type:'line',label:'Max Weight',data:maxWeights,borderColor:lineColor,backgroundColor:isLight?'rgba(74,120,224,0.08)':'rgba(107,163,255,0.1)',fill:true,tension:0.35,pointRadius:5,pointBackgroundColor:mainDotColor,pointBorderColor:lineColor,pointBorderWidth:2,pointHoverRadius:7,borderWidth:3,order:1},
-    {type:'scatter',label:'Set Weight',data:scatterData,backgroundColor:subDotColor,borderColor:'transparent',pointRadius:3,pointHoverRadius:5,pointStyle:'circle',order:2}
+    {type:'line',label:'Max Weight',data:maxWeights,borderColor:lineColor,backgroundColor:isLight?'rgba(74,120,224,0.08)':'rgba(107,163,255,0.1)',fill:true,tension:0.35,pointRadius:6,pointBackgroundColor:mainDotColor,pointBorderColor:lineColor,pointBorderWidth:2,pointHoverRadius:10,borderWidth:3,order:1,hitRadius:15},
+    {type:'scatter',label:'Set Weight',data:scatterData,backgroundColor:subDotColor,borderColor:'transparent',pointRadius:4,pointHoverRadius:8,pointStyle:'circle',order:2,hitRadius:12}
   ];
+
+  // Smart label thinning for mobile
+  var maxLabelsToShow=6;
+  var labelCount=labels.length;
 
   progressChartInstance=new Chart(document.getElementById('progressChart').getContext('2d'),{
     type:'scatter',
     data:{labels:labels,datasets:datasets},
     options:{
       responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'nearest',intersect:false,axis:'x'},
       plugins:{
         legend:{display:false},
         tooltip:{
@@ -811,7 +1006,7 @@ function renderChart(){
         }
       },
       scales:{
-        x:{type:'category',labels:labels,title:{display:true,text:'Date',color:textColor,font:{size:10,family:'Outfit',weight:'600'}},grid:{color:gridColor},ticks:{color:textColor,font:{size:10}}},
+        x:{type:'category',labels:labels,title:{display:true,text:'Date',color:textColor,font:{size:10,family:'Outfit',weight:'600'}},grid:{color:gridColor},ticks:{color:textColor,font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:maxLabelsToShow}},
         y:{
           min:yAxisMin,max:yAxisMax,
           title:{display:true,text:'Weight',color:textColor,font:{size:10,family:'Outfit',weight:'600'}},
@@ -908,7 +1103,12 @@ function importData(e){var f=e.target.files[0];if(!f)return;var r=new FileReader
 function clearAllData(){if(confirm('Delete all data permanently?')){localStorage.removeItem('ironlog_data');clearDraft();showToast('Cleared');goHome();}}
 
 // ═══════ EVENTS ═══════
-document.getElementById('btn-settings').addEventListener('click',showSettings);
+document.getElementById('btn-settings').addEventListener('click',function(){
+  showSettings();
+  // Populate sync URL field
+  var urlInput=document.getElementById('sync-url-input');
+  urlInput.value=getSyncUrl();
+});
 document.getElementById('btn-back-workout').addEventListener('click',function(){if(editingSessionIdx===null)triggerAutoSave();goHome();});
 document.getElementById('btn-back-settings').addEventListener('click',goHome);
 document.getElementById('btn-finish').addEventListener('click',finishWorkout);
@@ -919,6 +1119,16 @@ document.getElementById('import-file').addEventListener('change',importData);
 document.getElementById('btn-clear-data').addEventListener('click',clearAllData);
 document.getElementById('chart-exercise-select').addEventListener('change',renderChart);
 document.getElementById('nav-tabs').addEventListener('click',function(e){var t=e.target.closest('.nav-tab');if(t&&t.dataset.tab)switchTab(t.dataset.tab);});
+
+// Sync buttons
+document.getElementById('btn-save-sync-url').addEventListener('click',function(){
+  var url=document.getElementById('sync-url-input').value.trim();
+  if(!url){showToast('Enter a URL','var(--orange)');return;}
+  setSyncUrl(url);
+  showToast('Sync URL saved!');
+  document.getElementById('sync-status').textContent='URL saved. Tap "Sync Now" to test.';
+});
+document.getElementById('btn-sync-now').addEventListener('click',manualSync);
 
 // ═══════ INIT ═══════
 // Clean up any empty drafts from previous versions
@@ -933,7 +1143,16 @@ document.getElementById('nav-tabs').addEventListener('click',function(e){var t=e
     if(!hasAny)clearDraft();
   }
 })();
-initTheme();renderHome();
+initTheme();
+
+// Auto-pull from cloud on startup if sync URL is set
+if(getSyncUrl()){
+  cloudPull(function(pulled){
+    if(pulled) renderHome();
+  });
+}
+
+renderHome();
 </script>
 </body>
 </html>
