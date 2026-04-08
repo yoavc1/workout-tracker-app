@@ -110,7 +110,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0)}
 .delete-exercise-btn{background:var(--red-dim);border:1px solid rgba(239,95,95,0.15);color:var(--red);cursor:pointer;font-size:11px;font-family:var(--font-display);font-weight:600;padding:8px 12px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);transition:var(--transition);white-space:nowrap}
 
 /* Bottom bar with timer */
-.workout-bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:90;background:var(--bg-primary);border-top:1px solid var(--border);padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0))}
+.workout-bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:90;background:var(--bg-primary);border-top:1px solid var(--border);padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0));transform:translateY(0);will-change:transform}
 .timer-row{display:flex;gap:6px;margin-bottom:8px;align-items:center}
 .timer-preset{background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-family:var(--font-display);font-weight:600;cursor:pointer;transition:var(--transition);flex:1;text-align:center}
 .timer-preset:active{background:var(--accent-dim)}
@@ -131,7 +131,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0)}
 .btn-finish:active{transform:scale(0.98)}
 .btn-finish.update-mode{background:var(--green);color:#000}
 .btn-add-exercise{padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-display);font-size:15px;font-weight:600;cursor:pointer}
-.workout-meta{font-size:10px;color:var(--text-muted);text-align:center;padding-top:4px;font-family:var(--font-display)}
+.workout-meta{font-size:11px;color:var(--text-secondary);font-family:var(--font-display);font-weight:600;font-variant-numeric:tabular-nums;min-width:50px;text-align:right}
 
 /* Progress */
 .progress-section{padding:12px 16px 100px}
@@ -269,15 +269,14 @@ input[type=number]{-moz-appearance:textfield}
 
 <!-- WORKOUT -->
 <div id="screen-workout" class="screen">
-  <div class="header"><button class="back-btn" id="btn-back-workout">←</button><h1 id="workout-title"></h1><div style="width:38px"></div></div>
+  <div class="header"><button class="back-btn" id="btn-back-workout">←</button><h1 id="workout-title"></h1><div class="workout-meta" id="workout-meta"></div></div>
   <div id="exercise-list" class="exercise-list"></div>
-  <div class="workout-bottom-bar">
-    <div id="timer-done" class="timer-done">Time's up!</div>
-    <div id="timer-display" class="timer-display"><div class="timer-time" id="timer-time">0:00</div><div class="timer-actions"><button class="timer-action-btn" id="timer-add15">+15s</button><button class="timer-action-btn stop" id="timer-stop">Stop</button></div></div>
-    <div class="timer-row"><button class="timer-preset" data-secs="60">60s</button><button class="timer-preset" data-secs="90">90s</button><button class="timer-preset" data-secs="120">2m</button><button class="timer-preset custom-time" id="btn-custom-timer">Set</button></div>
-    <div class="bottom-buttons"><button class="btn-finish" id="btn-finish">Finish Workout</button><button class="btn-add-exercise" id="btn-add-exercise">+</button></div>
-    <div class="workout-meta" id="workout-meta"></div>
-  </div>
+</div>
+<div class="workout-bottom-bar" id="workout-bottom-bar" style="display:none">
+  <div id="timer-done" class="timer-done">Time's up!</div>
+  <div id="timer-display" class="timer-display"><div class="timer-time" id="timer-time">0:00</div><div class="timer-actions"><button class="timer-action-btn" id="timer-add15">+15s</button><button class="timer-action-btn stop" id="timer-stop">Stop</button></div></div>
+  <div class="timer-row"><button class="timer-preset" data-secs="60">60s</button><button class="timer-preset" data-secs="90">90s</button><button class="timer-preset" data-secs="120">2m</button><button class="timer-preset custom-time" id="btn-custom-timer">Set</button></div>
+  <div class="bottom-buttons"><button class="btn-finish" id="btn-finish">Finish Workout</button><button class="btn-add-exercise" id="btn-add-exercise">+</button></div>
 </div>
 
 <!-- PROGRESS -->
@@ -366,9 +365,9 @@ function initTheme(){if(localStorage.getItem('ironlog_theme')==='light'){documen
 function toggleTheme(){var el=document.getElementById('theme-toggle');el.classList.toggle('active');var l=!el.classList.contains('active');document.documentElement.setAttribute('data-theme',l?'light':'');localStorage.setItem('ironlog_theme',l?'light':'dark');}
 
 // ═══════ NAV ═══════
-function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.nav-tab').forEach(function(n){n.classList.remove('active');});var b=document.querySelector('.nav-tab[data-tab="'+t+'"]');if(b)b.classList.add('active');document.getElementById('nav-tabs').style.display='flex';if(t==='home'){document.getElementById('screen-home').classList.add('active');renderHome();}else if(t==='progress'){document.getElementById('screen-progress').classList.add('active');setTimeout(renderProgress,100);}else if(t==='history'){document.getElementById('screen-history').classList.add('active');renderHistory();}}
+function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.nav-tab').forEach(function(n){n.classList.remove('active');});var b=document.querySelector('.nav-tab[data-tab="'+t+'"]');if(b)b.classList.add('active');document.getElementById('nav-tabs').style.display='flex';document.getElementById('workout-bottom-bar').style.display='none';if(t==='home'){document.getElementById('screen-home').classList.add('active');renderHome();}else if(t==='progress'){document.getElementById('screen-progress').classList.add('active');setTimeout(renderProgress,100);}else if(t==='history'){document.getElementById('screen-history').classList.add('active');renderHistory();}}
 function goHome(){currentWorkout=null;currentSets={};openExercises={};editingSessionIdx=null;workoutStartTime=null;clearInterval(restTimerInterval);switchTab('home');}
-function showSettings(){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('screen-settings').classList.add('active');document.getElementById('nav-tabs').style.display='none';document.getElementById('sync-url-input').value=getSyncUrl();}
+function showSettings(){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('screen-settings').classList.add('active');document.getElementById('nav-tabs').style.display='none';document.getElementById('workout-bottom-bar').style.display='none';document.getElementById('sync-url-input').value=getSyncUrl();}
 
 function openWorkout(name,prefill,sessionIdx){
   currentWorkout=name;editingSessionIdx=(sessionIdx!==undefined)?sessionIdx:null;
@@ -379,6 +378,7 @@ function openWorkout(name,prefill,sessionIdx){
   document.getElementById('screen-workout').classList.add('active');
   document.getElementById('workout-title').textContent=name;
   document.getElementById('nav-tabs').style.display='none';
+  document.getElementById('workout-bottom-bar').style.display='block';
   // Reset timer UI
   document.getElementById('timer-display').classList.remove('active');
   document.getElementById('timer-done').classList.remove('active');
