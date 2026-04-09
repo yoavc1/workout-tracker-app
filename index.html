@@ -137,13 +137,13 @@ body{padding-bottom:env(safe-area-inset-bottom,0);background:linear-gradient(160
 .hmnav-t{font-family:var(--ff);font-size:14px;font-weight:700}
 .hmnav-b{background:var(--card);border:1px solid var(--brd);color:var(--t2);width:30px;height:30px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;padding:0}
 .hmnav-b.dis{opacity:0.3;pointer-events:none}
-.hmrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.hmrow{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
 .hmcard{background:var(--card);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--brd);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
 .hmsub{font-size:10px;color:var(--t2);margin-bottom:6px}
-.hmdh{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px}
-.hmdh div{font-size:7px;color:var(--t3);text-align:center;font-family:var(--ff);font-weight:600;text-transform:uppercase}
-.hmg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.hmc{aspect-ratio:1;width:100%;border-radius:4px;background:var(--input);border:1px solid rgba(255,255,255,0.03);cursor:default;transition:transform 0.15s}
+.hmdh{display:grid;grid-template-columns:repeat(7,32px);gap:4px;margin-bottom:4px}
+.hmdh div{font-size:9px;color:var(--t3);text-align:center;font-family:var(--ff);font-weight:600;text-transform:uppercase}
+.hmg{display:grid;grid-template-columns:repeat(7,32px);gap:4px}
+.hmc{width:32px;height:32px;border-radius:5px;background:var(--input);border:1px solid rgba(255,255,255,0.03);cursor:default;transition:transform 0.15s}
 .hmc.clk{cursor:pointer}.hmc.clk:active{transform:scale(0.85)}
 .hmc.empty{background:transparent;border-color:transparent}
 [data-theme="light"] .hmc{border-color:rgba(0,0,0,0.04)}
@@ -360,6 +360,9 @@ function ow(name,pre,si){
   document.getElementById('bbar').style.display='block';
   document.getElementById('tdisp').classList.remove('active');
   document.getElementById('tdone').classList.remove('active');
+  // Hide timer in edit mode
+  var trowEl=document.querySelector('.bbar .trow');
+  if(esi!==null){trowEl.style.display='none';}else{trowEl.style.display='flex';}
   var btn=document.getElementById('btn-fin');
   if(esi!==null){btn.textContent='Update Workout';btn.className='bfin upd';}else{btn.textContent='Finish Workout';btn.className='bfin';}
   re();uwm();
@@ -387,7 +390,7 @@ function gi(ss,wk){
   // Volume
   if(ss.length>=2){var lt=ss[ss.length-1];var pv=null;for(var i=ss.length-2;i>=0;i--){if(ss[i].workout===lt.workout){pv=ss[i];break;}}if(pv){var vol=function(s){return s.reduce(function(a,x){return a+x.kg*x.reps;},0);};var en=Object.keys(lt.exercises),up=0,dn=0;en.forEach(function(x){if(pv.exercises[x]){if(vol(lt.exercises[x])>vol(pv.exercises[x]))up++;else if(vol(lt.exercises[x])<vol(pv.exercises[x]))dn++;}});if(up>dn&&up>0)ins.push({type:'pos',text:'<strong>'+lt.workout+' volume up</strong> — '+up+' improved'});if(dn>up&&dn>0)ins.push({type:'warn',text:'<strong>'+lt.workout+' volume dropped</strong> on '+dn});}}
   // Abs reminder
-  if(ss.length>0){var lt2=ss[ss.length-1];if(!lt2.abs)ins.push({type:'info',text:'<strong>Don\'t forget abs</strong> — last workout logged without core training'});}
+  if(ss.length>0){var lt2=ss[ss.length-1];if(!lt2.abs)ins.push({type:'info',text:'<strong>Don\'t forget core</strong> — last workout logged without core training'});}
   return ins;
 }
 
@@ -410,17 +413,13 @@ function rh(){
   var todayStr=new Date().toDateString();
   var todayAbs=false;var todayHasWorkout=false;
   ss.forEach(function(s){if(new Date(s.date).toDateString()===todayStr){todayHasWorkout=true;if(s.abs)todayAbs=true;}});
-  if(todayHasWorkout&&!todayAbs){
-    absSec.innerHTML='<div class="hsec" style="padding:14px 18px"><div style="display:flex;align-items:center;gap:12px"><input type="checkbox" class="abs-cb" id="abs-home-cb" style="width:22px;height:22px;accent-color:var(--green)"><label for="abs-home-cb" style="font-family:var(--ff);font-size:14px;font-weight:600;cursor:pointer;flex:1">Abs trained today?</label></div></div>';
+  if(todayHasWorkout){
+    absSec.innerHTML='<div class="hsec" style="padding:14px 18px"><div style="display:flex;align-items:center;gap:12px"><input type="checkbox" class="abs-cb" id="abs-home-cb" '+(todayAbs?'checked':'')+' style="width:22px;height:22px;accent-color:var(--green)"><label for="abs-home-cb" style="font-family:var(--ff);font-size:14px;font-weight:600;cursor:pointer;flex:1">'+(todayAbs?'Core trained today ✓':'Core trained today?')+'</label></div></div>';
     document.getElementById('abs-home-cb').addEventListener('change',function(){
-      if(this.checked){
-        // Mark all today's sessions as abs=true
-        var d=gd();d.sessions.forEach(function(s){if(new Date(s.date).toDateString()===todayStr)s.abs=true;});sd(d);
-        toast('Abs logged!');setTimeout(function(){rh();},500);
-      }
+      var checked=this.checked;
+      var d=gd();d.sessions.forEach(function(s){if(new Date(s.date).toDateString()===todayStr)s.abs=checked;});sd(d);
+      toast(checked?'Core logged!':'Core unmarked');setTimeout(function(){rh();},500);
     });
-  }else if(todayAbs){
-    absSec.innerHTML='<div class="hsec" style="padding:14px 18px"><div style="display:flex;align-items:center;gap:12px"><span style="font-size:18px">✓</span><span style="font-family:var(--ff);font-size:14px;font-weight:600;color:var(--green)">Abs trained today</span></div></div>';
   }else{absSec.innerHTML='';}
   // Workouts
   var wSec=document.getElementById('wk-sec');var di=gdri();
@@ -552,7 +551,7 @@ function rhm(){
     if(!dwm[ds])dwm[ds]=[];dwm[ds].push(s.workout);
     if(s.abs)dAbsMap[ds]=true;
     var pv=null;for(var j=si-1;j>=0;j--){if(ss[j].workout===s.workout){pv=ss[j];break;}}
-    if(pv){var en=Object.keys(s.exercises),inc=0,tot=en.length;en.forEach(function(x){if(pv.exercises[x]){if(ev(s.exercises[x])>ev(pv.exercises[x]))inc++;}});var r=tot>0?inc/tot:0;dp[ds]=r>=0.5?'green':r>0?'blue':'red';}});
+    if(pv){var en=Object.keys(s.exercises),inc=0,dec=0,tot=en.length;en.forEach(function(x){if(pv.exercises[x]){if(ev(s.exercises[x])>ev(pv.exercises[x]))inc++;else if(ev(s.exercises[x])<ev(pv.exercises[x]))dec++;}});var r=tot>0?inc/tot:0;dp[ds]=r>=0.5?'green':r>0?'blue':'red';dwm[ds+'_prog']={workout:s.workout,inc:inc,dec:dec,tot:tot};}});
   var ma=0,mg=0;for(var d=1;d<=dim;d++){var ds=new Date(yr,mo,d).toDateString();if(dc[ds])ma++;if(dp[ds]==='green')mg++;}
   var dh='<div class="hmdh"><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div></div>';
   var ac='',pc='';
@@ -564,13 +563,20 @@ function rhm(){
       if(cnt>0){ac+='<div class="'+acls+' clk" data-ds="'+ds+'"></div>';}
       else{ac+='<div class="'+acls+'"></div>';}
       var pr=dp[ds];var pcls='hmc'+(pr==='green'?' pg':pr==='blue'?' pb':pr==='red'?' pr':'')+tc;
-      pc+='<div class="'+pcls+'"></div>';}}
-  var aH='<div class="hmcard"><div style="font-family:var(--ff);font-size:11px;font-weight:600;margin-bottom:2px">Activity</div><div class="hmsub">'+ma+' day'+(ma!==1?'s':'')+'</div>'+dh+'<div class="hmg" id="act-g">'+ac+'</div><div class="hmleg"><div class="hmleg-i"><div class="hmleg-d" style="background:var(--input)"></div>Rest</div><div class="hmleg-i"><div class="hmleg-d" style="background:var(--green)"></div>Trained</div><div class="hmleg-i"><div class="hmleg-d" style="background:var(--orange)"></div>+Abs</div></div></div>';
-  var pH='<div class="hmcard"><div style="font-family:var(--ff);font-size:11px;font-weight:600;margin-bottom:2px">Progression</div><div class="hmsub">'+mg+' improved</div>'+dh+'<div class="hmg">'+pc+'</div><div class="hmleg"><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(61,214,140,0.7)"></div>Vol ↑</div><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(91,140,247,0.5)"></div>Some</div><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(239,95,95,0.55)"></div>None</div></div></div>';
+      if(pr){pc+='<div class="'+pcls+' clk" data-ds="'+ds+'" data-type="prog"></div>';}
+      else{pc+='<div class="'+pcls+'"></div>';}}}
+  var aH='<div class="hmcard"><div style="font-family:var(--ff);font-size:11px;font-weight:600;margin-bottom:2px">Activity</div><div class="hmsub">'+ma+' day'+(ma!==1?'s':'')+'</div>'+dh+'<div class="hmg" id="act-g">'+ac+'</div><div class="hmleg"><div class="hmleg-i"><div class="hmleg-d" style="background:var(--input)"></div>Rest</div><div class="hmleg-i"><div class="hmleg-d" style="background:var(--green)"></div>Trained</div><div class="hmleg-i"><div class="hmleg-d" style="background:var(--orange)"></div>+Core</div></div></div>';
+  var pH='<div class="hmcard"><div style="font-family:var(--ff);font-size:11px;font-weight:600;margin-bottom:2px">Progression</div><div class="hmsub">'+mg+' improved</div>'+dh+'<div class="hmg" id="prog-g">'+pc+'</div><div class="hmleg"><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(61,214,140,0.7)"></div>Vol ↑</div><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(91,140,247,0.5)"></div>Some</div><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(239,95,95,0.55)"></div>None</div></div></div>';
   c.innerHTML=aH+pH;
-  c.querySelectorAll('.hmc.clk').forEach(function(cell){cell.addEventListener('click',function(){
+  // Activity click
+  c.querySelectorAll('.hmc.clk:not([data-type])').forEach(function(cell){cell.addEventListener('click',function(){
     var ds=cell.dataset.ds;var wks=dwm[ds];var hasAbs=dAbsMap[ds];
-    if(wks&&wks.length>0){document.getElementById('hmpop-date').textContent=new Date(ds).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});document.getElementById('hmpop-wk').textContent=wks.join(', ');document.getElementById('hmpop-abs').textContent=hasAbs?'✓ Abs trained':'';document.getElementById('hmpop-ov').classList.add('active');}
+    if(wks&&wks.length>0){document.getElementById('hmpop-date').textContent=new Date(ds).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});document.getElementById('hmpop-wk').textContent=wks.join(', ');document.getElementById('hmpop-abs').textContent=hasAbs?'✓ Core trained':'';document.getElementById('hmpop-ov').classList.add('active');}
+  });});
+  // Progression click
+  c.querySelectorAll('.hmc.clk[data-type="prog"]').forEach(function(cell){cell.addEventListener('click',function(){
+    var ds=cell.dataset.ds;var pd=dwm[ds+'_prog'];
+    if(pd){document.getElementById('hmpop-date').textContent=new Date(ds).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});document.getElementById('hmpop-wk').textContent=pd.workout;var same=pd.tot-pd.inc-pd.dec;document.getElementById('hmpop-abs').textContent='↑ '+pd.inc+' improved · ↓ '+pd.dec+' declined'+(same>0?' · = '+same+' same':'');document.getElementById('hmpop-ov').classList.add('active');}
   });});
 }
 
@@ -623,7 +629,7 @@ function rhi(){
     g.items.forEach(function(item){var s=item.s;var idx=item.idx;var ee=Object.entries(s.exercises);var ts=ee.reduce(function(a,e){return a+e[1].length;},0);
       var bd=ee.map(function(e){return'<div><strong>'+eh(e[0])+':</strong> '+e[1].map(function(x){return x.kg+'kg×'+x.reps;}).join(', ')+'</div>';}).join('');
       var dur=s.duration?' · '+fdur(s.duration):'';var day=new Date(s.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-      body+='<div class="hcard"><div class="hcard-top"><div><span class="hcard-name">'+eh(s.workout)+'</span><span class="hcard-date">'+day+'</span></div><div class="hcard-acts"><button class="hcard-btn je" data-i="'+idx+'">Edit</button><button class="hcard-btn jd" data-i="'+idx+'">Delete</button></div></div><div class="hcard-stats">'+ee.length+' exercise'+(ee.length!==1?'s':'')+' · '+ts+' sets'+dur+'</div><div class="hcard-ex">'+bd+'</div>'+(s.abs?'<div class="hcard-abs">✓ Abs trained</div>':'')+'</div>';
+      body+='<div class="hcard"><div class="hcard-top"><div><span class="hcard-name">'+eh(s.workout)+'</span><span class="hcard-date">'+day+'</span></div><div class="hcard-acts"><button class="hcard-btn je" data-i="'+idx+'">Edit</button><button class="hcard-btn jd" data-i="'+idx+'">Delete</button></div></div><div class="hcard-stats">'+ee.length+' exercise'+(ee.length!==1?'s':'')+' · '+ts+' sets'+dur+'</div><div class="hcard-ex">'+bd+'</div>'+(s.abs?'<div class="hcard-abs">✓ Core trained</div>':'')+'</div>';
     });
     body+='</div></div>';el.innerHTML=hdr+body;
     el.querySelector('.hwh').addEventListener('click',function(){el.classList.toggle('open');});
