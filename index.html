@@ -58,13 +58,25 @@ body{padding-bottom:env(safe-area-inset-bottom,0);background:linear-gradient(160
 .split-day-val:active{background:var(--card2)}
 .split-day-val.has-workout{color:var(--t1);background:rgba(61,214,140,0.08);border-color:rgba(61,214,140,0.15)}
 
-/* Nav */
-.nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(8,8,13,0.85);-webkit-backdrop-filter:var(--glass);backdrop-filter:var(--glass);border-top:1px solid rgba(255,255,255,0.08);display:flex;padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0));gap:4px}
-[data-theme="light"] .nav{background:rgba(240,240,244,0.85)}
-.ntab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--t3);font-family:var(--fb);font-size:10px;font-weight:500;cursor:pointer;padding:8px 0;transition:all 0.2s ease;border-radius:var(--rs)}
-.ntab.active{color:var(--accent);background:rgba(255,255,255,0.10)}
-[data-theme="light"] .ntab.active{background:rgba(0,0,0,0.06)}
+/* Nav - floating pill */
+.nav-wrap{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0))}
+.nav-pill{display:flex;background:rgba(20,20,28,0.92);-webkit-backdrop-filter:var(--glass);backdrop-filter:var(--glass);border:1px solid rgba(255,255,255,0.1);border-radius:28px;padding:6px;gap:2px;box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+[data-theme="light"] .nav-pill{background:rgba(240,240,244,0.92);border-color:rgba(0,0,0,0.08);box-shadow:0 4px 24px rgba(0,0,0,0.1)}
+.ntab{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--t3);font-family:var(--fb);font-size:9px;font-weight:500;cursor:pointer;padding:8px 18px;transition:all 0.2s ease;border-radius:22px}
+.ntab.active{color:var(--accent);background:rgba(255,255,255,0.12)}
+[data-theme="light"] .ntab.active{background:rgba(0,0,0,0.08)}
 .ntab svg{width:20px;height:20px}
+.nav-plus{width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--bg);border:none;font-size:28px;font-weight:300;font-family:var(--ff);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(255,255,255,0.15);transition:all 0.2s ease}
+.nav-plus:active{transform:scale(0.92)}
+[data-theme="light"] .nav-plus{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
+
+/* Exercise overview */
+.ov-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--brd)}
+.ov-item:last-child{border-bottom:none}
+.ov-name{font-family:var(--ff);font-size:13px;font-weight:600;flex:1}
+.ov-change{font-family:var(--ff);font-size:12px;font-weight:600;text-align:right}
+.ov-change.up{color:var(--green)}.ov-change.down{color:var(--red)}.ov-change.same{color:var(--t3)}
+.ov-card{background:var(--card);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
 
 /* Exercise */
 .elist{padding:10px 16px 240px;display:flex;flex-direction:column;gap:6px}
@@ -250,13 +262,12 @@ input[type=number]{-moz-appearance:textfield}
 <div id="mov-splitday" class="mov"><div class="modal"><h3 id="splitday-title">Monday</h3><div id="splitday-options"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="splitday-cancel">Cancel</button></div></div></div>
 
 <!-- HOME -->
-<div id="s-home" class="screen active" style="padding-bottom:100px">
-  <div class="header"><h1>🏋️‍♂️ Workout Tracker</h1><div><button class="ibtn" id="btn-settings">⚙</button></div></div>
+<div id="s-home" class="screen active" style="padding-bottom:120px">
+  <div class="header"><h1>🏋️‍♂️ Workout Tracker</h1><div style="display:flex;gap:6px"><button class="ibtn" id="btn-split" title="Weekly Split">📅</button><button class="ibtn" id="btn-settings">⚙</button></div></div>
   <div class="hsub" id="hsub"></div>
   <div id="ins-sec"></div>
   <div id="abs-home-sec"></div>
   <div id="wk-sec"></div>
-  <div id="split-bar-container"></div>
 </div>
 
 <!-- WORKOUT -->
@@ -281,8 +292,20 @@ input[type=number]{-moz-appearance:textfield}
     <div class="cttog" id="cttog"><button class="ctbtn active" data-range="W">W</button><button class="ctbtn" data-range="M">M</button><button class="ctbtn" data-range="6M">6M</button><button class="ctbtn" data-range="ALL">All</button></div>
     <select id="csel" class="csel"></select>
     <div id="ccont" class="ccont"><canvas id="chart"></canvas></div>
+    <h3 style="margin-top:18px">Exercise Overview</h3>
+    <select id="ov-sel" class="csel"></select>
+    <div id="ov-container"></div>
   </div>
 </div>
+
+<!-- Date edit modal -->
+<div id="mov-date" class="mov"><div class="modal"><h3>Change Date</h3><input type="date" class="minp" id="date-edit-inp" style="margin-bottom:12px"><div class="macts"><button class="mbtn sec" id="date-cancel">Cancel</button><button class="mbtn pri" id="date-save">Save</button></div></div></div>
+
+<!-- Split popup (centered) -->
+<div id="split-popup-ov" class="hmpop-ov"><div class="hmpop" style="min-width:300px;max-width:360px;text-align:left"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-family:var(--ff);font-size:17px;font-weight:700">📅 Weekly Split</div><button class="ibtn" id="split-popup-close" style="width:32px;height:32px;font-size:14px">×</button></div><div id="split-popup-grid"></div></div></div>
+
+<!-- Quick add workout modal -->
+<div id="mov-quickadd" class="mov"><div class="modal"><h3>Start Workout</h3><div id="quickadd-options"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="quickadd-cancel">Cancel</button></div></div></div>
 
 <!-- HISTORY -->
 <div id="s-history" class="screen">
@@ -300,11 +323,14 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
-<nav class="nav" id="nav">
-  <button class="ntab active" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Workouts</button>
-  <button class="ntab" data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>Progress</button>
-  <button class="ntab" data-tab="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</button>
-</nav>
+<div class="nav-wrap" id="nav">
+  <nav class="nav-pill">
+    <button class="ntab active" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Workouts</button>
+    <button class="ntab" data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>Progress</button>
+    <button class="ntab" data-tab="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</button>
+  </nav>
+  <button class="nav-plus" id="nav-plus">+</button>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 // ═══════ DATA ═══════
@@ -430,14 +456,6 @@ function rh(){
   h+='</div></div>';wSec.innerHTML=h;
   wSec.querySelectorAll('.wcard').forEach(function(c){c.addEventListener('click',function(){ow(c.dataset.w);});});
   document.getElementById('btn-manage').addEventListener('click',function(e){e.stopPropagation();showManage();});
-  // Split bar
-  var sbc=document.getElementById('split-bar-container');
-  var split=getSplit();var hasSplit=Object.values(split).some(function(v){return v;});
-  var shtml='<div class="split-bar" id="split-bar"><div class="split-bar-text">📅 Weekly Split</div><div style="color:var(--t3);font-size:14px">›</div></div>';
-  if(hasSplit){shtml='<div class="hsec"><div class="hsec-t">📅 Weekly Split</div><div class="split-grid">';DAYS.forEach(function(d){var v=split[d]||'';shtml+='<div class="split-day"><div class="split-day-label">'+d+'</div><div class="split-day-val'+(v?' has-workout':'')+'" data-day="'+d+'">'+(v||'Rest')+'</div></div>';});shtml+='</div></div>';}
-  sbc.innerHTML=shtml;
-  if(hasSplit){sbc.querySelectorAll('.split-day-val').forEach(function(el){el.addEventListener('click',function(){openSplitDay(el.dataset.day);});});}
-  else{document.getElementById('split-bar').addEventListener('click',function(){openSplitEditor();});}
 }
 
 // Manage workouts
@@ -538,7 +556,64 @@ function fdur(s){if(!s)return'';return Math.floor(s/60)+'m';}
 function toast(m,c){var t=document.getElementById('toast');t.textContent=m;t.style.background=c||'var(--green)';t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}
 
 // ═══════ PROGRESS ═══════
-function rp(){rhn();rhm();rpe();rc();sct();}
+function rp(){rhn();rhm();rpe();rc();sct();rov();sov();}
+
+// Exercise Overview
+function rov(){
+  var sel=document.getElementById('ov-sel');var wk=gw();var prev=sel.value;sel.innerHTML='';
+  Object.keys(wk).forEach(function(n){var o=document.createElement('option');o.value=n;o.textContent=n;if(n===prev)o.selected=true;sel.appendChild(o);});
+  renderOV();
+}
+function sov(){document.getElementById('ov-sel').addEventListener('change',renderOV);}
+function renderOV(){
+  var wkName=document.getElementById('ov-sel').value;var c=document.getElementById('ov-container');
+  if(!wkName){c.innerHTML='';return;}
+  var ss=gs().slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  var wk=gw();var exercises=wk[wkName]||[];
+  // Find last two sessions of this workout type
+  var recent=[];for(var i=ss.length-1;i>=0;i--){if(ss[i].workout===wkName){recent.unshift(ss[i]);if(recent.length>=2)break;}}
+  if(recent.length<1){c.innerHTML='<div class="cempty" style="min-height:80px">No data for '+eh(wkName)+' yet.</div>';return;}
+  var curr=recent[recent.length-1];var prev=recent.length>=2?recent[0]:null;
+  var h='<div class="ov-card">';
+  exercises.forEach(function(ex){
+    var currSets=curr.exercises[ex];var prevSets=prev?prev.exercises[ex]:null;
+    if(!currSets){h+='<div class="ov-item"><div class="ov-name">'+eh(ex)+'</div><div class="ov-change same">No data</div></div>';return;}
+    var currMax=Math.max.apply(null,currSets.map(function(s){return s.kg;}));
+    if(!prevSets){h+='<div class="ov-item"><div class="ov-name">'+eh(ex)+'</div><div class="ov-change same">'+currMax+' kg (new)</div></div>';return;}
+    var prevMax=Math.max.apply(null,prevSets.map(function(s){return s.kg;}));
+    var diff=currMax-prevMax;var cls=diff>0?'up':diff<0?'down':'same';
+    var arrow=diff>0?'↑':diff<0?'↓':'=';
+    h+='<div class="ov-item"><div class="ov-name">'+eh(ex)+'</div><div class="ov-change '+cls+'">'+arrow+' '+prevMax+' → '+currMax+' kg</div></div>';
+  });
+  h+='</div>';c.innerHTML=h;
+}
+
+// Split popup
+function showSplitPopup(){
+  var split=getSplit();var wk=gw();
+  var grid=document.getElementById('split-popup-grid');
+  var h='<div class="split-grid">';
+  DAYS.forEach(function(d){var v=split[d]||'';h+='<div class="split-day"><div class="split-day-label">'+d+'</div><div class="split-day-val'+(v?' has-workout':'')+'" data-day="'+d+'">'+(v||'Rest')+'</div></div>';});
+  h+='</div>';grid.innerHTML=h;
+  document.getElementById('split-popup-ov').classList.add('active');
+  grid.querySelectorAll('.split-day-val').forEach(function(el){el.addEventListener('click',function(){
+    document.getElementById('split-popup-ov').classList.remove('active');
+    openSplitDay(el.dataset.day);
+  });});
+}
+
+// Quick-add workout from + button
+function showQuickAdd(){
+  var wk=gw();var opts=document.getElementById('quickadd-options');
+  var h='<div style="display:flex;flex-direction:column;gap:6px">';
+  Object.keys(wk).forEach(function(n){h+='<button class="mbtn sec js-qa" data-w="'+esc(n)+'" style="margin:0;text-align:left;padding:14px 16px;font-size:15px">'+eh(n)+'</button>';});
+  h+='</div>';opts.innerHTML=h;
+  document.getElementById('mov-quickadd').classList.add('active');
+  opts.querySelectorAll('.js-qa').forEach(function(b){b.addEventListener('click',function(){
+    document.getElementById('mov-quickadd').classList.remove('active');
+    ow(b.dataset.w);
+  });});
+}
 function rhn(){var nav=document.getElementById('hmnav');var vd=new Date(new Date().getFullYear(),new Date().getMonth()+hmo,1);var mn=vd.toLocaleString('en',{month:'long',year:'numeric'});var fw=hmo<0;nav.innerHTML='<button class="hmnav-b" id="hm-p">‹</button><div class="hmnav-t">'+mn+'</div><button class="hmnav-b'+(fw?'':' dis')+'" id="hm-n">›</button>';document.getElementById('hm-p').addEventListener('click',function(){hmo--;rhn();rhm();});document.getElementById('hm-n').addEventListener('click',function(){if(hmo<0){hmo++;rhn();rhm();}});}
 
 function rhm(){
@@ -547,11 +622,29 @@ function rhm(){
   var dim=new Date(yr,mo+1,0).getDate();var sp=(new Date(yr,mo,1).getDay()+6)%7;
   var dc={},dp={};dwm={};dAbsMap={};
   function ev(s){return s.reduce(function(a,x){return a+x.kg*x.reps;},0);}
-  ss.forEach(function(s,si){var ds=new Date(s.date).toDateString();dc[ds]=(dc[ds]||0)+1;
+  function mw(s){return Math.max.apply(null,s.map(function(x){return x.kg;}));}
+  // Sort sessions by date for reliable comparison
+  var sorted=ss.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  sorted.forEach(function(s,si){var ds=new Date(s.date).toDateString();dc[ds]=(dc[ds]||0)+1;
     if(!dwm[ds])dwm[ds]=[];dwm[ds].push(s.workout);
     if(s.abs)dAbsMap[ds]=true;
-    var pv=null;for(var j=si-1;j>=0;j--){if(ss[j].workout===s.workout){pv=ss[j];break;}}
-    if(pv){var en=Object.keys(s.exercises),inc=0,dec=0,tot=en.length;en.forEach(function(x){if(pv.exercises[x]){if(ev(s.exercises[x])>ev(pv.exercises[x]))inc++;else if(ev(s.exercises[x])<ev(pv.exercises[x]))dec++;}});var r=tot>0?inc/tot:0;dp[ds]=r>=0.5?'green':r>0?'blue':'red';dwm[ds+'_prog']={workout:s.workout,inc:inc,dec:dec,tot:tot};}});
+    // Find previous session of same workout type
+    var pv=null;for(var j=si-1;j>=0;j--){if(sorted[j].workout===s.workout){pv=sorted[j];break;}}
+    if(pv){
+      // Only compare exercises that exist in BOTH sessions
+      var shared=Object.keys(s.exercises).filter(function(x){return pv.exercises[x];});
+      var inc=0,dec=0,tot=shared.length;
+      shared.forEach(function(x){
+        // Improved if max weight went up OR volume went up (either counts)
+        var curMax=mw(s.exercises[x]),prevMax=mw(pv.exercises[x]);
+        var curVol=ev(s.exercises[x]),prevVol=ev(pv.exercises[x]);
+        if(curMax>prevMax||curVol>prevVol)inc++;
+        else if(curMax<prevMax&&curVol<prevVol)dec++;
+      });
+      var r=tot>0?inc/tot:0;
+      dp[ds]=r>=0.5?'green':r>0?'blue':'red';
+      dwm[ds+'_prog']={workout:s.workout,inc:inc,dec:dec,tot:tot};
+    }});
   var ma=0,mg=0;for(var d=1;d<=dim;d++){var ds=new Date(yr,mo,d).toDateString();if(dc[ds])ma++;if(dp[ds]==='green')mg++;}
   var dh='<div class="hmdh"><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div></div>';
   var ac='',pc='';
@@ -629,12 +722,13 @@ function rhi(){
     g.items.forEach(function(item){var s=item.s;var idx=item.idx;var ee=Object.entries(s.exercises);var ts=ee.reduce(function(a,e){return a+e[1].length;},0);
       var bd=ee.map(function(e){return'<div><strong>'+eh(e[0])+':</strong> '+e[1].map(function(x){return x.kg+'kg×'+x.reps;}).join(', ')+'</div>';}).join('');
       var dur=s.duration?' · '+fdur(s.duration):'';var day=new Date(s.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-      body+='<div class="hcard"><div class="hcard-top"><div><span class="hcard-name">'+eh(s.workout)+'</span><span class="hcard-date">'+day+'</span></div><div class="hcard-acts"><button class="hcard-btn je" data-i="'+idx+'">Edit</button><button class="hcard-btn jd" data-i="'+idx+'">Delete</button></div></div><div class="hcard-stats">'+ee.length+' exercise'+(ee.length!==1?'s':'')+' · '+ts+' sets'+dur+'</div><div class="hcard-ex">'+bd+'</div>'+(s.abs?'<div class="hcard-abs">✓ Core trained</div>':'')+'</div>';
+      body+='<div class="hcard"><div class="hcard-top"><div><span class="hcard-name">'+eh(s.workout)+'</span><span class="hcard-date">'+day+'</span></div><div class="hcard-acts"><button class="hcard-btn jdt" data-i="'+idx+'">Date</button><button class="hcard-btn je" data-i="'+idx+'">Edit</button><button class="hcard-btn jd" data-i="'+idx+'">Delete</button></div></div><div class="hcard-stats">'+ee.length+' exercise'+(ee.length!==1?'s':'')+' · '+ts+' sets'+dur+'</div><div class="hcard-ex">'+bd+'</div>'+(s.abs?'<div class="hcard-abs">✓ Core trained</div>':'')+'</div>';
     });
     body+='</div></div>';el.innerHTML=hdr+body;
     el.querySelector('.hwh').addEventListener('click',function(){el.classList.toggle('open');});
     el.querySelectorAll('.je').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var i=parseInt(b.dataset.i);var s=gs()[i];if(s)ow(s.workout,s.exercises,i);});});
     el.querySelectorAll('.jd').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();ds(parseInt(b.dataset.i));rhi();toast('Deleted','var(--red)');});});
+    el.querySelectorAll('.jdt').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();window.openDateEdit(parseInt(b.dataset.i));});});
     c.appendChild(el);
   });
 }
@@ -654,7 +748,7 @@ document.getElementById('btn-imp-t').addEventListener('click',function(){documen
 document.getElementById('imp-f').addEventListener('change',imp);
 document.getElementById('btn-clear').addEventListener('click',function(){localStorage.removeItem('ironlog_data');cdr();toast('Cleared');gh();});
 document.getElementById('csel').addEventListener('change',rc);
-document.getElementById('nav').addEventListener('click',function(e){var t=e.target.closest('.ntab');if(t&&t.dataset.tab)st(t.dataset.tab);});
+document.querySelector('.nav-pill').addEventListener('click',function(e){var t=e.target.closest('.ntab');if(t&&t.dataset.tab)st(t.dataset.tab);});
 document.getElementById('btn-save-url').addEventListener('click',function(){var u=document.getElementById('sync-url').value.trim();if(!u){toast('Enter URL','var(--orange)');return;}ssu(u);toast('URL saved!');});
 document.getElementById('btn-sync').addEventListener('click',msync);
 document.querySelectorAll('.tpre[data-secs]').forEach(function(b){b.addEventListener('click',function(){srt(parseInt(b.dataset.secs));});});
@@ -673,6 +767,32 @@ document.getElementById('manage-close').addEventListener('click',function(){docu
 document.getElementById('split-cancel').addEventListener('click',function(){document.getElementById('mov-split').classList.remove('active');});
 document.getElementById('split-save').addEventListener('click',function(){var s={};document.querySelectorAll('.js-split-inp').forEach(function(inp){s[inp.dataset.day]=inp.value.trim();});setSplit(s);document.getElementById('mov-split').classList.remove('active');rh();toast('Split saved!');});
 document.getElementById('splitday-cancel').addEventListener('click',function(){document.getElementById('mov-splitday').classList.remove('active');});
+// Split popup button
+document.getElementById('btn-split').addEventListener('click',function(){
+  var split=getSplit();var hasSplit=Object.values(split).some(function(v){return v;});
+  if(hasSplit)showSplitPopup();else openSplitEditor();
+});
+document.getElementById('split-popup-close').addEventListener('click',function(){document.getElementById('split-popup-ov').classList.remove('active');});
+document.getElementById('split-popup-ov').addEventListener('click',function(e){if(e.target===document.getElementById('split-popup-ov'))document.getElementById('split-popup-ov').classList.remove('active');});
+// Quick-add from + button
+document.getElementById('nav-plus').addEventListener('click',showQuickAdd);
+document.getElementById('quickadd-cancel').addEventListener('click',function(){document.getElementById('mov-quickadd').classList.remove('active');});
+// Date edit
+var dateEditIdx=null;
+document.getElementById('date-cancel').addEventListener('click',function(){document.getElementById('mov-date').classList.remove('active');});
+document.getElementById('date-save').addEventListener('click',function(){
+  var val=document.getElementById('date-edit-inp').value;
+  if(!val||dateEditIdx===null){toast('Select a date','var(--orange)');return;}
+  var d=gd();var old=new Date(d.sessions[dateEditIdx].date);var nw=new Date(val);nw.setHours(old.getHours(),old.getMinutes(),old.getSeconds());
+  d.sessions[dateEditIdx].date=nw.toISOString();sd(d);
+  document.getElementById('mov-date').classList.remove('active');rhi();toast('Date updated!');
+});
+// Make date edit available globally
+window.openDateEdit=function(idx){
+  dateEditIdx=idx;var s=gs()[idx];
+  document.getElementById('date-edit-inp').value=new Date(s.date).toISOString().slice(0,10);
+  document.getElementById('mov-date').classList.add('active');
+};
 
 // Init
 (function(){var di=gdri();if(di&&di.sets){var h=false;Object.keys(di.sets).forEach(function(k){var s=di.sets[k];if(s&&s.length>0)s.forEach(function(x){if(x.kg!==''||x.reps!=='')h=true;});});if(!h)cdr();}})();
