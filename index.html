@@ -196,7 +196,7 @@ input[type=number]{-moz-appearance:textfield}
 <div id="mov-splitday" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%;max-height:80vh;overflow-y:auto"><h3 id="sd-title" style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Monday</h3><div id="sd-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="sd-cancel">Cancel</button></div></div></div>
 <div id="mov-date" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:260px;width:80%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Change Date</h3><input type="date" id="date-inp" style="margin-bottom:8px;width:100%;box-sizing:border-box;padding:10px 12px;font-size:14px;border:none;background:none;color:var(--t1);font-family:var(--fb);-webkit-appearance:none;appearance:none;outline:none;color-scheme:dark"><div class="macts"><button class="mbtn sec" id="date-cancel" style="padding:10px">Cancel</button><button class="mbtn pri" id="date-save" style="padding:10px">Save</button></div></div></div>
 
-<div id="mov-quick" class="mov"><div class="modal"><h3>Start Workout</h3><div id="quick-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="quick-cancel">Cancel</button></div></div></div>
+<div id="mov-quick" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%"><h3 style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Start Workout</h3><div id="quick-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="quick-cancel">Cancel</button></div></div></div>
 
 <div id="s-home" class="screen active" style="padding-bottom:100px">
   <div class="header"><h1>🏋️‍♂️ Workout Tracker</h1><div style="display:flex;gap:6px"><button class="ibtn" id="btn-split">📅</button><button class="ibtn" id="btn-set">⚙</button></div></div>
@@ -623,6 +623,7 @@ document.getElementById('nav-plus').addEventListener('click',function(){
   opts.querySelectorAll('.jqk').forEach(function(b){b.addEventListener('click',function(){document.getElementById('mov-quick').classList.remove('active');openWK(b.dataset.w);});});
 });
 document.getElementById('quick-cancel').addEventListener('click',function(){document.getElementById('mov-quick').classList.remove('active');});
+document.getElementById('mov-quick').addEventListener('click',function(e){if(e.target===document.getElementById('mov-quick'))document.getElementById('mov-quick').classList.remove('active');});
 document.getElementById('btn-surl').addEventListener('click',function(){var u=document.getElementById('sync-url').value.trim();if(!u){toast('Enter URL','var(--orange)');return;}sSyncUrl(u);toast('URL saved!');});
 document.getElementById('btn-sync').addEventListener('click',msync);
 document.querySelectorAll('.tpre[data-secs]').forEach(function(b){b.addEventListener('click',function(){startT(parseInt(b.dataset.secs));});});
