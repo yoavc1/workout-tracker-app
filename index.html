@@ -46,8 +46,7 @@ body{background:#e8f0f8;position:fixed;inset:0;overflow:hidden}
 .split-day{text-align:center}.split-day-label{font-family:var(--ff);font-size:10px;font-weight:600;color:var(--t3);margin-bottom:4px}
 .split-day-val{background:var(--input);border:1px solid var(--brd);border-radius:var(--rs);padding:8px 2px;font-size:9px;color:var(--t2);font-family:var(--ff);font-weight:500;min-height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;word-break:break-word;line-height:1.2}
 .split-day-val.has-workout{color:var(--t1);background:rgba(46,204,113,0.12);border-color:rgba(46,204,113,0.25)}
-.nav-wrap{position:fixed;bottom:0;left:0;right:0;z-index:100;padding:8px 14px;padding-bottom:max(8px, env(safe-area-inset-bottom,0));display:flex;align-items:center;justify-content:center;gap:10px;background:#e8f0f8}
-@supports(padding-bottom: env(safe-area-inset-bottom)){.nav-wrap{padding-bottom:max(8px, env(safe-area-inset-bottom,0))}}
+.nav-wrap{position:fixed;bottom:calc(-1 * env(safe-area-inset-bottom,0));left:0;right:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:0 14px 4px 14px}
 .nav{background:#fff;border:2px solid var(--t1);display:flex;border-radius:28px;padding:4px;gap:2px;flex:1;max-width:340px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
 [data-theme="light"] .nav{background:#fff;border:2px solid var(--t1)}
 .ntab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--t3);font-family:var(--fb);font-size:10px;font-weight:500;cursor:pointer;padding:10px 0;transition:all 0.25s ease;border-radius:24px}
