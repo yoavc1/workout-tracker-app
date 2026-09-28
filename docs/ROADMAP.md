@@ -1,6 +1,6 @@
 # Workout Tracker — feature roadmap
 
-Plan for the next round of features. It covers the decisions from the spec interview (29 Sep 2026), the bugs found in the current code, one shared data model that every feature builds on, and the order of work.
+Plan for the next round of features. It covers the decisions from the spec interview (29 Sep 2026), what your current Sheet sync does, the bugs found in the current code, one shared data model that every feature builds on, and the order of work.
 
 Baseline: PR #1 (merged) fixed the cut-off bottom nav and replaced last-writer-wins sync with a merge. Saves sync about 2s after each change, on launch, when the app is reopened and when the connection returns, and sync failures show on the home screen.
 
@@ -18,6 +18,9 @@ Baseline: PR #1 (merged) fixed the cut-off bottom nav and replaced last-writer-w
 | Core | A **one-tap daily tick**, available on any day. You can open it to log that day's core exercises, choosing **reps or time** per exercise (plank = time, leg raises = reps). |
 | Schedule button | All four: **weekly plan editor**, **calendar of done vs planned**, **start today's workout**, **move a missed day**. |
 | Balance alerts | Alerts are about **muscle groups** first and name the 1–2 exercises causing the problem. |
+| Muscle groups | **Two levels**: a main group with sub-groups, e.g. Back → Upper lats, Lower back; Shoulders → Front, Side, Rear (full list in §5 D). |
+| Calendars | **One calendar**, in the Schedule sheet. The Progress page's calendar moves there. |
+| Dark mode | **Fully working dark mode** as its own track (G). |
 
 ## 2. Overlap with PR #1
 
@@ -25,10 +28,16 @@ Baseline: PR #1 (merged) fixed the cut-off bottom nav and replaced last-writer-w
 |---|---|---|
 | Schedule menu | Renaming a workout carries its plan day over | Everything else. The weekly plan is still local-only (not synced). |
 | Reorder / one-off exercises | Sync pauses while a workout is open, because sets are tied to exercise position | The whole feature. Keying sets by exercise name removes the reason for that pause. |
-| Progress + real-time saving | Reliable merge sync, visible failures, sync on resume | Charts and metrics. The Sheet backend: PR #1's optional `backend/Code.gs` stores data in a Drive file, but you want the Sheet, so it gets replaced (step 0b). |
+| Progress + real-time saving | Reliable merge sync, visible failures, sync on resume | Charts and metrics. The Sheet backend: PR #1's optional `backend/Code.gs` stores data in a Drive file, but you want the Sheet, so it gets replaced. Your current Sheet script is close to its size limit (see below), so this is now step 0 and urgent. |
 | Core | Core toggles now sync correctly | How core is shown and logged. |
 | Goals | — | Everything. |
 | Reminders | Stale data after reopening the app is fixed by syncing on resume | The alert engine and the bugs listed below. |
+
+### What your Sheet does today (checked 29 Sep)
+- **Sheet:** "Workout Tracker App Data" in your Google Drive. The script is attached to it: open the Sheet, then **Extensions → Apps Script**.
+- **How it stores data:** the whole app's data is saved as one block of text in cell **A1** of the `data` tab, with the time of the last save in B1.
+- **The problem:** a Sheets cell holds at most **50,000 characters**, and yours is at **about 43,000**. PR #1 also gives every workout an id, which adds roughly 1,500 more. That leaves room for about **7–10 more workouts**, which is around 2–3 weeks of training.
+- **What happens then:** the save fails. The old app hid this. Since PR #1, the home screen shows "⚠️ not synced", and your data stays safe on your phone. The fix (step 0 below) spreads the data across several cells and keeps the same Sheet and the same app URL.
 
 ## 3. Bugs found in the current code (fixed as part of each feature)
 
@@ -59,7 +68,7 @@ Baseline: PR #1 (merged) fixed the cut-off bottom nav and replaced last-writer-w
 - Renaming an exercise edits only the saved workout, so its history stays under the old name and its progress chart splits in two.
 
 **App-wide**
-- The Dark Mode toggle does nothing, because both themes are light. Proposal: remove it for now (§8).
+- The Dark Mode toggle does nothing, because both themes are light. Many colours are also written directly into the code (`#fff`) instead of using the theme's named colours. Fixed in G.
 
 ---
 
@@ -78,7 +87,7 @@ Every feature reads and writes through this model, so it is built first (step 0b
               items: [{ name: "Plank", mode: "time", sets: [{ secs: 60 }] },
                       { name: "Leg Raise", mode: "reps", sets: [{ reps: 15 }] }] } },
   goals:    [{ id, mt, exercise, startKg, startDate, targetKg, targetDate, archived }],
-  muscles:  { "Incline Chest Press": "Chest" }, mm,              // only your overrides; defaults are guessed
+  muscles:  { "Incline Chest Press": "Chest/Upper" }, mm,        // main/sub; only your overrides, defaults are guessed
   deleted:  { "<id>": ts }, lastModified
 }
 ```
@@ -96,31 +105,38 @@ Every feature reads and writes through this model, so it is built first (step 0b
 - `e1rm(kg, reps)`: Epley formula, kg × (1 + reps/30), with reps capped at 12 for accuracy.
 - Bodyweight exercises track best reps, and time-based core tracks best hold time.
 - `exerciseSeries(name)`, `bestRecent(name, days)`, and `status(name)`, which returns progressing / stalled / regressing (see D).
-- `muscleOf(name)`: your override, otherwise a keyword guess (bench/chest/fly → Chest, row/pulldown/lat → Back, curl → Biceps, and so on).
+- `muscleOf(name)` → `{ main, sub }`: your override, otherwise a keyword guess (incline/bench → Chest/Upper, pulldown → Back/Upper lats, lateral raise → Shoulders/Side, and so on).
 
-**Stays on the device only:** the in-progress draft, theme, sync URL, sync status, and banner snoozes.
+**Stays on the device only:** the in-progress draft, theme choice (Auto / Light / Dark), sync URL, sync status, and banner snoozes.
 
 ---
 
 ## 5. Work plan
 
-### Phase 0: Foundation (sequential, 2 PRs)
+### Phase 0: Foundation (sequential, 3 PRs)
+
+**0 · Sheet storage fix (urgent, do first).**
+This is a new version of your Apps Script. It keeps the same Sheet, and because it's deployed as a new version of the same deployment, the app's sync URL doesn't change:
+- The app's data is spread across several cells of the `data` tab (40,000 characters each). The first save automatically moves your current A1 data over.
+- Saves are queued, so two devices saving at the same moment can't overwrite each other.
+- A readable **Log** tab (Date · Workout · Exercise · Set · kg · reps · e1RM) is rewritten on every save. **Core** and **Goals** tabs appear automatically once those features exist, so you only redeploy once.
+- The first save each day keeps a backup copy (the last 14 days) in a hidden `_backups` tab.
+- It only needs access to this Sheet, and it stays free.
+- It replaces PR #1's Drive-based `backend/Code.gs`.
+- **Your part** (about 5 minutes, with step-by-step instructions):
+  1. Paste the new code into Extensions → Apps Script.
+  2. Choose Deploy → Manage deployments → ✏️ → Version: *New version* → Deploy.
+
 
 **0a · Split the app into files, no behaviour change.**
 `index.html` is about 750 lines, and every feature below would roughly double it. More importantly, parallel work on a single file collides constantly. So:
 - Move the code into `css/app.css` and `js/{data,sync,stats,home,workout,progress,history,settings}.js`, loaded as plain `<script>` tags. There is no build step, so GitHub Pages works unchanged.
 - Add version query strings (`app.js?v=…`) so a phone never mixes new HTML with old cached JS.
+- Replace colours written directly into the code (`#fff`, `rgba(232,240,248,…)`) with the theme's named colours. Dark mode (G) then only has to supply a second set of colours, and no other track has to change.
 - Commit the test harness from PR #1: `tests/merge.test.js` (Node) and `tests/smoke.js` (headless Chrome at 393×852 against a mock sync server). Every later PR must pass both.
 
-**0b · Data model v2 and the Sheet backend.**
-- Implement §4: the new fields, merge rules, migrations, `stats.js` and `muscleOf`.
-- Replace `backend/Code.gs` with a Sheet-based script:
-  - A hidden `_data` tab holds the app's JSON, split into 40,000-character cells (a single cell caps at 50,000). Writes use a lock.
-  - A readable **Log** tab (Date · Workout · Exercise · Muscle · Set · kg · reps · secs · e1RM) is rewritten on every save.
-  - **Core** and **Goals** tabs.
-  - Daily backups: 14 days in a hidden `_backups` tab.
-  - It uses only Sheet permissions (no Drive access) and stays free.
-- **Needs from you:** paste your current Apps Script, so the new one keeps your existing sheet layout working.
+**0b · Data model v2.**
+- Implement §4: the new fields, merge rules, migrations, `stats.js` and `muscleOf`, including the two-level muscle map.
 
 ### Phase 1: Feature tracks (can be built in parallel; each is its own PR)
 
@@ -165,7 +181,34 @@ Every feature reads and writes through this model, so it is built first (step 0b
   - *Progressing:* a new e1RM best in the last 3 sessions.
   - *Stalled:* no new best in 3+ sessions.
   - *Regressing:* the average of the last 3 sessions is more than 5% below the 3 before.
-- **Muscle groups:** Chest, Back, Shoulders, Biceps, Triceps, Quads, Hamstrings, Glutes, Calves, Core, Other. The group is guessed from the exercise name and editable from the detail screen.
+- **Muscle groups** have two levels. Progress cards show the main group and can be expanded to its sub-groups:
+
+  | Main group | Sub-groups |
+  |---|---|
+  | Chest | Upper · Middle · Lower |
+  | Back | Upper lats · Lower lats · Mid back · Traps · Lower back |
+  | Shoulders | Front · Side · Rear |
+  | Arms | Biceps · Triceps · Forearms |
+  | Legs | Quads · Hamstrings · Glutes · Calves · Adductors |
+  | Core | Abs · Obliques |
+
+  Each exercise gets one sub-group, guessed from its name. You can change it from the exercise's detail screen. Starting guesses for your current exercises:
+  - Incline Bench / Incline Chest Press → Chest · Upper
+  - Machine Chest Flys → Chest · Middle
+  - Dips → Chest · Lower
+  - Lat Pull Down (front) → Back · Upper lats
+  - Uni-lateral Lat Pulldown → Back · Lower lats
+  - Chest Supported Rows → Back · Mid back
+  - Shrugs → Back · Traps
+  - Face Pulls → Shoulders · Rear
+  - Lateral Raise → Shoulders · Side
+  - Front Raise / Kettlebell Shoulder Raise → Shoulders · Front
+  - Curls (barbell, face-away, hammer) → Arms · Biceps
+  - Pushdowns / rope extensions → Arms · Triceps
+  - Leg Extension / Squat / Bulgarian Split Squat → Legs · Quads
+  - Leg Curl / Romanian Deadlift → Legs · Hamstrings
+  - Calf Raises → Legs · Calves
+  - The list is easy to change later.
 - Fixes every Progress bug in §3.
 - *Done when:* at one glance you can see which muscle groups are progressing and which exercises are stalled, including bodyweight and time-based ones.
 
@@ -181,13 +224,20 @@ Every feature reads and writes through this model, so it is built first (step 0b
 - Reaching a target celebrates and archives the goal; archived goals stay viewable.
 - *Done when:* the example 40 → 65 kg over 6 months shows the right expected kg for today, and flips to Behind once you fall below the tolerance.
 
+**G · Dark mode**
+- A **Theme** setting with three choices: **Auto** (follows your iPhone's light/dark setting), **Light** and **Dark**. This replaces the toggle that does nothing.
+- A full dark set of colours for every screen, sheet, chart, calendar and banner.
+- The iPhone status bar colour follows the theme.
+- It's small, because 0a has already moved every colour into named theme colours.
+- *Done when:* every screen reads well in both themes, including the charts, and changing your iPhone's appearance flips the app live when set to Auto.
+
 ### Phase 2: Smart banner (needs A–E)
 
 **F · Alerts at the top of the app**
 - Up to 3 alerts, ordered by priority, with "+N more" to expand. Each has an action button and a snooze (hidden until tomorrow). An alert clears itself once the data resolves it.
 - **Types**, in priority order:
   1. **Missed planned workout**: "Legs was planned Monday". Actions: *Do it today* / *Move*.
-  2. **Muscle group neglected**: "Hamstrings: no sets in 12 days (usually every 5)", naming the exercises (e.g. Leg Curl, RDL). A group counts as neglected at twice its usual gap, and at least 7 days.
+  2. **Muscle group neglected**: checked at sub-group level, so lagging areas like rear delts get caught. For example: "Shoulders · Rear: no sets in 12 days (usually every 5), Face Pulls". A sub-group counts as neglected at twice its usual gap, and at least 7 days.
   3. **Slow overload**: "Back is progressing at a third of your average (+1% vs +3% over 6 weeks)", naming the stalled exercises. Needs at least 3 sessions of data.
   4. **Goal behind pace**: "Incline Chest Press: 47.5 kg, should be ~50 kg by now".
   5. **Stalled exercise**: no new e1RM best in 4 sessions.
@@ -199,15 +249,16 @@ Every feature reads and writes through this model, so it is built first (step 0b
 ## 6. Order of work and how subagents are used
 
 ```
-0a restructure ─► 0b data v2 + Sheet backend ─┬─► A workout ─┐
+0 Sheet fix ─► 0a restructure ─► 0b data v2 ─┬─► A workout ─┐
                                               ├─► C core     │
                                               ├─► B schedule ├─► F smart banner
                                               ├─► D progress │
-                                              └─► E goals ───┘
+                                              ├─► E goals ───┘
+                                              └─► G dark mode
 ```
 
 - **Phase 0 is done by me in sequence.** Everything else depends on the shared data model and file split, so parallelising it would only cause conflicts.
-- **Phase 1 runs as 5 parallel subagents, each in its own git worktree.** After 0a, each track owns its own files (`js/workout.js`, `js/schedule.js`, …) and only calls the shared data API, so conflicts are limited to a few lines of `index.html` markup. Each agent must:
+- **Phase 1 runs as 6 parallel subagents, each in its own git worktree.** After 0a, each track owns its own files (`js/workout.js`, `js/schedule.js`, …) and only calls the shared data API, so conflicts are limited to a few lines of `index.html` markup. Each agent must:
   - pass `tests/merge.test.js` and `tests/smoke.js`, and add smoke steps for its own feature;
   - open its own PR, with iPhone-size screenshots and anything that needs checking on your phone.
 - **PRs land one at a time for your review**, in this suggested order:
@@ -216,6 +267,7 @@ Every feature reads and writes through this model, so it is built first (step 0b
   3. **B**
   4. **D**
   5. **E**
+  6. **G** (any time; it's independent)
 - **F comes last**, because it reads from all the others.
 - Each PR: you review, type `merge`, and I merge it and rebase the next one.
 
@@ -223,9 +275,9 @@ Every feature reads and writes through this model, so it is built first (step 0b
 
 GitHub Pages hosting, Google Apps Script with the Sheet, Chart.js and SortableJS from cdnjs are all free, and there are no servers to run. Apps Script limits (6 minutes per run, 30 requests at once) are far above what one person logging workouts uses. If you later want lock-screen push notifications, that needs a free Cloudflare Worker (Apps Script can't sign Web Push messages), so it's out of scope for now.
 
-## 8. Open questions
+## 8. Questions (all answered 29 Sep)
 
-1. **Paste your current Apps Script code.** 0b needs it before it starts.
-2. **Muscle group list** (§5 D): add, split or merge any groups? For example, split Back into Lats and Upper back, or Shoulders into Front, Side and Rear.
-3. **One calendar:** move the Progress page's progression calendar into the Schedule sheet (recommended), or keep both?
-4. **Dark Mode toggle:** remove it for now (recommended), or build a real dark theme as an extra track?
+1. **Current Apps Script:** read directly from your Drive, so no copy-paste was needed. Findings are in §2.
+2. **Muscle groups:** two levels, main group plus sub-groups (§5 D).
+3. **Calendars:** one calendar, in the Schedule sheet.
+4. **Dark mode:** fully working, as track G.
