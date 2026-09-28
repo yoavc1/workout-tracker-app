@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Keep the status bar opaque. With black-translucent, iOS 26 home-screen apps get a web view one status-bar height short of
+     the screen bottom (WebKit bug 301108): a blank strip no CSS can paint into. Opaque makes iOS run the view to the real edge. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#e8f0f8">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -12,7 +14,6 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Nunito:wght@400;500;600;700;800;900&display=swap');
 :root{--sab:env(safe-area-inset-bottom,0px);--navpb:max(10px,calc(var(--sab) - 8px));--bg:#e8f0f8;--bg2:#dce8f2;--card:#ffffff;--card2:#f5f8fb;--input:#f0f4f8;--brd:rgba(0,0,0,0.07);--brd2:rgba(0,0,0,0.12);--t1:#1a1a2e;--t2:#5a6070;--t3:#9aa0b0;--accent:#1a1a2e;--adim:rgba(0,0,0,0.04);--green:#2ecc71;--gdim:rgba(46,204,113,0.1);--red:#e74c3c;--rdim:rgba(231,76,60,0.08);--orange:#f39c12;--blue:#3498db;--bdim:rgba(52,152,219,0.1);--r:18px;--rs:12px;--ff:'Nunito',sans-serif;--fb:'DM Sans',sans-serif;--tr:0.25s cubic-bezier(0.4,0,0.2,1);--glass:saturate(120%) blur(20px);--sh:0 2px 12px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03)}
-html.vp-short{--sab:0px}
 [data-theme="light"]{--bg:#e8f0f8;--bg2:#dce8f2;--card:#ffffff;--card2:#f5f8fb;--input:#f0f4f8;--brd:rgba(0,0,0,0.07);--brd2:rgba(0,0,0,0.12);--t1:#1a1a2e;--t2:#5a6070;--t3:#9aa0b0;--accent:#1a1a2e;--adim:rgba(0,0,0,0.04);--green:#2ecc71;--gdim:rgba(46,204,113,0.1);--red:#e74c3c;--rdim:rgba(231,76,60,0.08);--orange:#f39c12;--blue:#3498db;--bdim:rgba(52,152,219,0.1);--sh:0 2px 12px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html{touch-action:pan-y;-ms-touch-action:pan-y;background:#e8f0f8}
@@ -747,10 +748,6 @@ document.getElementById('mov-date').addEventListener('click',function(e){if(e.ta
 (function(){var di=gDri();if(di&&di.sets){var h=false;Object.keys(di.sets).forEach(function(k){var s=di.sets[k];if(s&&s.length>0)s.forEach(function(x){if(x.kg!==''||x.reps!=='')h=true;});});if(!h)clDr();}})();
 iTheme();
 var ci=parseInt(sessionStorage.getItem('ins_idx')||'0');sessionStorage.setItem('ins_idx',String(ci+1));sessionStorage.removeItem('ins_dis');
-// iOS 26 home-screen apps (WebKit bug 301108) end the page about a status-bar height above the screen edge, so the
-// home indicator is already out of the way. Drop the bottom inset then, or the nav floats far above the dead strip.
-function fitVP(){var sh=Math.max(screen.width,screen.height);document.documentElement.classList.toggle('vp-short',navigator.standalone===true&&innerHeight>innerWidth&&sh-innerHeight>20);}
-fitVP();addEventListener('resize',fitVP);
 // Sync on launch, when the app comes back to the foreground (iOS resumes home-screen apps rather than relaunching them)
 // and when the connection returns; flush a pending save when it goes to the background.
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')csync();else if(syncT)csync();});
