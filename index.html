@@ -9,7 +9,8 @@
 <title>Workout Tracker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Nunito:wght@400;500;600;700;800;900&display=swap');
-:root{--bg:#e8f0f8;--bg2:#dce8f2;--card:#ffffff;--card2:#f5f8fb;--input:#f0f4f8;--brd:rgba(0,0,0,0.07);--brd2:rgba(0,0,0,0.12);--t1:#1a1a2e;--t2:#5a6070;--t3:#9aa0b0;--accent:#1a1a2e;--adim:rgba(0,0,0,0.04);--green:#2ecc71;--gdim:rgba(46,204,113,0.1);--red:#e74c3c;--rdim:rgba(231,76,60,0.08);--orange:#f39c12;--blue:#3498db;--bdim:rgba(52,152,219,0.1);--r:18px;--rs:12px;--ff:'Nunito',sans-serif;--fb:'DM Sans',sans-serif;--tr:0.25s cubic-bezier(0.4,0,0.2,1);--glass:saturate(120%) blur(20px);--sh:0 2px 12px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03)}
+:root{--sab:env(safe-area-inset-bottom,0px);--navpb:max(10px,calc(var(--sab) - 8px));--bg:#e8f0f8;--bg2:#dce8f2;--card:#ffffff;--card2:#f5f8fb;--input:#f0f4f8;--brd:rgba(0,0,0,0.07);--brd2:rgba(0,0,0,0.12);--t1:#1a1a2e;--t2:#5a6070;--t3:#9aa0b0;--accent:#1a1a2e;--adim:rgba(0,0,0,0.04);--green:#2ecc71;--gdim:rgba(46,204,113,0.1);--red:#e74c3c;--rdim:rgba(231,76,60,0.08);--orange:#f39c12;--blue:#3498db;--bdim:rgba(52,152,219,0.1);--r:18px;--rs:12px;--ff:'Nunito',sans-serif;--fb:'DM Sans',sans-serif;--tr:0.25s cubic-bezier(0.4,0,0.2,1);--glass:saturate(120%) blur(20px);--sh:0 2px 12px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03)}
+html.vp-short{--sab:0px}
 [data-theme="light"]{--bg:#e8f0f8;--bg2:#dce8f2;--card:#ffffff;--card2:#f5f8fb;--input:#f0f4f8;--brd:rgba(0,0,0,0.07);--brd2:rgba(0,0,0,0.12);--t1:#1a1a2e;--t2:#5a6070;--t3:#9aa0b0;--accent:#1a1a2e;--adim:rgba(0,0,0,0.04);--green:#2ecc71;--gdim:rgba(46,204,113,0.1);--red:#e74c3c;--rdim:rgba(231,76,60,0.08);--orange:#f39c12;--blue:#3498db;--bdim:rgba(52,152,219,0.1);--sh:0 2px 12px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html{touch-action:pan-y;-ms-touch-action:pan-y;background:#e8f0f8}
@@ -46,7 +47,7 @@ body{background:#e8f0f8;position:fixed;inset:0;overflow:hidden}
 .split-day{text-align:center}.split-day-label{font-family:var(--ff);font-size:10px;font-weight:600;color:var(--t3);margin-bottom:4px}
 .split-day-val{background:var(--input);border:1px solid var(--brd);border-radius:var(--rs);padding:8px 2px;font-size:9px;color:var(--t2);font-family:var(--ff);font-weight:500;min-height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;word-break:break-word;line-height:1.2}
 .split-day-val.has-workout{color:var(--t1);background:rgba(46,204,113,0.12);border-color:rgba(46,204,113,0.25)}
-.nav-wrap{position:fixed;bottom:calc(-1 * env(safe-area-inset-bottom,0));left:0;right:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:0 14px 4px 14px}
+.nav-wrap{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:0 14px var(--navpb) 14px}
 .nav{background:#fff;border:2px solid var(--t1);display:flex;border-radius:28px;padding:4px;gap:2px;flex:1;max-width:340px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
 [data-theme="light"] .nav{background:#fff;border:2px solid var(--t1)}
 .ntab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--t3);font-family:var(--fb);font-size:10px;font-weight:500;cursor:pointer;padding:10px 0;transition:all 0.25s ease;border-radius:24px}
@@ -84,7 +85,7 @@ body{background:#e8f0f8;position:fixed;inset:0;overflow:hidden}
 .delbtn{background:var(--rdim);border:1px solid rgba(239,95,95,0.15);color:var(--red);font-size:11px;font-family:var(--ff);font-weight:600;padding:8px 12px;border-radius:var(--rs);cursor:pointer;white-space:nowrap}
 .exbtn{background:var(--adim);border:1px solid var(--brd);color:var(--t2);font-size:13px;font-family:var(--ff);font-weight:600;padding:7px 10px;border-radius:var(--rs);cursor:pointer;white-space:nowrap}
 .exbtn:active{background:var(--card2)}
-.bbar{position:fixed;bottom:0;left:0;right:0;z-index:110;background:rgba(232,240,248,0.95);-webkit-backdrop-filter:var(--glass);backdrop-filter:var(--glass);border-top:1px solid var(--brd);padding:12px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0))}
+.bbar{position:fixed;bottom:0;left:0;right:0;z-index:110;background:rgba(232,240,248,0.95);-webkit-backdrop-filter:var(--glass);backdrop-filter:var(--glass);border-top:1px solid var(--brd);padding:12px 16px;padding-bottom:max(16px,calc(var(--sab) + 4px))}
 [data-theme="light"] .bbar{background:rgba(232,240,248,0.95)}
 .trow{display:flex;gap:6px;margin-bottom:8px}.tpre{background:#fff;border:1px solid var(--brd);color:var(--t2);border-radius:var(--rs);padding:7px 12px;font-size:12px;font-family:var(--ff);font-weight:600;cursor:pointer;flex:1;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
 .tpre:active{background:var(--card2)}.tpre.cust{flex:0.8;font-size:11px}
@@ -100,7 +101,7 @@ body{background:#e8f0f8;position:fixed;inset:0;overflow:hidden}
 .badd{padding:16px;border:1px solid var(--brd);border-radius:var(--r);background:#fff;color:var(--t1);font-family:var(--ff);font-size:16px;font-weight:600;cursor:pointer}
 .wmeta{font-size:11px;color:var(--t2);font-family:var(--ff);font-weight:600;font-variant-numeric:tabular-nums;min-width:50px;text-align:right}
 /* Progress */
-.psec{padding:12px 16px 100px}.psec h3{font-family:var(--ff);font-size:15px;font-weight:700;margin-bottom:12px}
+.psec{padding:12px 16px calc(94px + var(--navpb))}.psec h3{font-family:var(--ff);font-size:15px;font-weight:700;margin-bottom:12px}
 .hmnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .hmnav-t{font-family:var(--ff);font-size:14px;font-weight:700}
 .hmnav-b{background:var(--card);border:1px solid var(--brd);color:var(--t2);width:30px;height:30px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;padding:0}
@@ -145,7 +146,7 @@ body{background:#e8f0f8;position:fixed;inset:0;overflow:hidden}
 .ov-arrow{font-family:var(--ff);font-size:14px;font-weight:700;margin-left:10px;min-width:20px;text-align:center}
 .ov-arrow.up{color:var(--green)}.ov-arrow.down{color:var(--red)}.ov-arrow.same{color:var(--t3)}.ov-arrow.new{color:var(--blue)}
 /* History */
-.hlist{padding:10px 16px 100px;display:flex;flex-direction:column;gap:8px}
+.hlist{padding:10px 16px calc(94px + var(--navpb));display:flex;flex-direction:column;gap:8px}
 .hwg{background:#fff;border:2px solid var(--t1);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
 .hwh{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}.hwh:active{background:var(--card2)}
 .hwt{font-family:var(--ff);font-size:15px;font-weight:600}.hwc{font-size:12px;color:var(--t2);margin-left:8px}
@@ -173,7 +174,7 @@ body{background:#e8f0f8;position:fixed;inset:0;overflow:hidden}
 .dbtn{background:var(--rdim);border:1px solid rgba(239,95,95,0.2);color:var(--red);border-radius:var(--rs);padding:10px 16px;font-family:var(--fb);font-size:13px;font-weight:600;cursor:pointer;width:100%;margin-top:20px}
 .mov{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .mov.active{display:flex}
-.modal{background:#fff;border:2px solid var(--t1);border-radius:var(--r) var(--r) 0 0;padding:24px 20px;width:100%;max-width:500px;box-shadow:0 -4px 20px rgba(0,0,0,0.1)}
+.modal{background:#fff;border:2px solid var(--t1);border-radius:var(--r) var(--r) 0 0;padding:24px 20px calc(24px + var(--sab));width:100%;max-width:500px;box-shadow:0 -4px 20px rgba(0,0,0,0.1)}
 [data-theme="light"] .modal{background:#fff}
 .modal h3{font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px}
 .minp{background:var(--input);border:1px solid var(--brd);border-radius:var(--rs);padding:12px 14px;color:var(--t1);font-family:var(--fb);font-size:15px;width:100%;margin-bottom:12px}
@@ -204,7 +205,7 @@ input[type=number]{-moz-appearance:textfield}
 <div id="mov-quick" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%"><h3 style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Start Workout</h3><div id="quick-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="quick-cancel">Cancel</button></div></div></div>
 <div id="mov-rename" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:280px;width:85%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Rename Exercise</h3><input type="text" class="minp" id="rename-inp" placeholder="Exercise name" style="margin-bottom:8px"><div class="macts"><button class="mbtn sec" id="rename-cancel">Cancel</button><button class="mbtn pri" id="rename-save">Save</button></div></div></div>
 
-<div id="s-home" class="screen active" style="padding-bottom:100px">
+<div id="s-home" class="screen active" style="padding-bottom:calc(94px + var(--navpb))">
   <div class="header"><h1>🏋️‍♂️ Workout Tracker</h1><div style="display:flex;gap:6px"><button class="ibtn" id="btn-split">📅</button><button class="ibtn" id="btn-set">⚙</button></div></div>
   <div class="hsub" id="hsub"></div>
   <div id="ins-sec"></div>
@@ -263,15 +264,19 @@ input[type=number]{-moz-appearance:textfield}
 // ═══════ DATA ═══════
 var DW={"Legs":["Seated Machine Leg Curl","Calf Raise - Seated","Seated Machine Leg Extension","Calf Raise - Standing","Bulgarian Split Squats","Romanian Deadlift - Dumbbell","Squat - Dumbbell"],"Upper Pull":["Lat Pulldown Machine (Uni Lateral)","Chest Supported Seated Row (Grip 1)","Chest Supported Seated Row (Grip 2)","Lat Pull Down - Front","Cable Face Pulls","Shrugs - Dumbbell","Hammer Curl - Dumbbell","Faceaway Cable Curl","Bicep Curl - Barbell"],"Upper Push":["Smith Machine Incline Bench Press","Incline Chest Press Machine","Dips","Machine Chest Flys","Triceps Pulldown - Rope","Tricep Extension - Standing - Rope - Pulley Machine","Lateral Shoulder Raise - Dumbbell","Front Shoulder Raise - Dumbbell","Kettlebell Shoulder Raise"]};
 var DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-function gd(){try{return JSON.parse(localStorage.getItem('ironlog_data'))||{sessions:[]};}catch(e){return{sessions:[]};}}
+// Every session has a stable id (legacy ones derive it from their date, so all devices agree) and an mt (last-edit time)
+function sk(s){return s.id||('m'+(Date.parse(s.date)||0));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function gd(){var d=null;try{d=JSON.parse(localStorage.getItem('ironlog_data'));}catch(e){}if(!d||typeof d!=='object')d={};if(!Array.isArray(d.sessions))d.sessions=[];d.sessions.forEach(function(s){if(!s.id)s.id=sk(s);});return d;}
 function sd(d){d.lastModified=Date.now();localStorage.setItem('ironlog_data',JSON.stringify(d));cpush();}
 function gw(){var d=gd();return d.workouts||JSON.parse(JSON.stringify(DW));}
-function sw(w){var d=gd();d.workouts=w;sd(d);}
-function gs(){return gd().sessions||[];}
+function sw(w){var d=gd();d.workouts=w;d.wm=Date.now();sd(d);}
+function gs(){return gd().sessions;}
 function gss(){return gs().slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});}
-function addS(s){var d=gd();d.sessions.push(s);sd(d);}
-function updS(i,s){var d=gd();d.sessions[i]=s;sd(d);}
-function delS(i){var d=gd();d.sessions.splice(i,1);sd(d);}
+function sIdx(id){var ss=gs();for(var i=0;i<ss.length;i++)if(ss[i].id===id)return i;return -1;}
+function addS(s){var d=gd();s.id=s.id||uid();s.mt=Date.now();d.sessions.push(s);sd(d);}
+function updS(i,s){var d=gd();s.mt=Date.now();d.sessions[i]=s;sd(d);}
+function delS(i){var d=gd();var s=d.sessions[i];if(s){d.deleted=d.deleted||{};d.deleted[s.id]=Date.now();}d.sessions.splice(i,1);sd(d);}
 function svDr(n,s){localStorage.setItem('ironlog_draft',JSON.stringify({workout:n,sets:s,ts:Date.now()}));}
 function gDr(n){try{var d=JSON.parse(localStorage.getItem('ironlog_draft'));if(d&&d.workout===n)return d.sets;}catch(e){}return null;}
 function clDr(){localStorage.removeItem('ironlog_draft');}
@@ -280,10 +285,49 @@ function gSplit(){try{return JSON.parse(localStorage.getItem('ironlog_split'))||
 function sSplit(s){localStorage.setItem('ironlog_split',JSON.stringify(s));}
 function gSyncUrl(){return localStorage.getItem('ironlog_sync_url')||'';}
 function sSyncUrl(u){localStorage.setItem('ironlog_sync_url',u);}
-var pushT=null;
-function cpush(){var u=gSyncUrl();if(!u)return;clearTimeout(pushT);pushT=setTimeout(function(){fetch(u,{method:'POST',body:JSON.stringify(gd()),headers:{'Content-Type':'text/plain'}}).then(function(r){return r.json();}).then(function(r){if(r.success){var e=document.getElementById('sync-st');if(e)e.textContent='Synced: '+new Date().toLocaleTimeString();}}).catch(function(){});},2000);}
-function cpull(cb){var u=gSyncUrl();if(!u){if(cb)cb(false);return;}fetch(u).then(function(r){return r.json();}).then(function(d){if(d&&d.sessions){var l=gd();var cloudTime=d.lastModified||0;var localTime=l.lastModified||0;if(cloudTime>localTime){localStorage.setItem('ironlog_data',JSON.stringify(d));if(cb)cb(true);}else{if(cloudTime<localTime)cpush();if(cb)cb(false);}}else{if(cb)cb(false);}}).catch(function(){if(cb)cb(false);});}
-function msync(){var u=gSyncUrl();if(!u){toast('Set URL first','var(--orange)');return;}document.getElementById('sync-st').textContent='Syncing...';cpull(function(p){if(p){document.getElementById('sync-st').textContent='Restored';toast('Synced!');rHome();}else{fetch(u,{method:'POST',body:JSON.stringify(gd()),headers:{'Content-Type':'text/plain'}}).then(function(r){return r.json();}).then(function(r){document.getElementById('sync-st').textContent=r.success?'Pushed':'Failed';}).catch(function(){document.getElementById('sync-st').textContent='Failed';});}});}
+// ═══════ SYNC ═══════
+// Merge instead of last-writer-wins: sessions are unioned by id (latest edit wins), deletions travel as tombstones,
+// workout templates take the most recently edited copy. Any device can sync at any time without wiping another's work.
+function newer(a,b,f){var x=a[f]||0,y=b[f]||0;if(x!==y)return x>y?a:b;return(b.lastModified||0)>(a.lastModified||0)?b:a;}
+function mergeD(a,b){
+  var del={},by={},ids=[];
+  [a,b].forEach(function(d){var x=d.deleted||{};Object.keys(x).forEach(function(k){if(!(del[k]>=x[k]))del[k]=x[k];});});
+  [a,b].forEach(function(d){(d.sessions||[]).forEach(function(s){var k=sk(s),e=by[k];if(!e){ids.push(k);by[k]=s;}else if((s.mt||0)>(e.mt||0))by[k]=s;});});
+  var m={sessions:[],deleted:del,lastModified:Math.max(a.lastModified||0,b.lastModified||0)};
+  ids.forEach(function(k){var s=by[k];if(del[k]>=(s.mt||0))return;s.id=k;m.sessions.push(s);});
+  var w=newer(a,b,'wm');if(!w.workouts)w=w===a?b:a;if(w.workouts){m.workouts=w.workouts;if(w.wm)m.wm=w.wm;}
+  return m;
+}
+function dsig(d){var ss=(d.sessions||[]).map(function(s){return sk(s)+':'+(s.mt||0);}).sort();var dl=Object.keys(d.deleted||{}).sort().map(function(k){return k+':'+d.deleted[k];});return JSON.stringify([ss,dl,d.workouts||null,d.wm||0]);}
+function gSt(){try{return JSON.parse(localStorage.getItem('ironlog_sync_st'));}catch(e){return null;}}
+function setSt(ok,m){try{localStorage.setItem('ironlog_sync_st',JSON.stringify({ok:ok,m:m}));}catch(e){}var e=document.getElementById('sync-st');if(e)e.textContent=m;uSub();}
+var syncT=null,syncBusy=false,syncQ=false;
+function cpush(){if(!gSyncUrl())return;clearTimeout(syncT);syncT=setTimeout(csync,2000);}
+function csync(cb){
+  var u=gSyncUrl();clearTimeout(syncT);syncT=null;
+  if(!u)return;
+  // Never swap data under an open workout (sets are keyed by exercise position); goHome() resumes the sync
+  if(syncBusy||CW!==null){syncQ=true;return;}
+  syncBusy=true;var ch=false,deferred=false;
+  fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).then(function(c){
+    if(c==null||(typeof c==='object'&&!c.error&&!Object.keys(c).length))c={sessions:[]};
+    if(!Array.isArray(c.sessions))throw new Error(c.error||'unexpected response');
+    if(CW!==null){deferred=true;return;}
+    var l=gd(),m=mergeD(l,c);
+    if(dsig(m)!==dsig(l)){localStorage.setItem('ironlog_data',JSON.stringify(m));ch=true;}
+    if(dsig(m)===dsig(c))return;
+    return fetch(u,{method:'POST',body:JSON.stringify(m),headers:{'Content-Type':'text/plain'}}).then(function(r){return r.json();}).then(function(r){if(!r||!r.success)throw new Error((r&&r.error)||'save rejected');});
+  }).then(function(){
+    syncBusy=false;if(deferred){syncQ=true;return;}
+    setSt(true,'Synced '+new Date().toLocaleTimeString());if(ch)refreshView();if(cb)cb(true);
+    if(syncQ){syncQ=false;cpush();}
+  }).catch(function(err){
+    syncBusy=false;setSt(false,'Sync failed: '+(navigator.onLine===false?'offline':(err&&err.message)||'error'));if(ch)refreshView();if(cb)cb(false);
+    if(syncQ){syncQ=false;cpush();}
+  });
+}
+function refreshView(){if(CW!==null)return;var a=document.querySelector('.screen.active');if(!a)return;if(a.id==='s-home')rHome();else if(a.id==='s-hist')rHist();else if(a.id==='s-prog')rProg();}
+function msync(){if(!gSyncUrl()){toast('Set URL first','var(--orange)');return;}document.getElementById('sync-st').textContent='Syncing...';csync(function(ok){if(ok)toast('Synced!');else toast('Sync failed','var(--red)');});}
 function gPRs(){var p={};gss().forEach(function(s){Object.keys(s.exercises).forEach(function(x){s.exercises[x].forEach(function(t){if(!p[x]||t.kg>p[x])p[x]=t.kg;});});});return p;}
 
 // ═══════ STATE ═══════
@@ -298,8 +342,8 @@ function tTheme(){var e=document.getElementById('tog');e.classList.toggle('activ
 
 // ═══════ NAV ═══════
 function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.ntab').forEach(function(n){n.classList.remove('active');});var b=document.querySelector('.ntab[data-tab="'+t+'"]');if(b)b.classList.add('active');document.getElementById('nav-wrap').style.display='flex';document.getElementById('bbar').style.display='none';if(t==='home'){document.getElementById('s-home').classList.add('active');rHome();}else if(t==='progress'){document.getElementById('s-prog').classList.add('active');setTimeout(rProg,100);}else if(t==='history'){document.getElementById('s-hist').classList.add('active');rHist();}}
-function goHome(){CW=null;CS={};OE={};ESI=null;WST=null;clearInterval(RTI);clearInterval(metaInterval);switchTab('home');}
-function goSet(){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('s-set').classList.add('active');document.getElementById('nav-wrap').style.display='none';document.getElementById('bbar').style.display='none';document.getElementById('sync-url').value=gSyncUrl();}
+function goHome(){CW=null;CS={};OE={};ESI=null;WST=null;clearInterval(RTI);clearInterval(metaInterval);switchTab('home');if(syncQ){syncQ=false;cpush();}}
+function goSet(){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('s-set').classList.add('active');document.getElementById('nav-wrap').style.display='none';document.getElementById('bbar').style.display='none';document.getElementById('sync-url').value=gSyncUrl();var st=gSt();document.getElementById('sync-st').textContent=st?st.m:'';}
 
 function openWK(name,pre,si){
   CW=name;ESI=(si!==undefined)?si:null;var ex=CEL();CS={};OE={};WST=Date.now();
@@ -336,10 +380,11 @@ function genIns(ss,wk){
 }
 
 // ═══════ HOME ═══════
+function uSub(){var n=gs().length,st=gSt();document.getElementById('hsub').textContent=(n===0?'Ready for your first workout?':n+' workout'+(n!==1?'s':'')+' logged')+(gSyncUrl()&&st&&st.ok===false?' · ⚠️ not synced':'');}
 function rHome(){
   document.getElementById('bbar').style.display='none';
   var ss=gs();var wk=gw();
-  document.getElementById('hsub').textContent=ss.length===0?'Ready for your first workout?':ss.length+' workout'+(ss.length!==1?'s':'')+' logged';
+  uSub();
   // Insight
   var iS=document.getElementById('ins-sec');var ins=genIns(ss,wk);
   var ii=parseInt(sessionStorage.getItem('ins_idx')||'0');
@@ -355,7 +400,7 @@ function rHome(){
   ss.forEach(function(s){if(new Date(s.date).toDateString()===tds){hasWK=true;if(s.abs)hasCore=true;}});
   if(hasWK){
     aS.innerHTML='<div class="hsec" style="padding:14px 18px"><div style="display:flex;align-items:center;gap:12px"><input type="checkbox" id="core-cb" '+(hasCore?'checked':'')+' style="width:22px;height:22px;accent-color:var(--green)"><label for="core-cb" style="font-family:var(--ff);font-size:14px;font-weight:600;cursor:pointer;flex:1">'+(hasCore?'Core trained today ✓':'Core trained today?')+'</label></div></div>';
-    document.getElementById('core-cb').addEventListener('change',function(){var c=this.checked;var d=gd();d.sessions.forEach(function(s){if(new Date(s.date).toDateString()===tds)s.abs=c;});sd(d);toast(c?'Core logged!':'Core unmarked');});
+    document.getElementById('core-cb').addEventListener('change',function(){var c=this.checked;var d=gd();d.sessions.forEach(function(s){if(new Date(s.date).toDateString()===tds){s.abs=c;s.mt=Date.now();}});sd(d);toast(c?'Core logged!':'Core unmarked');});
   }else{aS.innerHTML='';}
   // Workouts
   var wS=document.getElementById('wk-sec');var di=gDri();
@@ -375,8 +420,14 @@ function showManage(){
   Object.keys(wk).forEach(function(n){h+='<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--input);border-radius:var(--rs)"><input class="minp jrn" data-n="'+ea(n)+'" value="'+ea(n)+'" style="flex:1;margin:0;padding:8px 10px;font-size:13px"><button class="hcard-btn jrs" data-n="'+ea(n)+'">Save</button><button class="hcard-btn jdw" data-n="'+ea(n)+'" style="color:var(--red)">Delete</button></div>';});
   h+='<div style="display:flex;gap:8px;margin-top:8px"><input class="minp" id="mn-new" placeholder="New workout name" style="flex:1;margin:0;padding:10px 12px;font-size:13px"><button class="mbtn pri" id="mn-add" style="flex:0;padding:10px 16px">Add</button></div></div>';
   body.innerHTML=h;document.getElementById('mov-manage').classList.add('active');
-  body.querySelectorAll('.jrs').forEach(function(b){b.addEventListener('click',function(){var old=b.dataset.n;var inp=body.querySelector('.jrn[data-n="'+old+'"]');var nw=inp.value.trim();if(nw&&nw!==old){var w=gw();w[nw]=w[old];delete w[old];sw(w);document.getElementById('mov-manage').classList.remove('active');rHome();toast('Renamed!');}});});
-  body.querySelectorAll('.jdw').forEach(function(b){b.addEventListener('click',function(){var w=gw();delete w[b.dataset.n];sw(w);document.getElementById('mov-manage').classList.remove('active');rHome();toast('Deleted');});});
+  body.querySelectorAll('.jrs').forEach(function(b){b.addEventListener('click',function(){var old=b.dataset.n;var nw=b.parentNode.querySelector('.jrn').value.trim();if(!nw||nw===old)return;var d=gd(),w=gw();if(w[nw]){toast('Name already used','var(--orange)');return;}
+    // Keep list order and carry history, split day and draft over, so insights and "Previous" sets still find them
+    var w2={};Object.keys(w).forEach(function(k){w2[k===old?nw:k]=w[k];});d.workouts=w2;d.wm=Date.now();
+    d.sessions.forEach(function(s){if(s.workout===old){s.workout=nw;s.mt=Date.now();}});sd(d);
+    var sp=gSplit();DAYS.forEach(function(k){if(sp[k]===old)sp[k]=nw;});sSplit(sp);
+    var dr=gDri();if(dr&&dr.workout===old){dr.workout=nw;localStorage.setItem('ironlog_draft',JSON.stringify(dr));}
+    document.getElementById('mov-manage').classList.remove('active');rHome();toast('Renamed!');});});
+  body.querySelectorAll('.jdw').forEach(function(b){tap2(b,function(){var w=gw();delete w[b.dataset.n];sw(w);document.getElementById('mov-manage').classList.remove('active');rHome();toast('Deleted');});});
   document.getElementById('mn-add').addEventListener('click',function(){var n=document.getElementById('mn-new').value.trim();if(n){var w=gw();w[n]=[];sw(w);document.getElementById('mov-manage').classList.remove('active');rHome();toast(n+' created');}});
 }
 
@@ -422,8 +473,7 @@ function rEx(){
     card.innerHTML='<div class="ehdr jtog"><div class="ename">'+eh(en)+'</div><div class="esum">'+sum+'</div><div class="echv">▾</div></div><div class="ebody"><div class="ebody-in">'+ph+sh+'<div class="eftr"><button class="addbtn jadd">+ Add Set</button>'+moveButtons+'<button class="delbtn jdel">Remove</button></div></div></div>';
     card.querySelector('.jtog').addEventListener('click',function(){card.classList.toggle('open');OE[ei]=card.classList.contains('open');});
     card.querySelector('.jadd').addEventListener('click',function(){syncInp();if(!CS[ei])CS[ei]=[];CS[ei].push({kg:'',reps:''});OE[ei]=true;rEx();autoSave();setTimeout(function(){var c2=c.querySelector('[data-ei="'+ei+'"]');if(c2){var ins=c2.querySelectorAll('.jkg');if(ins.length)ins[ins.length-1].focus();}},60);});
-    var db=card.querySelector('.jdel');var dc=false;
-    db.addEventListener('click',function(ev){ev.stopPropagation();if(!dc){dc=true;db.textContent='Confirm?';db.style.background='var(--red)';db.style.color='#fff';setTimeout(function(){if(dc){dc=false;db.textContent='Remove';db.style.background='';db.style.color='';}},3000);return;}syncInp();var w=gw();w[CW].splice(ei,1);sw(w);var ns={},no={};for(var i=0;i<w[CW].length;i++){ns[i]=CS[i<ei?i:i+1]||[];no[i]=OE[i<ei?i:i+1]||false;}CS=ns;OE=no;rEx();autoSave();toast('Removed');});
+    tap2(card.querySelector('.jdel'),function(){syncInp();var w=gw();w[CW].splice(ei,1);sw(w);var ns={},no={};for(var i=0;i<w[CW].length;i++){ns[i]=CS[i<ei?i:i+1]||[];no[i]=OE[i<ei?i:i+1]||false;}CS=ns;OE=no;rEx();autoSave();toast('Removed');});
     card.querySelectorAll('.jrm').forEach(function(b){b.addEventListener('click',function(){syncInp();CS[ei].splice(parseInt(b.dataset.si),1);OE[ei]=true;rEx();autoSave();});});
     // Move up
     var mup=card.querySelector('.jmup');if(mup&&ei>0)mup.addEventListener('click',function(ev){ev.stopPropagation();syncInp();var w=gw();var tmp=w[CW][ei];w[CW][ei]=w[CW][ei-1];w[CW][ei-1]=tmp;sw(w);var ts=CS[ei];CS[ei]=CS[ei-1];CS[ei-1]=ts;var to=OE[ei];OE[ei]=OE[ei-1];OE[ei-1]=to;rEx();autoSave();});
@@ -438,7 +488,8 @@ function rEx(){
 }
 
 // Timer
-function startT(s){RS=s;clearInterval(RTI);document.getElementById('tdone').classList.remove('active');document.getElementById('tdisp').classList.add('active');uTD();RTI=setInterval(function(){RS--;if(RS<=0){clearInterval(RTI);RS=0;document.getElementById('tdisp').classList.remove('active');document.getElementById('tdone').classList.add('active');if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);setTimeout(function(){document.getElementById('tdone').classList.remove('active');},3000);}uTD();},1000);}
+var RE=0;
+function startT(s){RE=Date.now()+s*1000;RS=s;clearInterval(RTI);document.getElementById('tdone').classList.remove('active');document.getElementById('tdisp').classList.add('active');uTD();RTI=setInterval(function(){RS=Math.max(0,Math.ceil((RE-Date.now())/1000));if(RS<=0){clearInterval(RTI);RS=0;document.getElementById('tdisp').classList.remove('active');document.getElementById('tdone').classList.add('active');if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);setTimeout(function(){document.getElementById('tdone').classList.remove('active');},3000);}uTD();},250);}
 function uTD(){document.getElementById('ttime').textContent=Math.floor(RS/60)+':'+String(RS%60).padStart(2,'0');}
 
 // Save workout
@@ -447,7 +498,7 @@ function finWK(){
   ex.forEach(function(en,ei){var sets=CS[ei]||[];var v=sets.filter(function(s){return s.kg!==''&&s.reps!=='';});if(v.length>0){ed[en]=v.map(function(s){return{kg:parseFloat(s.kg)||0,reps:parseInt(s.reps)||0};});hd=true;}});
   if(!hd){toast('Add at least one set','var(--orange)');return;}
   var dur=WST?Math.floor((Date.now()-WST)/1000):0;
-  if(ESI!==null){var ex2=gs()[ESI];updS(ESI,{workout:CW,date:ex2.date,exercises:ed,duration:ex2.duration||0,abs:ex2.abs||false});toast('Updated!');}
+  if(ESI!==null){var ex2=gs()[ESI];updS(ESI,{id:ex2.id,workout:CW,date:ex2.date,exercises:ed,duration:ex2.duration||0,abs:ex2.abs||false});toast('Updated!');}
   else{addS({workout:CW,date:new Date().toISOString(),exercises:ed,duration:dur,abs:false});clDr();toast('Saved!');}
   goHome();
 }
@@ -455,6 +506,7 @@ function finWK(){
 // Helpers
 function gLast(n){var s=gss();for(var i=s.length-1;i>=0;i--)if(s[i].workout===n)return s[i];return null;}
 function gLastEx(n,x,xi){var s=gss();var orig=gs();for(var i=s.length-1;i>=0;i--){var origIdx=orig.indexOf(s[i]);if(xi!=null&&origIdx===xi)continue;if(s[i].workout===n&&s[i].exercises[x])return{date:s[i].date,sets:s[i].exercises[x]};}return null;}
+function tap2(b,fn){var t=null;b.addEventListener('click',function(e){e.stopPropagation();if(!t){var tx=b.textContent;b.textContent='Confirm?';b.style.background='var(--red)';b.style.color='#fff';t=setTimeout(function(){t=null;b.textContent=tx;b.style.background='';b.style.color='';},3000);return;}clearTimeout(t);t=null;fn();});}
 function eh(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function ea(v){return v==null?'':String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
 function fds(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
@@ -601,14 +653,14 @@ function renderOV(){
 }
 
 // ═══════ HISTORY ═══════
-function gwk(ds){var d=new Date(ds);var dy=d.getDay(),df=d.getDate()-dy+(dy===0?-6:1);var m=new Date(d);m.setDate(df);m.setHours(0,0,0,0);return m.toISOString().slice(0,10);}
-function fwr(ms){var m=new Date(ms);var s=new Date(m);s.setDate(s.getDate()+6);return m.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+s.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
-var editDateIdx=null;
+function gwk(ds){var d=new Date(ds);var dy=d.getDay(),df=d.getDate()-dy+(dy===0?-6:1);var m=new Date(d);m.setDate(df);return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');}
+function fwr(ms){var p=ms.split('-');var m=new Date(p[0],p[1]-1,p[2]);var s=new Date(m);s.setDate(s.getDate()+6);return m.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+s.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+var editDateId=null;
 function rHist(){
   var c=document.getElementById('hlist');var ss=gs();
   if(!ss.length){c.innerHTML='<div class="empty"><h3>No workouts yet</h3><p>Complete a workout first.</p></div>';return;}
-  c.innerHTML='';var rv=ss.slice().reverse();var wgs=[],wm={};
-  rv.forEach(function(s,ri){var idx=ss.length-1-ri;var wk=gwk(s.date);if(!wm[wk]){wm[wk]={key:wk,items:[]};wgs.push(wm[wk]);}wm[wk].items.push({s:s,idx:idx});});
+  c.innerHTML='';var wgs=[],wm={};
+  ss.map(function(s,i){return{s:s,idx:i};}).sort(function(a,b){return new Date(b.s.date)-new Date(a.s.date);}).forEach(function(it){var wk=gwk(it.s.date);if(!wm[wk]){wm[wk]={key:wk,items:[]};wgs.push(wm[wk]);}wm[wk].items.push(it);});
   wgs.forEach(function(g,gi){
     var el=document.createElement('div');el.className='hwg'+(gi===0?' open':'');
     var hdr='<div class="hwh"><div><span class="hwt">'+fwr(g.key)+'</span><span class="hwc">'+g.items.length+' workout'+(g.items.length!==1?'s':'')+'</span></div><span class="hwchv">▾</span></div>';
@@ -621,9 +673,9 @@ function rHist(){
     body+='</div></div>';el.innerHTML=hdr+body;
     el.querySelector('.hwh').addEventListener('click',function(){el.classList.toggle('open');});
     el.querySelectorAll('.je').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var i=parseInt(b.dataset.i);var s=gs()[i];if(s)openWK(s.workout,s.exercises,i);});});
-    el.querySelectorAll('.jd').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();delS(parseInt(b.dataset.i));rHist();toast('Deleted','var(--red)');});});
-    el.querySelectorAll('.jcore').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var i=parseInt(b.dataset.i);var d=gd();d.sessions[i].abs=!d.sessions[i].abs;sd(d);rHist();toast(d.sessions[i].abs?'Core added':'Core removed');});});
-    el.querySelectorAll('.jdt').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();editDateIdx=parseInt(b.dataset.i);var s=gs()[editDateIdx];document.getElementById('date-inp').value=new Date(s.date).toISOString().slice(0,10);document.getElementById('mov-date').classList.add('active');});});
+    el.querySelectorAll('.jd').forEach(function(b){tap2(b,function(){delS(parseInt(b.dataset.i));rHist();toast('Deleted','var(--red)');});});
+    el.querySelectorAll('.jcore').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var i=parseInt(b.dataset.i);var d=gd();d.sessions[i].abs=!d.sessions[i].abs;d.sessions[i].mt=Date.now();sd(d);rHist();toast(d.sessions[i].abs?'Core added':'Core removed');});});
+    el.querySelectorAll('.jdt').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var s=gs()[parseInt(b.dataset.i)];editDateId=s.id;document.getElementById('date-inp').value=new Date(s.date).toISOString().slice(0,10);document.getElementById('mov-date').classList.add('active');});});
     c.appendChild(el);
   });
 }
@@ -642,7 +694,7 @@ document.getElementById('tog').addEventListener('click',tTheme);
 document.getElementById('btn-exp').addEventListener('click',expD);
 document.getElementById('btn-impt').addEventListener('click',function(){document.getElementById('impf').click();});
 document.getElementById('impf').addEventListener('change',impD);
-document.getElementById('btn-clr').addEventListener('click',function(){localStorage.removeItem('ironlog_data');clDr();toast('Cleared');goHome();});
+tap2(document.getElementById('btn-clr'),function(){localStorage.removeItem('ironlog_data');clDr();toast(gSyncUrl()?'Cleared on this device':'Cleared');goHome();});
 document.getElementById('csel').addEventListener('change',rChart);
 document.getElementById('nav').addEventListener('click',function(e){var t=e.target.closest('.ntab');if(t&&t.dataset.tab)switchTab(t.dataset.tab);});
 document.getElementById('nav-plus').addEventListener('click',function(){
@@ -658,11 +710,11 @@ document.getElementById('nav-plus').addEventListener('click',function(){
 });
 document.getElementById('quick-cancel').addEventListener('click',function(){document.getElementById('mov-quick').classList.remove('active');});
 document.getElementById('mov-quick').addEventListener('click',function(e){if(e.target===document.getElementById('mov-quick'))document.getElementById('mov-quick').classList.remove('active');});
-document.getElementById('btn-surl').addEventListener('click',function(){var u=document.getElementById('sync-url').value.trim();if(!u){toast('Enter URL','var(--orange)');return;}sSyncUrl(u);toast('URL saved!');});
+document.getElementById('btn-surl').addEventListener('click',function(){var u=document.getElementById('sync-url').value.trim();if(!u){toast('Enter URL','var(--orange)');return;}sSyncUrl(u);toast('URL saved!');msync();});
 document.getElementById('btn-sync').addEventListener('click',msync);
 document.querySelectorAll('.tpre[data-secs]').forEach(function(b){b.addEventListener('click',function(){startT(parseInt(b.dataset.secs));});});
 document.getElementById('tstop').addEventListener('click',function(){clearInterval(RTI);document.getElementById('tdisp').classList.remove('active');document.getElementById('tdone').classList.remove('active');});
-document.getElementById('tadd15').addEventListener('click',function(){RS+=15;uTD();});
+document.getElementById('tadd15').addEventListener('click',function(){RE+=15000;RS+=15;uTD();});
 document.getElementById('btn-ct').addEventListener('click',function(){document.getElementById('mov-timer').classList.add('active');});
 document.getElementById('tm-cancel').addEventListener('click',function(){document.getElementById('mov-timer').classList.remove('active');});
 document.getElementById('tm-start').addEventListener('click',function(){var m=parseInt(document.getElementById('cmin').value)||0;var s=parseInt(document.getElementById('csec').value)||0;var t=m*60+s;if(t<=0){toast('Set a time','var(--orange)');return;}document.getElementById('mov-timer').classList.remove('active');startT(t);});
@@ -682,9 +734,9 @@ document.getElementById('mov-splitday').addEventListener('click',function(e){if(
 document.getElementById('date-cancel').addEventListener('click',function(){document.getElementById('mov-date').classList.remove('active');});
 document.getElementById('date-save').addEventListener('click',function(){
   var val=document.getElementById('date-inp').value;if(!val){toast('Pick a date','var(--orange)');return;}
-  var d=gd();var s=d.sessions[editDateIdx];
+  var d=gd();var s=d.sessions[sIdx(editDateId)];if(!s){document.getElementById('mov-date').classList.remove('active');rHist();return;}
   var old=new Date(s.date);var nd=new Date(val);nd.setHours(old.getHours(),old.getMinutes(),old.getSeconds());
-  s.date=nd.toISOString();sd(d);
+  s.date=nd.toISOString();s.mt=Date.now();sd(d);
   document.getElementById('mov-date').classList.remove('active');rHist();toast('Date updated');
 });
 document.getElementById('mov-date').addEventListener('click',function(e){if(e.target===document.getElementById('mov-date'))document.getElementById('mov-date').classList.remove('active');});
@@ -693,6 +745,14 @@ document.getElementById('mov-date').addEventListener('click',function(e){if(e.ta
 (function(){var di=gDri();if(di&&di.sets){var h=false;Object.keys(di.sets).forEach(function(k){var s=di.sets[k];if(s&&s.length>0)s.forEach(function(x){if(x.kg!==''||x.reps!=='')h=true;});});if(!h)clDr();}})();
 iTheme();
 var ci=parseInt(sessionStorage.getItem('ins_idx')||'0');sessionStorage.setItem('ins_idx',String(ci+1));sessionStorage.removeItem('ins_dis');
-if(gSyncUrl()){cpull(function(p){if(p)rHome();});}
+// iOS 26 home-screen apps (WebKit bug 301108) end the page about a status-bar height above the screen edge, so the
+// home indicator is already out of the way. Drop the bottom inset then, or the nav floats far above the dead strip.
+function fitVP(){var sh=Math.max(screen.width,screen.height);document.documentElement.classList.toggle('vp-short',navigator.standalone===true&&innerHeight>innerWidth&&sh-innerHeight>20);}
+fitVP();addEventListener('resize',fitVP);
+// Sync on launch, when the app comes back to the foreground (iOS resumes home-screen apps rather than relaunching them)
+// and when the connection returns; flush a pending save when it goes to the background.
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')csync();else if(syncT)csync();});
+addEventListener('online',function(){csync();});
 rHome();
+csync();
 </script></body></html>
