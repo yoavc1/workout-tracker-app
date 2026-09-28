@@ -28,16 +28,20 @@ Baseline: PR #1 (merged) fixed the cut-off bottom nav and replaced last-writer-w
 |---|---|---|
 | Schedule menu | Renaming a workout carries its plan day over | Everything else. The weekly plan is still local-only (not synced). |
 | Reorder / one-off exercises | Sync pauses while a workout is open, because sets are tied to exercise position | The whole feature. Keying sets by exercise name removes the reason for that pause. |
-| Progress + real-time saving | Reliable merge sync, visible failures, sync on resume | Charts and metrics. The Sheet backend: PR #1's optional `backend/Code.gs` stores data in a Drive file, but you want the Sheet, so it gets replaced. Your current Sheet script is close to its size limit (see below), so this is now step 0 and urgent. |
+| Progress + real-time saving | Reliable merge sync, visible failures, sync on resume | Charts and metrics. The Sheet backend: PR #1's optional `backend/Code.gs` stores data in a Drive file, but you want the Sheet, so it gets replaced. Replaced by a Sheet-based script in step 0, which is now deployed. |
 | Core | Core toggles now sync correctly | How core is shown and logged. |
 | Goals | — | Everything. |
 | Reminders | Stale data after reopening the app is fixed by syncing on resume | The alert engine and the bugs listed below. |
 
 ### What your Sheet does today (checked 29 Sep)
 - **Sheet:** "Workout Tracker App Data" in your Google Drive. The script is attached to it: open the Sheet, then **Extensions → Apps Script**.
-- **How it stores data:** the whole app's data is saved as one block of text in cell **A1** of the `data` tab, with the time of the last save in B1.
-- **The problem:** a Sheets cell holds at most **50,000 characters**, and yours is at **about 43,000**. PR #1 also gives every workout an id, which adds roughly 1,500 more. That leaves room for about **7–10 more workouts**, which is around 2–3 weeks of training.
-- **What happens then:** the save fails. The old app hid this. Since PR #1, the home screen shows "⚠️ not synced", and your data stays safe on your phone. The fix (step 0 below) spreads the data across several cells and keeps the same Sheet and the same app URL.
+- **How it stored data:** the whole app's data was saved as one block of text in cell **A1** of the `data` tab, with the time of the last save in B1.
+- **The limit:** a Sheets cell holds at most **50,000 characters**. Your data is **about 25,000**, roughly half. At your current pace that's months of headroom, not an emergency.
+  - An earlier estimate of 43,000 was wrong. It was measured on an exported copy of the Sheet, where every quote mark counts as six characters.
+- **What would have happened:** once full, saves would fail. The old app hid failures; since PR #1 the home screen shows "⚠️ not synced". Step 0 removes the limit by splitting the data across cells, and adds a readable Log tab and daily backups. It was **deployed on 29 Sep**, and the Log (561 sets) and Core (34 days) tabs are live.
+- **What the data shows** (useful for D and F):
+  - **Some exercises were renamed over time**, which splits their history. Examples: Seated Machine Leg Curl → Seated Hamstring Curl; Chest Supported Row (Grip 1 / Grip 2) → (Tucked Elbow / Flared Elbow); Incline Chest Press Machine → Incline Chest Press (Smith/Machine).
+  - **Muay Thai and Swimming are logged as workouts** with a single 0 kg × 0 reps set ("Session Complete", "Swimming"). They are activities, not lifts.
 
 ## 3. Bugs found in the current code (fixed as part of each feature)
 
@@ -115,7 +119,7 @@ Every feature reads and writes through this model, so it is built first (step 0b
 
 ### Phase 0: Foundation (sequential, 3 PRs)
 
-**0 · Sheet storage fix (urgent, do first).**
+**0 · Sheet storage fix.** ✅ Deployed 29 Sep (PR #5).
 This is a new version of your Apps Script. It keeps the same Sheet, and because it's deployed as a new version of the same deployment, the app's sync URL doesn't change:
 - The app's data is spread across several cells of the `data` tab (40,000 characters each). The first save automatically moves your current A1 data over.
 - Saves are queued, so two devices saving at the same moment can't overwrite each other.
@@ -128,7 +132,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
   2. Choose Deploy → Manage deployments → ✏️ → Version: *New version* → Deploy.
 
 
-**0a · Split the app into files, no behaviour change.**
+**0a · Split the app into files, no behaviour change.** In review (PR #6).
 `index.html` is about 750 lines, and every feature below would roughly double it. More importantly, parallel work on a single file collides constantly. So:
 - Move the code into `css/app.css` and `js/{data,sync,stats,home,workout,progress,history,settings}.js`, loaded as plain `<script>` tags. There is no build step, so GitHub Pages works unchanged.
 - Add version query strings (`app.js?v=…`) so a phone never mixes new HTML with old cached JS.
@@ -193,22 +197,30 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
   | Core | Abs · Obliques |
 
   Each exercise gets one sub-group, guessed from its name. You can change it from the exercise's detail screen. Starting guesses for your current exercises:
-  - Incline Bench / Incline Chest Press → Chest · Upper
-  - Machine Chest Flys → Chest · Middle
-  - Dips → Chest · Lower
-  - Lat Pull Down (front) → Back · Upper lats
-  - Uni-lateral Lat Pulldown → Back · Lower lats
-  - Chest Supported Rows → Back · Mid back
-  - Shrugs → Back · Traps
-  - Face Pulls → Shoulders · Rear
-  - Lateral Raise → Shoulders · Side
-  - Front Raise / Kettlebell Shoulder Raise → Shoulders · Front
-  - Curls (barbell, face-away, hammer) → Arms · Biceps
-  - Pushdowns / rope extensions → Arms · Triceps
-  - Leg Extension / Squat / Bulgarian Split Squat → Legs · Quads
-  - Leg Curl / Romanian Deadlift → Legs · Hamstrings
-  - Calf Raises → Legs · Calves
+  - **Chest:**
+    - Incline Chest Press (Smith/Machine) → Upper
+    - Machine Chest Flys → Middle
+    - Dips → Lower
+  - **Back:**
+    - Pull-Ups, Lat Pull Down - Front → Upper lats
+    - Lat Pulldown Machine (Uni Lateral) → Lower lats
+    - Chest Supported Seated Row (Tucked Elbow) → Mid back
+    - Chest Supported Seated Row (Flared Elbow) → Mid back
+    - Shrugs → Traps
+  - **Shoulders:**
+    - Cable Face Pulls, Reverse Cable Fly (rear delts) → Rear
+    - Lateral Shoulder Raise → Side
+    - Front Shoulder Raise, Kettlebell / Barbell Rope Shoulder Raise → Front
+  - **Arms:**
+    - Bayesian curl, Rope Hammer Curl, Faceaway Cable Curl → Biceps
+    - V-Bar Tricep Pushdown, Overhead V-Bar Tricep Extension, rope extensions → Triceps
+  - **Legs:**
+    - Seated Machine Leg Extension, squats → Quads
+    - Seated Hamstring Curl, Romanian Deadlift → Hamstrings
+    - Calf Raise - Standing / Seated → Calves
   - The list is easy to change later.
+- **Merge exercises:** the detail screen gets a *Merge into…* option, so renamed exercises (§2) join their old history into one chart.
+- **Activities vs lifts:** workouts whose sets are all 0 kg × 0 reps (Muay Thai, Swimming) count as activities. They show in the calendar and frequency, but stay out of e1RM and overload stats.
 - Fixes every Progress bug in §3.
 - *Done when:* at one glance you can see which muscle groups are progressing and which exercises are stalled, including bodyweight and time-based ones.
 
@@ -244,6 +256,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
   6. **Core**: not done in 4+ days.
   7. **Positive**: a real PR this week, or a streak.
 - The banner is rebuilt on launch, on reopen, after each sync and at midnight, so it always reflects current data.
+- Activities (Muay Thai, Swimming) count toward "trained recently", but never trigger overload or neglect alerts for a muscle group.
 - Fixes every insights bug in §3.
 
 ## 6. Order of work and how subagents are used
