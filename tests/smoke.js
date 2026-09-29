@@ -101,9 +101,9 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.strictEqual(rn.old, 0); assert.ok(rn.renamed > 0); assert.strictEqual(rn.split, 'Leg Day');
     step('rename carries history and split');
 
-    // The weekly plan editor saves into synced data
-    await p.ev(`openSplitEditor();document.querySelector('.split-day-val[data-day="Tue"]').click();'ok'`); await p.wait(100);
-    await p.ev(`document.querySelector('#sd-opts .jsd[data-v="Upper Pull"]').click();'ok'`);
+    // The weekly plan in the Schedule sheet saves into synced data
+    await p.ev(`document.getElementById('btn-split').click();document.querySelector('.wp-p[data-day="Tue"] .wp-b').click();'ok'`); await p.wait(100);
+    await p.ev(`document.querySelector('#sd-opts .jsd[data-v="Upper Pull"]').click();document.getElementById('sch-x').click();'ok'`);
     assert.strictEqual(await p.ev(`gSplit().Tue`), 'Upper Pull');
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.deepStrictEqual({ mon: s.schedule.week.Mon, tue: s.schedule.week.Tue }, { mon: 'Leg Day', tue: 'Upper Pull' }, 'plan synced as schedule');
