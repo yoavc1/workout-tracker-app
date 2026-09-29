@@ -5,7 +5,7 @@ document.getElementById('btn-split').addEventListener('click',openSplitEditor);
 document.getElementById('btn-bk').addEventListener('click',function(){if(ESI===null)autoSave();goHome();});
 document.getElementById('btn-bs').addEventListener('click',goHome);
 document.getElementById('btn-fin').addEventListener('click',finWK);
-document.getElementById('tog').addEventListener('click',tTheme);
+document.querySelectorAll('#theme-seg .seg-b').forEach(function(b){b.addEventListener('click',function(){sTheme(b.dataset.th);});});
 document.getElementById('btn-exp').addEventListener('click',expD);
 document.getElementById('btn-impt').addEventListener('click',function(){document.getElementById('impf').click();});
 document.getElementById('impf').addEventListener('change',impD);
