@@ -28,10 +28,18 @@ function sIdx(id){var ss=gs();for(var i=0;i<ss.length;i++)if(ss[i].id===id)retur
 function addS(s){var d=gd();s.id=s.id||uid();s.mt=Date.now();d.sessions.push(s);sd(d);}
 function updS(i,s){var d=gd();s.mt=Date.now();d.sessions[i]=s;sd(d);}
 function delS(i){var d=gd();var s=d.sessions[i];if(s){d.deleted=d.deleted||{};d.deleted[s.id]=Date.now();}d.sessions.splice(i,1);sd(d);}
-function svDr(n,s){localStorage.setItem('ironlog_draft',JSON.stringify({workout:n,sets:s,ts:Date.now()}));}
-function gDr(n){try{var d=JSON.parse(localStorage.getItem('ironlog_draft'));if(d&&d.workout===n)return d.sets;}catch(e){}return null;}
+// The unfinished workout, on this device only: {v:2, workout, list (the session's exercises), sets {name: [{kg,reps}]},
+// st (start time), day (only when logging a past day)}
+function svDr(n,list,sets,st,day){localStorage.setItem('ironlog_draft',JSON.stringify({v:2,workout:n,list:list,sets:sets,st:st,day:day||undefined,ts:Date.now()}));}
+function gDr(n){var d=gDri();return d&&d.workout===n?d:null;}
 function clDr(){localStorage.removeItem('ironlog_draft');}
-function gDri(){try{return JSON.parse(localStorage.getItem('ironlog_draft'));}catch(e){return null;}}
+// Older drafts keyed sets by the exercise's position in the saved workout; they move to names once, while that
+// workout still has the order they were logged against
+function gDri(){var d=null;try{d=JSON.parse(localStorage.getItem('ironlog_draft'));}catch(e){}
+  if(d&&d.v!==2&&d.workout&&d.sets){var t=gw()[d.workout]||[],s={};t.forEach(function(x,i){if(d.sets[i]&&!s[x])s[x]=d.sets[i];});
+    d={v:2,workout:d.workout,list:t.slice(),sets:s,ts:d.ts};localStorage.setItem('ironlog_draft',JSON.stringify(d));}
+  return d&&d.v===2?d:null;}
+function drHas(sets){return Object.keys(sets||{}).some(function(k){return(sets[k]||[]).some(function(x){return x.kg!==''||x.reps!=='';});});}
 function gSplit(){var sc=gd().schedule;return(sc&&sc.week)||{};}
 function sSplit(s){var d=gd();d.schedule=d.schedule||{moves:{}};d.schedule.week=s;d.schedule.wkm=Date.now();sd(d);}
 // One-off schedule changes ("do Monday's Legs on Tuesday"); synced records like sessions
@@ -50,17 +58,28 @@ function archiveGoal(id){updGoal(id,{archived:true});}
 function delGoal(id){var d=gd();d.goals=(d.goals||[]).filter(function(g){return g.id!==id;});d.deleted=d.deleted||{};d.deleted[id]=Date.now();sd(d);}
 // Muscle group overrides ('Main/Sub'); defaults are guessed in stats.js
 function setMuscle(name,ms){var d=gd();d.muscles=d.muscles||{};if(ms)d.muscles[name]=ms;else delete d.muscles[name];d.mm=Date.now();sd(d);}
+// Moves an exercise's logged history to another name (a rename, or a merge into an existing exercise). A session that has
+// both keeps one entry at the position of whichever came first, with that one's sets first. A muscle override moves too.
+// Returns how many sessions changed.
+function renameExHist(from,to){
+  if(!from||!to||from===to)return 0;var d=gd(),now=Date.now(),n=0;
+  d.sessions.forEach(function(s){var ex=s.exercises||{};if(!ex[from])return;var o={};
+    Object.keys(ex).forEach(function(k){if(k===from||k===to)o[to]=(o[to]||[]).concat(ex[k]);else o[k]=ex[k];});
+    s.exercises=o;s.mt=now;n++;});
+  var mu=d.muscles||{};if(mu[from]){if(!mu[to])mu[to]=mu[from];delete mu[from];d.muscles=mu;d.mm=now;}
+  if(n||d.mm===now)sd(d);return n;
+}
 function gSyncUrl(){return localStorage.getItem('ironlog_sync_url')||'';}
 function sSyncUrl(u){localStorage.setItem('ironlog_sync_url',u);}
 function gPRs(){var p={};gss().forEach(function(s){Object.keys(s.exercises).forEach(function(x){s.exercises[x].forEach(function(t){if(!p[x]||t.kg>p[x])p[x]=t.kg;});});});return p;}
 // ═══════ STATE ═══════
-var CW=null,CS={},OE={},ESI=null,PCI=null,WST=null,RTI=null,RS=0,HMO=0,CTR='W',OVTR='W';
+var CW=null,CL=[],CS={},OE={},ESI=null,WDAY=null,PCI=null,WST=null,RTI=null,RS=0,HMO=0,CTR='W',OVTR='W';
 var DWM={},DABS={},DPROG={};
 var metaInterval=null;
-function CEL(){return(gw()[CW])||[];}
 // Helpers
 function gLast(n){var s=gss();for(var i=s.length-1;i>=0;i--)if(s[i].workout===n)return s[i];return null;}
-function gLastEx(n,x,xi){var s=gss();var orig=gs();for(var i=s.length-1;i>=0;i--){var origIdx=orig.indexOf(s[i]);if(xi!=null&&origIdx===xi)continue;if(s[i].workout===n&&s[i].exercises[x])return{date:s[i].date,sets:s[i].exercises[x]};}return null;}
+// The last time exercise x was logged in workout n, else in any workout; skips session id xi (the one being edited)
+function gLastEx(n,x,xi){var s=gss(),any=null;for(var i=s.length-1;i>=0;i--){if(s[i].id===xi||!s[i].exercises[x])continue;if(s[i].workout===n)return{date:s[i].date,sets:s[i].exercises[x]};if(!any)any={date:s[i].date,sets:s[i].exercises[x]};}return any;}
 function tap2(b,fn){var t=null;b.addEventListener('click',function(e){e.stopPropagation();if(!t){var tx=b.textContent;b.textContent='Confirm?';b.style.background='var(--red)';b.style.color='var(--on-color)';t=setTimeout(function(){t=null;b.textContent=tx;b.style.background='';b.style.color='';},3000);return;}clearTimeout(t);t=null;fn();});}
 function eh(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function ea(v){return v==null?'':String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');}

@@ -17,14 +17,16 @@
 <body>
 <div id="toast" class="toast"></div>
 <div id="hmpop-ov" class="hmpop-ov"><div class="hmpop"><div class="hmpop-date" id="hp-date"></div><div class="hmpop-wk" id="hp-wk"></div><div class="hmpop-detail" id="hp-det"></div><button class="hmpop-close" id="hp-close">Close</button></div></div>
-<div id="mov-ex" class="mov"><div class="modal"><h3>Add Exercise</h3><input type="text" class="minp" id="new-ex" placeholder="Exercise name"><div class="macts"><button class="mbtn sec" id="ex-cancel">Cancel</button><button class="mbtn pri" id="ex-add">Add</button></div></div></div>
+<div id="mov-ex" class="mov"><div class="modal"><h3>Add Exercise</h3><p class="msub">Just for this session. When you finish, you can add it to the workout.</p><input type="text" class="minp" id="new-ex" placeholder="Exercise name" autocomplete="off"><div class="macts"><button class="mbtn sec" id="ex-cancel">Cancel</button><button class="mbtn pri" id="ex-add">Add</button></div></div></div>
 <div id="mov-timer" class="mov"><div class="modal"><h3>Set Timer</h3><div class="tinp-row"><input type="number" class="tinp" id="cmin" value="1" inputmode="numeric"><span class="tlabel">min</span><input type="number" class="tinp" id="csec" value="30" inputmode="numeric"><span class="tlabel">sec</span></div><div class="macts"><button class="mbtn sec" id="tm-cancel">Cancel</button><button class="mbtn pri" id="tm-start">Start</button></div></div></div>
 <div id="mov-manage" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:320px;width:90%;max-height:80vh;overflow-y:auto"><h3 id="manage-title" style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Manage Workouts</h3><div id="manage-body"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="manage-close">Close</button></div></div></div>
 <div id="mov-splitday" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%;max-height:80vh;overflow-y:auto"><h3 id="sd-title" style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Monday</h3><div id="sd-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="sd-cancel">Cancel</button></div></div></div>
 <div id="mov-date" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:260px;width:80%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Change Date</h3><input type="date" id="date-inp" style="margin-bottom:8px;width:100%;box-sizing:border-box;padding:10px 12px;font-size:14px;border:none;background:none;color:var(--t1);font-family:var(--fb);-webkit-appearance:none;appearance:none;outline:none;color-scheme:dark"><div class="macts"><button class="mbtn sec" id="date-cancel" style="padding:10px">Cancel</button><button class="mbtn pri" id="date-save" style="padding:10px">Save</button></div></div></div>
 
 <div id="mov-quick" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%"><h3 style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Start Workout</h3><div id="quick-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="quick-cancel">Cancel</button></div></div></div>
-<div id="mov-rename" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:280px;width:85%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Rename Exercise</h3><input type="text" class="minp" id="rename-inp" placeholder="Exercise name" style="margin-bottom:8px"><div class="macts"><button class="mbtn sec" id="rename-cancel">Cancel</button><button class="mbtn pri" id="rename-save">Save</button></div></div></div>
+<div id="mov-rename" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:280px;width:85%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Rename Exercise</h3><input type="text" class="minp" id="rename-inp" placeholder="Exercise name" style="margin-bottom:8px"><label class="chk" id="rename-hist-row"><input type="checkbox" id="rename-hist" checked><span>Also rename it in your history, so its progress stays in one chart</span></label><div class="macts"><button class="mbtn sec" id="rename-cancel">Cancel</button><button class="mbtn pri" id="rename-save">Save</button></div></div></div>
+
+<div id="mov-upd" class="mov"><div class="modal"><h3 id="upd-t">Also update this workout?</h3><p class="msub">You changed the exercises in this session.</p><div id="upd-body" class="upd-body"></div><div class="macts"><button class="mbtn sec" id="upd-no">Just this session</button><button class="mbtn pri" id="upd-yes">Update workout</button></div></div></div>
 
 <div id="s-home" class="screen active" style="padding-bottom:calc(94px + var(--navpb))">
   <div class="header"><h1>🏋️‍♂️ Workout Tracker</h1><div style="display:flex;gap:6px"><button class="ibtn" id="btn-split">📅</button><button class="ibtn" id="btn-set">⚙</button></div></div>
@@ -81,9 +83,11 @@
 <button class="nav-plus" id="nav-plus"><span>+</span></button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.7/Sortable.min.js"></script>
 <script src="js/data.js?v=20260929b"></script>
 <script src="js/sync.js?v=20260929b"></script>
 <script src="js/stats.js?v=20260929b"></script>
+<script src="js/ui.js?v=20260929b"></script>
 <script src="js/home.js?v=20260929b"></script>
 <script src="js/workout.js?v=20260929b"></script>
 <script src="js/progress.js?v=20260929b"></script>
