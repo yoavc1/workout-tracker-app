@@ -12,7 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>Workout Tracker</title>
 <!-- Bump ?v= on every release so phones never mix new HTML with cached old CSS/JS -->
-<link rel="stylesheet" href="css/app.css?v=20260929-core">
+<link rel="stylesheet" href="css/app.css?v=20260929-sched">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -33,6 +33,7 @@
 <div id="s-home" class="screen active" style="padding-bottom:calc(94px + var(--navpb))">
   <div class="header"><h1>🏋️‍♂️ Workout Tracker</h1><div style="display:flex;gap:6px"><button class="ibtn" id="btn-split">📅</button><button class="ibtn" id="btn-set">⚙</button></div></div>
   <div class="hsub" id="hsub"></div>
+  <div id="today-sec"></div>
   <div id="ins-sec"></div>
   <div id="abs-sec"></div>
   <div id="wk-sec"></div>
@@ -53,8 +54,6 @@
 <div id="s-prog" class="screen">
   <div class="header"><h1>📈 Progress</h1><div style="width:40px"></div></div>
   <div class="psec">
-    <div id="hmnav" class="hmnav"></div>
-    <div id="hmrow" style="margin-bottom:18px"></div>
     <h3>Weight Progression (kg)</h3>
     <div class="cttog" id="cttog"><button class="ctbtn active" data-range="W">W</button><button class="ctbtn" data-range="M">M</button><button class="ctbtn" data-range="3M">3M</button><button class="ctbtn" data-range="6M">6M</button><button class="ctbtn" data-range="ALL">All</button></div>
     <select id="csel" class="csel"></select>
@@ -80,6 +79,8 @@
   </div>
 </div>
 
+<div id="sch" class="sch"><div class="header"><h1>📅 Schedule</h1><button class="ibtn" id="sch-x" aria-label="Close">✕</button></div><div class="sch-body"><div id="sch-td"></div><div id="sch-wp"></div><div id="sch-cal"></div></div></div>
+
 <div class="nav-wrap" id="nav-wrap">
 <nav class="nav" id="nav">
   <button class="ntab active" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Workouts</button>
@@ -91,16 +92,17 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.7/Sortable.min.js"></script>
-<script src="js/data.js?v=20260929-core"></script>
-<script src="js/sync.js?v=20260929-core"></script>
-<script src="js/stats.js?v=20260929-core"></script>
-<script src="js/ui.js?v=20260929-core"></script>
-<script src="js/home.js?v=20260929-core"></script>
-<script src="js/workout.js?v=20260929-core"></script>
-<script src="js/progress.js?v=20260929-core"></script>
-<script src="js/history.js?v=20260929-core"></script>
-<script src="js/core.js?v=20260929-core"></script>
-<script src="js/settings.js?v=20260929-core"></script>
-<script src="js/goals.js?v=20260929-core"></script>
-<script src="js/main.js?v=20260929-core"></script>
+<script src="js/data.js?v=20260929-sched"></script>
+<script src="js/sync.js?v=20260929-sched"></script>
+<script src="js/stats.js?v=20260929-sched"></script>
+<script src="js/ui.js?v=20260929-sched"></script>
+<script src="js/home.js?v=20260929-sched"></script>
+<script src="js/workout.js?v=20260929-sched"></script>
+<script src="js/progress.js?v=20260929-sched"></script>
+<script src="js/schedule.js?v=20260929-sched"></script>
+<script src="js/history.js?v=20260929-sched"></script>
+<script src="js/core.js?v=20260929-sched"></script>
+<script src="js/settings.js?v=20260929-sched"></script>
+<script src="js/goals.js?v=20260929-sched"></script>
+<script src="js/main.js?v=20260929-sched"></script>
 </body></html>

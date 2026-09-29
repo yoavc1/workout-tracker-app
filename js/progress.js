@@ -1,74 +1,7 @@
-// Workout Tracker — Progress screen: heatmap, weight chart, exercise overview
+// Workout Tracker — Progress screen: weight chart, exercise overview (the calendar lives in the Schedule sheet)
 function tcut(r){var n=new Date(),c=null;if(r==='W'){c=new Date(n);c.setDate(c.getDate()-7);}else if(r==='M'){c=new Date(n);c.setMonth(c.getMonth()-1);}else if(r==='3M'){c=new Date(n);c.setMonth(c.getMonth()-3);}else if(r==='6M'){c=new Date(n);c.setMonth(c.getMonth()-6);}return c;}
 // ═══════ PROGRESS ═══════
-function rProg(){rHMnav();rHM();rPE();rChart();sCT();rOV();sOV();if(typeof rCoreProg==='function')rCoreProg(document.getElementById('prog-core'));}
-
-function rHMnav(){var n=document.getElementById('hmnav');var vd=new Date(new Date().getFullYear(),new Date().getMonth()+HMO,1);var mn=vd.toLocaleString('en',{month:'long',year:'numeric'});var fw=HMO<0;n.innerHTML='<button class="hmnav-b" id="hm-p">‹</button><div class="hmnav-t">'+mn+'</div><button class="hmnav-b'+(fw?'':' dis')+'" id="hm-n">›</button>';document.getElementById('hm-p').addEventListener('click',function(){HMO--;rHMnav();rHM();});document.getElementById('hm-n').addEventListener('click',function(){if(HMO<0){HMO++;rHMnav();rHM();}});}
-
-function rHM(){
-  var c=document.getElementById('hmrow');var ss=gs();var coreM=gd().core;var today=new Date();var tds=today.toDateString();
-  var vd=new Date(today.getFullYear(),today.getMonth()+HMO,1);var yr=vd.getFullYear(),mo=vd.getMonth();
-  var dim=new Date(yr,mo+1,0).getDate();var sp=(new Date(yr,mo,1).getDay()+6)%7;
-  DWM={};DABS={};DPROG={};
-  function ev(s){return s.reduce(function(a,x){return a+x.kg*x.reps;},0);}
-  function mx(s){return Math.max.apply(null,s.map(function(x){return x.kg;}));}
-  // Sort by date for reliable comparison
-  var sorted=ss.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-  var dc={};
-  sorted.forEach(function(s,si){
-    var ds=new Date(s.date).toDateString();dc[ds]=(dc[ds]||0)+1;
-    if(!DWM[ds])DWM[ds]=[];DWM[ds].push(s.workout);
-    if(coreDone(lday(s.date),coreM))DABS[ds]=true;
-    // Find previous session of SAME workout type
-    var pv=null;for(var j=si-1;j>=0;j--){if(sorted[j].workout===s.workout){pv=sorted[j];break;}}
-    if(pv){
-      // Only compare shared exercises
-      var shared=Object.keys(s.exercises).filter(function(x){return pv.exercises[x];});
-      var inc=0,dec2=0,tot=shared.length;
-      shared.forEach(function(x){
-        var cm=mx(s.exercises[x]),pm=mx(pv.exercises[x]);
-        var cv=ev(s.exercises[x]),pvv=ev(pv.exercises[x]);
-        if(cm>pm||cv>pvv)inc++;else if(cm<pm||cv<pvv)dec2++;
-      });
-      var r=tot>0?inc/tot:0;
-      DPROG[ds]={status:r>=0.5?'green':r>0?'blue':'red',workout:s.workout,inc:inc,dec:dec2,tot:tot,same:tot-inc-dec2};
-    } else {
-      // First session of this workout type
-      if(!DPROG[ds]) DPROG[ds]={status:'first',workout:s.workout};
-    }
-  });
-  var mg=0;for(var d=1;d<=dim;d++){var ds=new Date(yr,mo,d).toDateString();if(DPROG[ds]&&DPROG[ds].status==='green')mg++;}
-  var dh='<div class="hmdh"><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div></div>';
-  var cells='';
-  for(var p=0;p<sp;p++)cells+='<div class="hmc empty"></div>';
-  for(var d=1;d<=dim;d++){
-    var date=new Date(yr,mo,d);var ds=date.toDateString();var it=ds===tds;var fu=date>today;var tc=it?' today':'';
-    if(fu){cells+='<div class="hmc" style="opacity:0.15"></div>';}
-    else{
-      var cnt=dc[ds]||0;var pr=DPROG[ds];var hasC=DABS[ds];
-      if(!cnt){cells+='<div class="hmc'+tc+'"></div>';}
-      else{
-        var cls='hmc';
-        if(pr){if(pr.status==='green')cls+=' pg';else if(pr.status==='blue')cls+=' pb';else if(pr.status==='red')cls+=' pr';else if(pr.status==='first')cls+=' first';}
-        cls+=tc;var cTag=hasC?'<span class="hmc-c">C</span>':'';
-        cells+='<div class="'+cls+' clk" data-ds="'+ds+'">'+cTag+'</div>';
-      }
-    }
-  }
-  var h='<div class="hmcard"><div style="font-family:var(--ff);font-size:12px;font-weight:600;margin-bottom:2px">Progression</div><div class="hmsub">'+mg+' improved</div>'+dh+'<div class="hmg">'+cells+'</div><div class="hmleg"><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(61,214,140,0.7)"></div>Vol ↑</div><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(91,140,247,0.5)"></div>Some</div><div class="hmleg-i"><div class="hmleg-d" style="background:rgba(239,95,95,0.55)"></div>None</div><div class="hmleg-i"><div class="hmleg-d" style="border:1.5px solid var(--t3)"></div>1st</div><div class="hmleg-i"><span style="font-size:8px;font-weight:800;color:var(--t2)">C</span> Core</div></div></div>';
-  c.innerHTML=h;
-  c.querySelectorAll('.hmc.clk').forEach(function(cell){cell.addEventListener('click',function(){
-    var ds=cell.dataset.ds;var wks=DWM[ds]||[];var hasC=DABS[ds];var pd=DPROG[ds];
-    document.getElementById('hp-date').textContent=new Date(ds).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-    document.getElementById('hp-wk').textContent=wks.join(', ');
-    var det='';
-    if(pd&&pd.status!=='first')det='↑ '+pd.inc+' improved · ↓ '+pd.dec+' declined'+(pd.same>0?' · = '+pd.same+' same':'');
-    else det='First session logged';
-    var coreHTML=hasC?'<div style="margin-top:8px;color:var(--green);font-size:13px">✓ Core trained</div>':'';
-    document.getElementById('hp-det').innerHTML='<div>'+det+'</div>'+coreHTML;
-    document.getElementById('hmpop-ov').classList.add('active');
-  });});
-}
+function rProg(){rPE();rChart();sCT();rOV();sOV();if(typeof rCoreProg==='function')rCoreProg(document.getElementById('prog-core'));}
 
 function rPE(){var sel=document.getElementById('csel');var ss=gs();var ex={};ss.forEach(function(s){Object.keys(s.exercises).forEach(function(e){ex[e]=true;});});var pv=sel.value;sel.innerHTML='';var n=Object.keys(ex).sort();if(!n.length){var o=document.createElement('option');o.textContent='No data yet';o.disabled=true;o.selected=true;sel.appendChild(o);return;}n.forEach(function(e){var o=document.createElement('option');o.value=e;o.textContent=e;if(e===pv)o.selected=true;sel.appendChild(o);});}
 var ctBound=false,ovBound=false;
