@@ -41,13 +41,12 @@ function cpush(){if(!gSyncUrl())return;clearTimeout(syncT);syncT=setTimeout(csyn
 function csync(cb){
   var u=gSyncUrl();clearTimeout(syncT);syncT=null;
   if(!u)return;
-  // Never swap data under an open workout (sets are keyed by exercise position); goHome() resumes the sync
-  if(syncBusy||CW!==null){syncQ=true;return;}
-  syncBusy=true;var ch=false,deferred=false;
+  // Safe while a workout is open: the session keeps its own copy of the exercise list and keys sets by name
+  if(syncBusy){syncQ=true;return;}
+  syncBusy=true;var ch=false;
   fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).then(function(c){
     if(c==null||(typeof c==='object'&&!c.error&&!Object.keys(c).length))c={sessions:[]};
     if(!Array.isArray(c.sessions))throw new Error(c.error||'unexpected response');
-    if(CW!==null){deferred=true;return;}
     // Sign the cloud copy as it arrived: merging fills in derived records (core days from old ticks), and a cloud
     // still in the old format should receive them once, along with the Sheet's muscle column
     var cs=dsig(c),l=gd(),m=mergeD(l,c);
@@ -56,7 +55,7 @@ function csync(cb){
     // muscleMap only rides along for the Sheet's Muscle column; it is never stored on the device or merged
     return fetch(u,{method:'POST',body:JSON.stringify(Object.assign({},m,{muscleMap:muscleMap(m)})),headers:{'Content-Type':'text/plain'}}).then(function(r){return r.json();}).then(function(r){if(!r||!r.success)throw new Error((r&&r.error)||'save rejected');});
   }).then(function(){
-    syncBusy=false;if(deferred){syncQ=true;return;}
+    syncBusy=false;
     setSt(true,'Synced '+new Date().toLocaleTimeString());if(ch)refreshView();if(cb)cb(true);
     if(syncQ){syncQ=false;cpush();}
   }).catch(function(err){

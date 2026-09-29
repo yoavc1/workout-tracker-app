@@ -146,7 +146,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 
 ### Phase 1: Feature tracks (can be built in parallel; each is its own PR)
 
-> **Status (29 Sep 2026): ⏸ paused at the owner's request.** Phase 0 is complete (PRs #5, #6 and #7). Don't start Phase 1 until the owner types **"resume building features"**. Then start with Track A, following §6. Each PR waits for the owner to type "merge".
+> **Status (29 Sep 2026): ▶ in progress.** Phase 0 is complete (PRs #5, #6 and #7). The owner resumed Phase 1 on 29 Sep. Tracks A, B, C, D, E and G are being built in parallel, each in its own PR, following §6. Each PR waits for the owner to type "merge".
 
 
 **A · Workout: session vs saved workout**

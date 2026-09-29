@@ -35,8 +35,12 @@ document.getElementById('tm-cancel').addEventListener('click',function(){documen
 document.getElementById('tm-start').addEventListener('click',function(){var m=parseInt(document.getElementById('cmin').value)||0;var s=parseInt(document.getElementById('csec').value)||0;var t=m*60+s;if(t<=0){toast('Set a time','var(--orange)');return;}document.getElementById('mov-timer').classList.remove('active');startT(t);});
 document.getElementById('btn-ae').addEventListener('click',function(){document.getElementById('mov-ex').classList.add('active');document.getElementById('new-ex').value='';setTimeout(function(){document.getElementById('new-ex').focus();},100);});
 document.getElementById('ex-cancel').addEventListener('click',function(){document.getElementById('mov-ex').classList.remove('active');});
-document.getElementById('ex-add').addEventListener('click',function(){var n=document.getElementById('new-ex').value.trim();if(!n){toast('Enter name','var(--orange)');return;}syncInp();var w=gw();w[CW].push(n);sw(w);CS[w[CW].length-1]=[];OE[w[CW].length-1]=true;document.getElementById('mov-ex').classList.remove('active');rEx();autoSave();toast(n+' added');});
-document.getElementById('new-ex').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('ex-add').click();});
+document.getElementById('ex-add').addEventListener('click',function(){addEx(document.getElementById('new-ex').value);});
+document.getElementById('new-ex').addEventListener('keydown',function(e){if(e.key==='Enter')addEx(this.value);});
+typeahead(document.getElementById('new-ex'),function(){return exNames().filter(function(x){return CL.indexOf(x)<0;});},addEx);
+document.getElementById('mov-ex').addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');});
+// Tapping outside "Also update …?" goes back to the workout without saving
+document.getElementById('mov-upd').addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');});
 document.getElementById('hp-close').addEventListener('click',function(){document.getElementById('hmpop-ov').classList.remove('active');});
 document.getElementById('rename-cancel').addEventListener('click',function(){document.getElementById('mov-rename').classList.remove('active');});
 document.getElementById('mov-rename').addEventListener('click',function(e){if(e.target===document.getElementById('mov-rename'))document.getElementById('mov-rename').classList.remove('active');});
@@ -59,7 +63,7 @@ document.getElementById('date-save').addEventListener('click',function(){
 });
 document.getElementById('mov-date').addEventListener('click',function(e){if(e.target===document.getElementById('mov-date'))document.getElementById('mov-date').classList.remove('active');});
 // ═══════ INIT ═══════
-(function(){var di=gDri();if(di&&di.sets){var h=false;Object.keys(di.sets).forEach(function(k){var s=di.sets[k];if(s&&s.length>0)s.forEach(function(x){if(x.kg!==''||x.reps!=='')h=true;});});if(!h)clDr();}})();
+(function(){var di=gDri();if(di&&!drHas(di.sets))clDr();})();
 iTheme();
 var ci=parseInt(sessionStorage.getItem('ins_idx')||'0');sessionStorage.setItem('ins_idx',String(ci+1));sessionStorage.removeItem('ins_dis');
 // Sync on launch, when the app comes back to the foreground (iOS resumes home-screen apps rather than relaunching them)
