@@ -6,7 +6,8 @@ var AL={
   NEG_MIN:7,         // ...and never before 7 days
   NEG_MAX:42,        // after 6 weeks without it, it's treated as dropped from the program, not neglected
   NEG_DAYS:3,        // a usual gap needs 3+ training days; it's the median of the last 10 gaps
-  SLOW_RATIO:0.5,    // slow overload: a group's 6-week trend below half the average of your groups
+  SLOW_RATIO:0.5,    // slow overload: a group's 6-week trend below half the average of your groups...
+  SLOW_OK:3,         // ...unless it gained 3%+ in those 6 weeks anyway (one fast group shouldn't make good progress look slow)
   SLOW_DAYS:3,       // ...and only with 3+ sessions of that group in those 6 weeks
   STALL:4,           // stalled: no new best in the last 4 sessions
   CORE_DAYS:4,       // core not done for 4+ days
@@ -50,7 +51,7 @@ function buildAlerts(d,now){
   var gs=groupStats(ex,d,now).filter(function(g){return g.main!=='Other'&&g.main!=='Core'&&g.trend!=null;});
   var avg=gs.length>1?gs.reduce(function(a,g){return a+g.trend;},0)/gs.length:0,from=now-ST.TREND_DAYS*864e5;
   if(avg>0)gs.forEach(function(g){
-    if(g.trend>=avg*AL.SLOW_RATIO)return;
+    if(g.trend>=avg*AL.SLOW_RATIO||g.trend>=AL.SLOW_OK)return;
     var n={};d.sessions.forEach(function(s){var t=new Date(s.date).getTime();if(t<from||t>now||isActivity(s))return;
       if(g.ex.some(function(x){return(s.exercises[x]||[]).length;}))n[lday(s.date)]=1;});
     if(Object.keys(n).length<AL.SLOW_DAYS)return;
@@ -100,18 +101,18 @@ function rAlerts(){
   var all=buildAlerts(gd()).filter(function(a){return sz[a.id]!==t;}),show=ALX?all:all.slice(0,AL.SHOW);
   if(!all.length){el.innerHTML='';return;}
   var h='<div class="al-wrap">';
-  show.forEach(function(a,i){h+='<div class="ins al '+a.kind+'"><div class="ins-icon">'+a.icon+'</div><div class="al-m"><div class="al-t">'+eh(a.title)+'</div><div class="al-s">'+a.text+'</div>'+
+  show.forEach(function(a,i){h+='<div class="ins al '+a.kind+'" data-id="'+ea(a.id)+'"><div class="ins-icon">'+a.icon+'</div><div class="al-m"><div class="al-t">'+eh(a.title)+'</div><div class="al-s">'+a.text+'</div>'+
     (a.act?'<button class="al-b" data-i="'+i+'">'+eh(a.act.label)+'</button>':'')+'</div><button class="al-x" data-i="'+i+'" aria-label="Hide until tomorrow">×</button></div>';});
   if(all.length>AL.SHOW)h+='<button class="al-more">'+(ALX?'Show less':'+'+(all.length-AL.SHOW)+' more')+'</button>';
   el.innerHTML=h+'</div>';
   el.querySelectorAll('.al-b').forEach(function(b){b.addEventListener('click',function(){alGo(show[+b.dataset.i].act);});});
-  el.querySelectorAll('.al-x').forEach(function(b){b.addEventListener('click',function(){snooze(show[+b.dataset.i].id);rAlerts();toast('Hidden until tomorrow','var(--t2)');});});
+  el.querySelectorAll('.al-x').forEach(function(b){b.addEventListener('click',function(){snooze(show[+b.dataset.i].id);rAlerts();toast('Hidden until tomorrow');});});
   var mb=el.querySelector('.al-more');if(mb)mb.addEventListener('click',function(){ALX=!ALX;rAlerts();});
 }
 function alGo(a){
   if(a.go==='start')openWK(a.arg);
   else if(a.go==='goal'){switchTab('goals');openGoal(a.arg);}
-  else if(a.go==='prog'){PGX=a.arg||null;switchTab('progress');}
+  else if(a.go==='prog'){PGX=a.arg||null;PGALL=false;PGSC=0;switchTab('progress');}
   else if(a.go==='core')openCore(lday(new Date()));
 }
 // Rebuild just after midnight, so day counts and "this week" roll over even if the app stays open
