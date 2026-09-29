@@ -1,6 +1,6 @@
-// Workout Tracker — Navigation, insights, home screen, manage workouts, weekly split editor
+// Workout Tracker — Navigation, insights, home screen, manage workouts
 // ═══════ NAV ═══════
-function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.ntab').forEach(function(n){n.classList.remove('active');});var b=document.querySelector('.ntab[data-tab="'+t+'"]');if(b)b.classList.add('active');document.getElementById('nav-wrap').style.display='flex';document.getElementById('bbar').style.display='none';if(t==='home'){document.getElementById('s-home').classList.add('active');rHome();}else if(t==='progress'){document.getElementById('s-prog').classList.add('active');setTimeout(rProg,100);}else if(t==='history'){document.getElementById('s-hist').classList.add('active');rHist();}}
+function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.ntab').forEach(function(n){n.classList.remove('active');});var b=document.querySelector('.ntab[data-tab="'+t+'"]');if(b)b.classList.add('active');document.getElementById('nav-wrap').style.display='flex';document.getElementById('bbar').style.display='none';if(t==='home'){document.getElementById('s-home').classList.add('active');rHome();}else if(t==='progress'){document.getElementById('s-prog').classList.add('active');setTimeout(rProg,100);}else if(t==='history'){document.getElementById('s-hist').classList.add('active');rHist();}else if(t==='goals'){document.getElementById('s-goals').classList.add('active');rGoals(true);}}
 function goHome(){CW=null;CL=[];CS={};OE={};ESI=null;WDAY=null;WST=null;clearInterval(RTI);clearInterval(metaInterval);switchTab('home');}
 // ═══════ INSIGHTS ═══════
 var insRange=7;
@@ -26,7 +26,7 @@ function uSub(){var n=gs().length,st=gSt();document.getElementById('hsub').textC
 function rHome(){
   document.getElementById('bbar').style.display='none';
   var ss=gs();var wk=gw();
-  uSub();
+  uSub();rToday();
   // Insight
   var iS=document.getElementById('ins-sec');var ins=genIns(ss,wk);
   var ii=parseInt(sessionStorage.getItem('ins_idx')||'0');
@@ -37,13 +37,8 @@ function rHome(){
     document.getElementById('ins-x').addEventListener('click',function(){iS.innerHTML='';sessionStorage.setItem('ins_dis','1');sessionStorage.setItem('ins_idx',String(ii+1));});
     iS.querySelectorAll('.ins-range-btn').forEach(function(b){b.addEventListener('click',function(){insRange=parseInt(b.dataset.r);rHome();});});
   }else{iS.innerHTML='';}
-  // Core checkbox
-  var aS=document.getElementById('abs-sec');var tds=new Date().toDateString(),today=lday(new Date());var hasWK=false,hasCore=coreDone(today);
-  ss.forEach(function(s){if(new Date(s.date).toDateString()===tds)hasWK=true;});
-  if(hasWK){
-    aS.innerHTML='<div class="hsec" style="padding:14px 18px"><div style="display:flex;align-items:center;gap:12px"><input type="checkbox" id="core-cb" '+(hasCore?'checked':'')+' style="width:22px;height:22px;accent-color:var(--green)"><label for="core-cb" style="font-family:var(--ff);font-size:14px;font-weight:600;cursor:pointer;flex:1">'+(hasCore?'Core trained today ✓':'Core trained today?')+'</label></div></div>';
-    document.getElementById('core-cb').addEventListener('change',function(){var c=this.checked;setCoreDone(today,c);toast(c?'Core logged!':'Core unmarked');});
-  }else{aS.innerHTML='';}
+  // Core chip, every day (js/core.js)
+  rCoreChip(document.getElementById('abs-sec'),lday(new Date()));
   // Workouts
   var wS=document.getElementById('wk-sec');var di=gDri();
   var h='<div class="hsec"><div class="hsec-t">My Workouts<button class="ibtn" id="btn-manage" style="width:28px;height:28px;font-size:12px">⚙</button></div><div class="wcards">';
@@ -113,28 +108,4 @@ function renEx(n,old){
       dr.sets[nw]=(dr.sets[nw]||[]).concat(dr.sets[old]||[]);delete dr.sets[old];localStorage.setItem('ironlog_draft',JSON.stringify(dr));}
     showExEd(n);toast(hn?'Renamed, including '+hn+' past workout'+(hn!==1?'s':''):'Renamed');
   };
-}
-
-function openSplitEditor(){
-  // Show a modal with all 7 days - tap each to pick workout
-  var split=gSplit();var wk=gw();
-  var body=document.getElementById('manage-body');
-  var h='<div class="split-grid" style="margin-top:0">';
-  DAYS.forEach(function(d){var v=split[d]||'';h+='<div class="split-day"><div class="split-day-label">'+d+'</div><div class="split-day-val'+(v?' has-workout':'')+'" data-day="'+d+'" style="cursor:pointer">'+(v||'Rest')+'</div></div>';});
-  h+='</div>';
-  document.getElementById('manage-title').textContent='Weekly Split';
-  body.innerHTML=h;
-  document.getElementById('mov-manage').classList.add('active');
-  body.querySelectorAll('.split-day-val').forEach(function(el){el.addEventListener('click',function(){
-    document.getElementById('mov-manage').classList.remove('active');
-    openSD(el.dataset.day);
-  });});
-}
-function openSD(day){
-  var wk=gw();var split=gSplit();document.getElementById('sd-title').textContent=day;
-  var opts=document.getElementById('sd-opts');
-  var h='<div style="display:flex;flex-direction:column;gap:6px"><button class="mbtn sec jsd" data-v="" style="margin:0">Rest</button>';
-  Object.keys(wk).forEach(function(n){h+='<button class="mbtn '+(split[day]===n?'pri':'sec')+' jsd" data-v="'+ea(n)+'" style="margin:0">'+eh(n)+'</button>';});
-  h+='</div>';opts.innerHTML=h;document.getElementById('mov-splitday').classList.add('active');
-  opts.querySelectorAll('.jsd').forEach(function(b){b.addEventListener('click',function(){split[day]=b.dataset.v||'';sSplit(split);document.getElementById('mov-splitday').classList.remove('active');rHome();});});
 }

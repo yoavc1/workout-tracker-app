@@ -47,9 +47,15 @@ function addMove(from,to,workout){var d=gd();d.schedule=d.schedule||{week:{},wkm
 function delMove(id){var d=gd();if(d.schedule&&d.schedule.moves&&d.schedule.moves[id]){delete d.schedule.moves[id];d.deleted=d.deleted||{};d.deleted[id]=Date.now();sd(d);}}
 // Core is one record per day. Sessions on that day keep the old abs flag in step, so older app versions still see it.
 function coreDone(day,cm){cm=cm||gd().core;var r=cm['c'+day];return!!(r&&r.done);}
+// A session's mt only moves when its flag really flips: logging core sets must not make a stale copy of that day's
+// workout beat an edit made on another device
 function coreSet(d,day,v){var k='c'+day,now=Date.now(),r=d.core[k]||{id:k,date:day,items:[]};r.done=!!v;r.mt=now;d.core[k]=r;
-  d.sessions.forEach(function(s){if(lday(s.date)===day){s.abs=!!v;s.mt=now;}});}
+  d.sessions.forEach(function(s){if(lday(s.date)===day&&!!s.abs!==!!v){s.abs=!!v;s.mt=now;}});}
 function setCoreDone(day,v){var d=gd();coreSet(d,day,v);sd(d);}
+// A day's core exercises: [{name, mode:'time'|'reps', sets:[{secs}|{reps}]}]. Saving any set marks the day done;
+// removing sets leaves the tick as it is.
+function coreItems(day,cm){cm=cm||gd().core;var r=cm['c'+day];return(r&&r.items)||[];}
+function setCoreItems(day,items){var d=gd();coreSet(d,day,coreDone(day,d.core)||items.some(function(it){return(it.sets||[]).length>0;}));d.core['c'+day].items=items;sd(d);}
 // Goals: target kg by a date (UI comes later)
 function gGoals(){return gd().goals||[];}
 function addGoal(g){var d=gd();d.goals=d.goals||[];g.id=g.id||uid();g.mt=Date.now();d.goals.push(g);sd(d);return g.id;}
@@ -74,8 +80,7 @@ function gSyncUrl(){return localStorage.getItem('ironlog_sync_url')||'';}
 function sSyncUrl(u){localStorage.setItem('ironlog_sync_url',u);}
 function gPRs(){var p={};gss().forEach(function(s){Object.keys(s.exercises).forEach(function(x){s.exercises[x].forEach(function(t){if(!p[x]||t.kg>p[x])p[x]=t.kg;});});});return p;}
 // ═══════ STATE ═══════
-var CW=null,CL=[],CS={},OE={},ESI=null,WDAY=null,PCI=null,WST=null,RTI=null,RS=0,HMO=0;
-var DWM={},DABS={},DPROG={};
+var CW=null,CL=[],CS={},OE={},ESI=null,WDAY=null,PCI=null,WST=null,RTI=null,RS=0;
 var metaInterval=null;
 // Helpers
 function gLast(n){var s=gss();for(var i=s.length-1;i>=0;i--)if(s[i].workout===n)return s[i];return null;}
