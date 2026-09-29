@@ -139,12 +139,15 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 - Replace colours written directly into the code (`#fff`, `rgba(232,240,248,…)`) with the theme's named colours. Dark mode (G) then only has to supply a second set of colours, and no other track has to change.
 - Commit the test harness from PR #1: `tests/merge.test.js` (Node) and `tests/smoke.js` (headless Chrome at 393×852 against a mock sync server). Every later PR must pass both.
 
-**0b · Data model v2.** In review.
+**0b · Data model v2.** ✅ Merged (PR #7).
 - Implement §4: the new fields, merge rules, migrations, `stats.js` and `muscleOf`, including the two-level muscle map.
 - Also: when syncing, the app sends a computed `muscleMap` to the Sheet, which fills in the Log tab's Muscle column. It is never stored on the device.
 - Not included: the workout draft format (Track A) and any UI. Existing screens use the new data through small helpers and look exactly the same.
 
 ### Phase 1: Feature tracks (can be built in parallel; each is its own PR)
+
+> **Status (29 Sep 2026): ⏸ paused at the owner's request.** Phase 0 is complete (PRs #5, #6 and #7). Don't start Phase 1 until the owner types **"resume building features"**. Then start with Track A, following §6. Each PR waits for the owner to type "merge".
+
 
 **A · Workout: session vs saved workout**
 - Opening a workout copies its exercise list into the session. From then on, reorder, add and remove affect **only this session**.
