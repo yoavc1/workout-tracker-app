@@ -12,7 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>Workout Tracker</title>
 <!-- Bump ?v= on every release so phones never mix new HTML with cached old CSS/JS -->
-<link rel="stylesheet" href="css/app.css?v=20260929-goals">
+<link rel="stylesheet" href="css/app.css?v=20260929-core">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -24,6 +24,7 @@
 <div id="mov-splitday" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%;max-height:80vh;overflow-y:auto"><h3 id="sd-title" style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Monday</h3><div id="sd-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="sd-cancel">Cancel</button></div></div></div>
 <div id="mov-date" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:260px;width:80%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Change Date</h3><input type="date" id="date-inp" style="margin-bottom:8px;width:100%;box-sizing:border-box;padding:10px 12px;font-size:14px;border:none;background:none;color:var(--t1);font-family:var(--fb);-webkit-appearance:none;appearance:none;outline:none;color-scheme:dark"><div class="macts"><button class="mbtn sec" id="date-cancel" style="padding:10px">Cancel</button><button class="mbtn pri" id="date-save" style="padding:10px">Save</button></div></div></div>
 
+<div id="mov-core" class="mov"><div class="modal csheet" id="core-body"></div></div>
 <div id="mov-quick" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%"><h3 style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Start Workout</h3><div id="quick-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="quick-cancel">Cancel</button></div></div></div>
 <div id="mov-rename" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:280px;width:85%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Rename Exercise</h3><input type="text" class="minp" id="rename-inp" placeholder="Exercise name" style="margin-bottom:8px"><label class="chk" id="rename-hist-row"><input type="checkbox" id="rename-hist" checked><span>Also rename it in your history, so its progress stays in one chart</span></label><div class="macts"><button class="mbtn sec" id="rename-cancel">Cancel</button><button class="mbtn pri" id="rename-save">Save</button></div></div></div>
 
@@ -39,6 +40,7 @@
 
 <div id="s-wk" class="screen">
   <div class="header"><button class="ibtn" id="btn-bk">←</button><h1 id="wk-t"></h1><div class="wmeta" id="wmeta"></div></div>
+  <div id="wk-core"></div>
   <div id="elist" class="elist"></div>
 </div>
 <div class="bbar" id="bbar" style="display:none">
@@ -61,6 +63,7 @@
     <div class="cttog" id="ovtog"><button class="ctbtn active" data-range="W">W</button><button class="ctbtn" data-range="M">M</button><button class="ctbtn" data-range="3M">3M</button><button class="ctbtn" data-range="6M">6M</button><button class="ctbtn" data-range="ALL">All</button></div>
     <select id="ovsel" class="csel"></select>
     <div id="ovcont"></div>
+    <div id="prog-core"></div>
   </div>
 </div>
 
@@ -88,15 +91,16 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.7/Sortable.min.js"></script>
-<script src="js/data.js?v=20260929-goals"></script>
-<script src="js/sync.js?v=20260929-goals"></script>
-<script src="js/stats.js?v=20260929-goals"></script>
-<script src="js/ui.js?v=20260929-goals"></script>
-<script src="js/home.js?v=20260929-goals"></script>
-<script src="js/workout.js?v=20260929-goals"></script>
-<script src="js/progress.js?v=20260929-goals"></script>
-<script src="js/history.js?v=20260929-goals"></script>
-<script src="js/settings.js?v=20260929-goals"></script>
-<script src="js/goals.js?v=20260929-goals"></script>
-<script src="js/main.js?v=20260929-goals"></script>
+<script src="js/data.js?v=20260929-core"></script>
+<script src="js/sync.js?v=20260929-core"></script>
+<script src="js/stats.js?v=20260929-core"></script>
+<script src="js/ui.js?v=20260929-core"></script>
+<script src="js/home.js?v=20260929-core"></script>
+<script src="js/workout.js?v=20260929-core"></script>
+<script src="js/progress.js?v=20260929-core"></script>
+<script src="js/history.js?v=20260929-core"></script>
+<script src="js/core.js?v=20260929-core"></script>
+<script src="js/settings.js?v=20260929-core"></script>
+<script src="js/goals.js?v=20260929-core"></script>
+<script src="js/main.js?v=20260929-core"></script>
 </body></html>
