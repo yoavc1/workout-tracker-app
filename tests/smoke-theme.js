@@ -72,6 +72,28 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.deepStrictEqual(card, ['rgb(27, 31, 42)', 'rgb(228, 232, 241)', '2px'], 'dark cards keep the bold 2px outline');
     step('Auto follows the phone live and redraws');
 
+    // Charts take their colours from CSS variables as they draw, so a live flip must redraw the open ones:
+    // Progress v2's exercise detail and a goal's detail sheet
+    const charts = async () => p.ev(`(function(){var t1=getComputedStyle(document.documentElement).getPropertyValue('--t1').trim(),o={};
+      if(typeof PCI!=='undefined'&&PCI)o.prog=JSON.stringify(PCI.config.data.datasets.map(function(x){return x.borderColor;})).indexOf(t1)>=0||JSON.stringify(PCI.config.options.scales).indexOf(getComputedStyle(document.documentElement).getPropertyValue('--t2').trim())>=0;
+      if(typeof GCI!=='undefined'&&GCI)o.goal=GCI.config.data.datasets.some(function(x){return x.borderColor===t1;});return o;})()`);
+    const hasPg = await p.ev(`typeof pgOpen==='function'`), hasGoals = await p.ev(`typeof openGoal==='function'`);
+    if (hasPg) {
+      await p.ev(`switchTab('progress');'ok'`); await p.wait(300); await p.ev(`pgOpen('Squat - Dumbbell');'ok'`); await p.wait(300);
+      const before = await p.ev('PCI&&PCI.id'); await phone('light'); await p.wait(300);
+      assert.ok(await p.ev(`PCI&&PCI.id!==${before}`), 'Progress detail chart redrawn'); assert.strictEqual((await charts()).prog, true, 'in the light colours');
+      await phone('dark'); await p.wait(300); assert.strictEqual((await charts()).prog, true, 'and back in the dark colours');
+      await p.ev(`pgBack();'ok'`);
+    }
+    if (hasGoals) {
+      await p.ev(`(function(){var a=new Date(),b=new Date();a.setDate(a.getDate()-60);b.setMonth(b.getMonth()+4);var id=addGoal({exercise:'Squat - Dumbbell',startKg:40,startDate:lday(a),targetKg:70,targetDate:lday(b),archived:false});switchTab('goals');openGoal(id);})();'ok'`); await p.wait(300);
+      assert.strictEqual((await charts()).goal, true); await phone('light'); await p.wait(300);
+      assert.strictEqual((await charts()).goal, true, 'goal chart redrawn in the light colours');
+      assert.ok(await p.ev(`document.getElementById('mov-goal').classList.contains('active')`), 'the goal sheet stays open');
+      await p.ev(`closeGoalM();'ok'`); await phone('dark'); await p.wait(200);
+    }
+    if (hasPg || hasGoals) step('open charts redraw in the new colours');
+
     // Contrast of the main text colours on every surface, in both themes (WCAG AA for body text: 4.5:1)
     const contrast = () => p.ev(`(function(){
       var e=document.createElement('i');document.body.appendChild(e);

@@ -134,7 +134,7 @@ function openGoalNew(){
 // ─── Detail ───
 function openGoal(id){
   var d=gd(),g=(d.goals||[]).filter(function(x){return x.id===id;})[0];if(!g)return;
-  var s=goalStatus(g,d),m=document.getElementById('goal-m'),band='±'+gKg(s.tol).replace(' kg','')+' kg';
+  var s=goalStatus(g,d),m=document.getElementById('goal-m');m.dataset.id=g.id;var band='±'+gKg(s.tol).replace(' kg','')+' kg';
   var note=s.status==='done'?'Reached on '+fdf(s.hit)+'.':s.perWk==null?'The target date has passed.':
     s.status==='ahead'?gKg(s.diff)+' ahead of the pace line.':s.status==='behind'?gKg(-s.diff)+' behind the pace line. On track means within '+band+'.':'Within '+band+' of the pace line.';
   if(s.src==='latest')note+=' Not trained in the last 2 weeks, so this uses your latest top set.';

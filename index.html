@@ -43,12 +43,15 @@ thApply();
 <div id="mov-core" class="mov"><div class="modal csheet" id="core-body"></div></div>
 <div id="mov-quick" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%"><h3 style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Start Workout</h3><div id="quick-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="quick-cancel">Cancel</button></div></div></div>
 <div id="mov-rename" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:280px;width:85%;padding:20px"><h3 style="font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:12px">Rename Exercise</h3><input type="text" class="minp" id="rename-inp" placeholder="Exercise name" style="margin-bottom:8px"><label class="chk" id="rename-hist-row"><input type="checkbox" id="rename-hist" checked><span>Also rename it in your history, so its progress stays in one chart</span></label><div class="macts"><button class="mbtn sec" id="rename-cancel">Cancel</button><button class="mbtn pri" id="rename-save">Save</button></div></div></div>
+<div id="mov-mus" class="mov"><div class="modal pg-sheet"><h3>Muscle group</h3><div class="pg-note" id="mus-for" style="margin:-6px 0 4px"></div><div id="mus-opts"></div><div class="macts" style="margin-top:18px"><button class="mbtn sec" id="mus-cancel">Cancel</button></div></div></div>
+<div id="mov-merge" class="mov"><div class="modal pg-sheet"><h3>Merge into…</h3><div class="pg-note" style="margin:-6px 0 14px">Moves every session of <b id="mg-from"></b> into the exercise you pick, so a renamed exercise keeps one history.</div><input type="text" class="minp" id="mg-inp" placeholder="Search your exercises" autocomplete="off"><div class="pg-note" id="mg-conf" style="margin:0 0 14px"></div><div class="macts"><button class="mbtn sec" id="mg-cancel">Cancel</button><button class="mbtn pri" id="mg-go" disabled>Merge</button></div></div></div>
 
 <div id="mov-upd" class="mov"><div class="modal"><h3 id="upd-t">Also update this workout?</h3><p class="msub">You changed the exercises in this session.</p><div id="upd-body" class="upd-body"></div><div class="macts"><button class="mbtn sec" id="upd-no">Just this session</button><button class="mbtn pri" id="upd-yes">Update workout</button></div></div></div>
 
 <div id="s-home" class="screen active" style="padding-bottom:calc(94px + var(--navpb))">
   <div class="header"><h1>🏋️‍♂️ Workout Tracker</h1><div style="display:flex;gap:6px"><button class="ibtn" id="btn-split">📅</button><button class="ibtn" id="btn-set">⚙</button></div></div>
   <div class="hsub" id="hsub"></div>
+  <div id="today-sec"></div>
   <div id="ins-sec"></div>
   <div id="abs-sec"></div>
   <div id="wk-sec"></div>
@@ -69,8 +72,6 @@ thApply();
 <div id="s-prog" class="screen">
   <div class="header"><h1>📈 Progress</h1><div style="width:40px"></div></div>
   <div class="psec">
-    <div id="hmnav" class="hmnav"></div>
-    <div id="hmrow" style="margin-bottom:18px"></div>
     <h3>Weight Progression (kg)</h3>
     <div class="cttog" id="cttog"><button class="ctbtn active" data-range="W">W</button><button class="ctbtn" data-range="M">M</button><button class="ctbtn" data-range="3M">3M</button><button class="ctbtn" data-range="6M">6M</button><button class="ctbtn" data-range="ALL">All</button></div>
     <select id="csel" class="csel"></select>
@@ -79,8 +80,13 @@ thApply();
     <div class="cttog" id="ovtog"><button class="ctbtn active" data-range="W">W</button><button class="ctbtn" data-range="M">M</button><button class="ctbtn" data-range="3M">3M</button><button class="ctbtn" data-range="6M">6M</button><button class="ctbtn" data-range="ALL">All</button></div>
     <select id="ovsel" class="csel"></select>
     <div id="ovcont"></div>
+  <div class="header"><button class="ibtn" id="pg-bk" style="display:none">←</button><h1>📈 Progress</h1><div style="width:40px"></div></div>
+  <div class="psec" id="pg-main">
+    <div id="pg-glance"></div>
+    <div id="pg-exl"></div>
     <div id="prog-core"></div>
   </div>
+  <div class="psec" id="pg-det" style="display:none"></div>
 </div>
 
 <div id="s-goals" class="screen"><div class="header"><h1>🎯 Goals</h1><button class="ibtn gplus" id="btn-gnew" aria-label="New goal">+</button></div><div id="glist" class="glist"></div></div>
@@ -95,6 +101,8 @@ thApply();
     <div class="sitem" style="flex-direction:column;align-items:stretch;gap:10px"><div class="sitem-l">Local Data</div><div style="display:flex;gap:8px"><button class="sbtn" id="btn-exp" style="flex:1">Export</button><button class="sbtn" id="btn-impt" style="flex:1">Import</button><input type="file" id="impf" accept=".json" style="display:none"></div><button class="dbtn" id="btn-clr">Clear All Data</button></div>
   </div>
 </div>
+
+<div id="sch" class="sch"><div class="header"><h1>📅 Schedule</h1><button class="ibtn" id="sch-x" aria-label="Close">✕</button></div><div class="sch-body"><div id="sch-td"></div><div id="sch-wp"></div><div id="sch-cal"></div></div></div>
 
 <div class="nav-wrap" id="nav-wrap">
 <nav class="nav" id="nav">
@@ -114,6 +122,7 @@ thApply();
 <script src="js/home.js?v=20260929-theme"></script>
 <script src="js/workout.js?v=20260929-theme"></script>
 <script src="js/progress.js?v=20260929-theme"></script>
+<script src="js/schedule.js?v=20260929-theme"></script>
 <script src="js/history.js?v=20260929-theme"></script>
 <script src="js/core.js?v=20260929-theme"></script>
 <script src="js/settings.js?v=20260929-theme"></script>

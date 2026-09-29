@@ -69,10 +69,8 @@ rules.replace(/\{([^{}]*)\}/g, (m, body) => { if (COLOR.test(body)) bad.push('ap
 assert.ok(/:root\[data-theme="dark"\]\{/.test(css), 'dark tokens block');
 assert.ok(!/\[data-theme="light"\]/.test(css), 'no light duplicates left');
 [...html.matchAll(/style="([^"]*)"/g)].forEach(m => { if (COLOR.test(m[1])) bad.push('index.html style: ' + m[1].slice(0, 90)); });
-// Exceptions: progress.js is rewritten by Track D, and main.js's nav-plus palette is replaced by Track B's wColor()
-fs.readdirSync(path.join(root, 'js')).filter(f => f.endsWith('.js') && f !== 'progress.js').forEach(f => {
+fs.readdirSync(path.join(root, 'js')).filter(f => f.endsWith('.js')).forEach(f => {
   fs.readFileSync(path.join(root, 'js', f), 'utf8').split('\n').forEach((l, i) => {
-    if (f === 'main.js' && /var colors=\[/.test(l)) return;
     if (COLOR.test(l)) bad.push(f + ':' + (i + 1) + ': ' + l.trim().slice(0, 90));
   });
 });
