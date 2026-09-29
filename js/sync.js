@@ -63,5 +63,5 @@ function csync(cb){
     if(syncQ){syncQ=false;cpush();}
   });
 }
-function refreshView(){if(CW!==null)return;var a=document.querySelector('.screen.active');if(!a)return;if(a.id==='s-home')rHome();else if(a.id==='s-hist')rHist();else if(a.id==='s-prog')rProg();}
+function refreshView(){if(CW!==null)return;var a=document.querySelector('.screen.active');if(!a)return;if(a.id==='s-home')rHome();else if(a.id==='s-hist')rHist();else if(a.id==='s-prog')rProg();else if(a.id==='s-goals')rGoals();}
 function msync(){if(!gSyncUrl()){toast('Set URL first','var(--orange)');return;}document.getElementById('sync-st').textContent='Syncing...';csync(function(ok){if(ok)toast('Synced!');else toast('Sync failed','var(--red)');});}
