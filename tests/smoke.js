@@ -65,20 +65,22 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.strictEqual(s.sessions.filter(x => x.abs).length, 2, 'local edit reached the cloud');
     step('merge keeps both devices\' changes');
 
-    // Core is one record per day: the home tick and History's C both go through it, and it syncs as core
+    // Core is one record per day: the home chip's tick and History's core line both go through it, and it syncs as core
     const today = await p.ev(`lday(new Date())`);
-    await p.ev(`switchTab('home');var c=document.getElementById('core-cb');c.checked=true;c.dispatchEvent(new Event('change'));'ok'`);
+    await p.ev(`switchTab('home');document.querySelector('#abs-sec .jct').click();'ok'`);
     assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), true, 'home tick sets the day');
     assert.ok(await p.ev(`gs().filter(function(s){return lday(s.date)===lday(new Date())}).every(function(s){return s.abs})`), 'abs kept in step');
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.strictEqual(s.core['c' + today].done, true, 'core day synced');
-    await p.ev(`switchTab('history');document.querySelector('.hwg.open .jcore').click();'ok'`);
-    assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), false, 'History C unticks the same day');
-    assert.strictEqual(await p.ev(`document.querySelector('.hwg.open .hcard-core')`), null);
+    await p.ev(`switchTab('history');document.querySelector('.hwg.open .jhc.on').click();'ok'`);
+    assert.strictEqual(await p.ev(`COD`), today, 'History core line opens that day');
+    await p.ev(`document.querySelector('#mov-core .csh-h .jct').click();document.querySelector('#mov-core .jcx').click();'ok'`);
+    assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), false, 'the day sheet unticks the same day');
+    assert.strictEqual(await p.ev(`document.querySelector('.hwg.open .jhc.on')`), null);
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.strictEqual(s.core['c' + today].done, false); assert.ok(s.muscleMap && s.muscleMap.Dips === 'Chest/Lower', 'muscle map sent to the Sheet');
     assert.strictEqual(await p.ev(`'muscleMap' in JSON.parse(localStorage.getItem('ironlog_data'))`), false);
-    step('core tick and History C share one synced day record');
+    step('home core chip and History core line share one synced day record');
 
     // History: newest week first, labelled Monday to Sunday
     const wk = await p.ev(`(function(){var s=gss();var k=gwk(s[s.length-1].date);var q=k.split('-');return {label:document.querySelector('.hwt').textContent,expect:fwr(k),dow:new Date(q[0],q[1]-1,q[2]).getDay()};})()`);

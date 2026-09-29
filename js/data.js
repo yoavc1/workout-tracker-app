@@ -47,9 +47,15 @@ function addMove(from,to,workout){var d=gd();d.schedule=d.schedule||{week:{},wkm
 function delMove(id){var d=gd();if(d.schedule&&d.schedule.moves&&d.schedule.moves[id]){delete d.schedule.moves[id];d.deleted=d.deleted||{};d.deleted[id]=Date.now();sd(d);}}
 // Core is one record per day. Sessions on that day keep the old abs flag in step, so older app versions still see it.
 function coreDone(day,cm){cm=cm||gd().core;var r=cm['c'+day];return!!(r&&r.done);}
+// A session's mt only moves when its flag really flips: logging core sets must not make a stale copy of that day's
+// workout beat an edit made on another device
 function coreSet(d,day,v){var k='c'+day,now=Date.now(),r=d.core[k]||{id:k,date:day,items:[]};r.done=!!v;r.mt=now;d.core[k]=r;
-  d.sessions.forEach(function(s){if(lday(s.date)===day){s.abs=!!v;s.mt=now;}});}
+  d.sessions.forEach(function(s){if(lday(s.date)===day&&!!s.abs!==!!v){s.abs=!!v;s.mt=now;}});}
 function setCoreDone(day,v){var d=gd();coreSet(d,day,v);sd(d);}
+// A day's core exercises: [{name, mode:'time'|'reps', sets:[{secs}|{reps}]}]. Saving any set marks the day done;
+// removing sets leaves the tick as it is.
+function coreItems(day,cm){cm=cm||gd().core;var r=cm['c'+day];return(r&&r.items)||[];}
+function setCoreItems(day,items){var d=gd();coreSet(d,day,coreDone(day,d.core)||items.some(function(it){return(it.sets||[]).length>0;}));d.core['c'+day].items=items;sd(d);}
 // Goals: target kg by a date (UI comes later)
 function gGoals(){return gd().goals||[];}
 function addGoal(g){var d=gd();d.goals=d.goals||[];g.id=g.id||uid();g.mt=Date.now();d.goals.push(g);sd(d);return g.id;}
@@ -59,15 +65,16 @@ function delGoal(id){var d=gd();d.goals=(d.goals||[]).filter(function(g){return 
 // Muscle group overrides ('Main/Sub'); defaults are guessed in stats.js
 function setMuscle(name,ms){var d=gd();d.muscles=d.muscles||{};if(ms)d.muscles[name]=ms;else delete d.muscles[name];d.mm=Date.now();sd(d);}
 // Moves an exercise's logged history to another name (a rename, or a merge into an existing exercise). A session that has
-// both keeps one entry at the position of whichever came first, with that one's sets first. A muscle override moves too.
-// Returns how many sessions changed.
+// both keeps one entry at the position of whichever came first, with that one's sets first. Goals and a muscle override
+// move too. Returns how many sessions changed.
 function renameExHist(from,to){
-  if(!from||!to||from===to)return 0;var d=gd(),now=Date.now(),n=0;
+  if(!from||!to||from===to)return 0;var d=gd(),now=Date.now(),n=0,g=0;
   d.sessions.forEach(function(s){var ex=s.exercises||{};if(!ex[from])return;var o={};
     Object.keys(ex).forEach(function(k){if(k===from||k===to)o[to]=(o[to]||[]).concat(ex[k]);else o[k]=ex[k];});
     s.exercises=o;s.mt=now;n++;});
+  (d.goals||[]).forEach(function(x){if(x.exercise===from){x.exercise=to;x.mt=now;g++;}});
   var mu=d.muscles||{};if(mu[from]){if(!mu[to])mu[to]=mu[from];delete mu[from];d.muscles=mu;d.mm=now;}
-  if(n||d.mm===now)sd(d);return n;
+  if(n||g||d.mm===now)sd(d);return n;
 }
 function gSyncUrl(){return localStorage.getItem('ironlog_sync_url')||'';}
 function sSyncUrl(u){localStorage.setItem('ironlog_sync_url',u);}

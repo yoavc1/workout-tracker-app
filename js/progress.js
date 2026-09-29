@@ -1,7 +1,7 @@
 // Workout Tracker — Progress screen: weight chart, exercise overview (the calendar lives in the Schedule sheet)
 function tcut(r){var n=new Date(),c=null;if(r==='W'){c=new Date(n);c.setDate(c.getDate()-7);}else if(r==='M'){c=new Date(n);c.setMonth(c.getMonth()-1);}else if(r==='3M'){c=new Date(n);c.setMonth(c.getMonth()-3);}else if(r==='6M'){c=new Date(n);c.setMonth(c.getMonth()-6);}return c;}
 // ═══════ PROGRESS ═══════
-function rProg(){rPE();rChart();sCT();rOV();sOV();}
+function rProg(){rPE();rChart();sCT();rOV();sOV();if(typeof rCoreProg==='function')rCoreProg(document.getElementById('prog-core'));}
 
 function rPE(){var sel=document.getElementById('csel');var ss=gs();var ex={};ss.forEach(function(s){Object.keys(s.exercises).forEach(function(e){ex[e]=true;});});var pv=sel.value;sel.innerHTML='';var n=Object.keys(ex).sort();if(!n.length){var o=document.createElement('option');o.textContent='No data yet';o.disabled=true;o.selected=true;sel.appendChild(o);return;}n.forEach(function(e){var o=document.createElement('option');o.value=e;o.textContent=e;if(e===pv)o.selected=true;sel.appendChild(o);});}
 var ctBound=false,ovBound=false;

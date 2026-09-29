@@ -18,7 +18,7 @@ function openWK(name,pre,si,day){
   document.getElementById('trow').style.display=ESI!==null||WDAY?'none':'flex';
   var btn=document.getElementById('btn-fin');
   if(ESI!==null){btn.textContent='Update Workout';btn.className='bfin upd';}else{btn.textContent='Finish Workout';btn.className='bfin';}
-  rEx();uMeta();
+  rEx();uMeta();rWkCore();
 }
 // Elapsed time, or the date when logging a past day
 function uMeta(){clearInterval(metaInterval);var e=document.getElementById('wmeta');
