@@ -6,7 +6,7 @@ function rProg(){rHMnav();rHM();rPE();rChart();sCT();rOV();sOV();}
 function rHMnav(){var n=document.getElementById('hmnav');var vd=new Date(new Date().getFullYear(),new Date().getMonth()+HMO,1);var mn=vd.toLocaleString('en',{month:'long',year:'numeric'});var fw=HMO<0;n.innerHTML='<button class="hmnav-b" id="hm-p">‹</button><div class="hmnav-t">'+mn+'</div><button class="hmnav-b'+(fw?'':' dis')+'" id="hm-n">›</button>';document.getElementById('hm-p').addEventListener('click',function(){HMO--;rHMnav();rHM();});document.getElementById('hm-n').addEventListener('click',function(){if(HMO<0){HMO++;rHMnav();rHM();}});}
 
 function rHM(){
-  var c=document.getElementById('hmrow');var ss=gs();var today=new Date();var tds=today.toDateString();
+  var c=document.getElementById('hmrow');var ss=gs();var coreM=gd().core;var today=new Date();var tds=today.toDateString();
   var vd=new Date(today.getFullYear(),today.getMonth()+HMO,1);var yr=vd.getFullYear(),mo=vd.getMonth();
   var dim=new Date(yr,mo+1,0).getDate();var sp=(new Date(yr,mo,1).getDay()+6)%7;
   DWM={};DABS={};DPROG={};
@@ -18,7 +18,7 @@ function rHM(){
   sorted.forEach(function(s,si){
     var ds=new Date(s.date).toDateString();dc[ds]=(dc[ds]||0)+1;
     if(!DWM[ds])DWM[ds]=[];DWM[ds].push(s.workout);
-    if(s.abs)DABS[ds]=true;
+    if(coreDone(lday(s.date),coreM))DABS[ds]=true;
     // Find previous session of SAME workout type
     var pv=null;for(var j=si-1;j>=0;j--){if(sorted[j].workout===s.workout){pv=sorted[j];break;}}
     if(pv){

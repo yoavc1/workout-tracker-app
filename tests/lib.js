@@ -81,4 +81,19 @@ async function launchChrome() {
 // 20 sessions over the last ~60 days across four workouts, written straight into localStorage
 const SEED = `localStorage.clear();(function(){var ss=[];var W={'Legs':['Squat - Dumbbell','Calf Raise - Seated'],'Upper Pull':['Lat Pull Down - Front'],'Upper Push':['Dips'],'Muay Thai':['Pads']};var n=0;var t0=new Date();t0.setHours(12,0,0,0);for(var d=60;d>2;d-=3){var w=Object.keys(W)[n++%4];var ex={};W[w].forEach(function(x){ex[x]=[{kg:40+n,reps:10},{kg:42+n,reps:8}];});ss.push({workout:w,date:new Date(t0.getTime()-d*864e5).toISOString(),exercises:ex,duration:3000,abs:false});}localStorage.setItem('ironlog_data',JSON.stringify({sessions:ss,workouts:W,lastModified:t0.getTime()-1000}));})();'ok'`;
 
-module.exports = { staticServer, mockSync, launchChrome, urlOf, SEED };
+// Loads app scripts (js/*.js) into a sandbox with an in-memory localStorage and no DOM, for unit tests of the
+// data layer. fetch can be replaced per test (ctx.fetch = ...). Values come from another realm, so compare via JSON.
+function loadApp(files, store = {}) {
+  const vm = require('vm');
+  const localStorage = { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; }, clear() { for (const k in store) delete store[k]; } };
+  const ctx = vm.createContext({
+    localStorage, console, setTimeout: () => 0, clearTimeout() {},
+    document: { getElementById: () => null, querySelector: () => null }, navigator: { onLine: true },
+    uSub() {}, fetch: () => Promise.reject(new Error('no network in unit tests')),
+  });
+  for (const f of files) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8'), ctx, { filename: f });
+  ctx.__store = store;
+  return ctx;
+}
+
+module.exports = { staticServer, mockSync, launchChrome, urlOf, SEED, loadApp };
