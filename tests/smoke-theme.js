@@ -101,7 +101,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
       function lum(c){c=c.map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];}
       function cr(a,b){var x=lum(rgb(a)),y=lum(rgb(b));return Math.round((Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)*100)/100;}
       var o={};['t1','t2'].forEach(function(t){['bg','card','card2','input'].forEach(function(s){o[t+'/'+s]=cr(t,s);});});
-      o['on-accent/accent']=cr('on-accent','accent');['pos-bg','warn-bg','info-bg'].forEach(function(s){o['t1/'+s]=cr('t1',s);});
+      o['on-accent/accent']=cr('on-accent','accent');['pos-bg','warn-bg','info-bg'].forEach(function(s){o['t1/'+s]=cr('t1',s);o['t2/'+s]=cr('t2',s);});
       o['t3/card (hints)']=cr('t3','card');e.remove();return o;})()`);
     const report = {};
     for (const t of ['light', 'dark']) {
@@ -128,8 +128,12 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     for (const t of ['light', 'dark']) {
       await p.ev(`sTheme('${t}');goHome();document.getElementById('s-home').scrollTop=0;document.getElementById('toast').classList.remove('show');'ok'`);
       await shot('01-home', t);
-      // All three insight colours, using the home screen's own markup
-      await p.ev(`document.getElementById('ins-sec').innerHTML='<div class="hsec"><div class="hsec-t">Insights</div><div style="display:flex;flex-direction:column;gap:8px">'+[['pos','🏆','<strong>New PR</strong> — Dips hit 12 kg'],['warn','⚠️','<strong>Legs</strong> not logged in 9 days'],['info','📅','<strong>Upper Pull</strong> is scheduled for today']].map(function(i){return '<div class="ins '+i[0]+'"><div class="ins-icon">'+i[1]+'</div><div class="ins-text">'+i[2]+'</div></div>';}).join('')+'</div></div>';'ok'`);
+      // The smart banner expanded, with one alert of each colour, drawn by rAlerts() itself
+      await p.ev(`(function(){var b=buildAlerts;buildAlerts=function(){return[
+        {id:'x1',pri:2,kind:'warn',icon:'⚠️',title:'Shoulders · Rear',text:'No sets in 12 days (usually every 5). Cable Face Pulls',act:{label:'Start Upper Pull',go:'start',arg:'Upper Pull'}},
+        {id:'x2',pri:5,kind:'info',icon:'⏸️',title:'Squat - Dumbbell',text:'No new best in 5 sessions',act:{label:'See progress',go:'prog',arg:'Squat - Dumbbell'}},
+        {id:'x3',pri:7,kind:'pos',icon:'🏆',title:'New best: Dips',text:'62 kg × 8 (e1RM 78.5 kg)',act:{label:'See progress',go:'prog',arg:'Dips'}},
+        {id:'x4',pri:7,kind:'pos',icon:'🔥',title:'3 weeks in a row',text:'with 2+ training days each'}];};ALX=true;rAlerts();buildAlerts=b;ALX=false;})();'ok'`);
       await shot('02-home-insights', t);
       await sheet('03-start-workout', t, `document.getElementById('nav-plus').click();`);
       await sheet('04-manage-workouts', t, `showManage();`);
