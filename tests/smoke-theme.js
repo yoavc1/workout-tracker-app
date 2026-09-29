@@ -68,7 +68,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.deepStrictEqual([await theme(), await p.ev('__rv')], ['dark', 2]);
     await p.ev(`document.dispatchEvent(new Event('visibilitychange'));'ok'`);
     assert.strictEqual(await p.ev('__rv'), 2, 'no redraw when nothing changed');
-    const card = await p.ev(`(function(){var c=getComputedStyle(document.querySelector('#s-prog .ccont'));return [c.backgroundColor,c.borderTopColor,c.borderTopWidth];})()`);
+    const card = await p.ev(`(function(){var c=getComputedStyle(document.querySelector('#s-set .sitem'));return [c.backgroundColor,c.borderTopColor,c.borderTopWidth];})()`);
     assert.deepStrictEqual(card, ['rgb(27, 31, 42)', 'rgb(228, 232, 241)', '2px'], 'dark cards keep the bold 2px outline');
     step('Auto follows the phone live and redraws');
 
