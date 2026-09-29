@@ -103,7 +103,7 @@ Every feature reads and writes through this model, so it is built first (step 0b
 **One-time migrations:**
 - `session.abs === true` → `core[date].done = true` (`abs` stays, so older app versions still read it).
 - Local `ironlog_split` → `schedule.week`.
-- The workout draft moves from sets keyed by position to `{ workout, list: [names], sets: { name: [...] } }`.
+- The workout draft moves from sets keyed by position to `{ workout, list: [names], sets: { name: [...] } }`. This one ships with Track A, which owns the workout screen; 0b leaves the draft alone.
 
 **Shared helpers** (in `js/stats.js`, built in step 0b):
 - `e1rm(kg, reps)`: Epley formula, kg × (1 + reps/30), with reps capped at 12 for accuracy.
@@ -132,15 +132,17 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
   2. Choose Deploy → Manage deployments → ✏️ → Version: *New version* → Deploy.
 
 
-**0a · Split the app into files, no behaviour change.** In review (PR #6).
+**0a · Split the app into files, no behaviour change.** ✅ Merged (PR #6).
 `index.html` is about 750 lines, and every feature below would roughly double it. More importantly, parallel work on a single file collides constantly. So:
 - Move the code into `css/app.css` and `js/{data,sync,stats,home,workout,progress,history,settings}.js`, loaded as plain `<script>` tags. There is no build step, so GitHub Pages works unchanged.
 - Add version query strings (`app.js?v=…`) so a phone never mixes new HTML with old cached JS.
 - Replace colours written directly into the code (`#fff`, `rgba(232,240,248,…)`) with the theme's named colours. Dark mode (G) then only has to supply a second set of colours, and no other track has to change.
 - Commit the test harness from PR #1: `tests/merge.test.js` (Node) and `tests/smoke.js` (headless Chrome at 393×852 against a mock sync server). Every later PR must pass both.
 
-**0b · Data model v2.**
+**0b · Data model v2.** In review.
 - Implement §4: the new fields, merge rules, migrations, `stats.js` and `muscleOf`, including the two-level muscle map.
+- Also: when syncing, the app sends a computed `muscleMap` to the Sheet, which fills in the Log tab's Muscle column. It is never stored on the device.
+- Not included: the workout draft format (Track A) and any UI. Existing screens use the new data through small helpers and look exactly the same.
 
 ### Phase 1: Feature tracks (can be built in parallel; each is its own PR)
 

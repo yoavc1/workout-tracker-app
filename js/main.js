@@ -51,7 +51,10 @@ document.getElementById('date-save').addEventListener('click',function(){
   var val=document.getElementById('date-inp').value;if(!val){toast('Pick a date','var(--orange)');return;}
   var d=gd();var s=d.sessions[sIdx(editDateId)];if(!s){document.getElementById('mov-date').classList.remove('active');rHist();return;}
   var old=new Date(s.date);var nd=new Date(val);nd.setHours(old.getHours(),old.getMinutes(),old.getSeconds());
-  s.date=nd.toISOString();s.mt=Date.now();sd(d);
+  var oldDay=lday(s.date);s.date=nd.toISOString();s.mt=Date.now();
+  // A core tick travels with its session, as it did when core was stored per session
+  if(s.abs){coreSet(d,lday(s.date),true);if(!d.sessions.some(function(x){return lday(x.date)===oldDay&&x.abs;}))coreSet(d,oldDay,false);}
+  sd(d);
   document.getElementById('mov-date').classList.remove('active');rHist();toast('Date updated');
 });
 document.getElementById('mov-date').addEventListener('click',function(e){if(e.target===document.getElementById('mov-date'))document.getElementById('mov-date').classList.remove('active');});

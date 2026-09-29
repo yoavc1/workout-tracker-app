@@ -65,6 +65,21 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.strictEqual(s.sessions.filter(x => x.abs).length, 2, 'local edit reached the cloud');
     step('merge keeps both devices\' changes');
 
+    // Core is one record per day: the home tick and History's C both go through it, and it syncs as core
+    const today = await p.ev(`lday(new Date())`);
+    await p.ev(`switchTab('home');var c=document.getElementById('core-cb');c.checked=true;c.dispatchEvent(new Event('change'));'ok'`);
+    assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), true, 'home tick sets the day');
+    assert.ok(await p.ev(`gs().filter(function(s){return lday(s.date)===lday(new Date())}).every(function(s){return s.abs})`), 'abs kept in step');
+    await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
+    assert.strictEqual(s.core['c' + today].done, true, 'core day synced');
+    await p.ev(`switchTab('history');document.querySelector('.hwg.open .jcore').click();'ok'`);
+    assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), false, 'History C unticks the same day');
+    assert.strictEqual(await p.ev(`document.querySelector('.hwg.open .hcard-core')`), null);
+    await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
+    assert.strictEqual(s.core['c' + today].done, false); assert.ok(s.muscleMap && s.muscleMap.Dips === 'Chest/Lower', 'muscle map sent to the Sheet');
+    assert.strictEqual(await p.ev(`'muscleMap' in JSON.parse(localStorage.getItem('ironlog_data'))`), false);
+    step('core tick and History C share one synced day record');
+
     // History: newest week first, labelled Monday to Sunday
     const wk = await p.ev(`(function(){var s=gss();var k=gwk(s[s.length-1].date);var q=k.split('-');return {label:document.querySelector('.hwt').textContent,expect:fwr(k),dow:new Date(q[0],q[1]-1,q[2]).getDay()};})()`);
     assert.strictEqual(wk.label, wk.expect); assert.strictEqual(wk.dow, 1, 'week starts on Monday');
@@ -85,6 +100,15 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.deepStrictEqual(rn.order, ['Leg Day', 'Upper Pull', 'Upper Push', 'Muay Thai']);
     assert.strictEqual(rn.old, 0); assert.ok(rn.renamed > 0); assert.strictEqual(rn.split, 'Leg Day');
     step('rename carries history and split');
+
+    // The weekly plan editor saves into synced data
+    await p.ev(`openSplitEditor();document.querySelector('.split-day-val[data-day="Tue"]').click();'ok'`); await p.wait(100);
+    await p.ev(`document.querySelector('#sd-opts .jsd[data-v="Upper Pull"]').click();'ok'`);
+    assert.strictEqual(await p.ev(`gSplit().Tue`), 'Upper Pull');
+    await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
+    assert.deepStrictEqual({ mon: s.schedule.week.Mon, tue: s.schedule.week.Tue }, { mon: 'Leg Day', tue: 'Upper Pull' }, 'plan synced as schedule');
+    assert.ok(s.schedule.wkm > 1);
+    step('weekly plan editor saves and syncs as schedule');
 
     // A failing sync is shown, not swallowed
     await p.ev(`sSyncUrl('http://127.0.0.1:9/');new Promise(function(r){csync(r);})`);

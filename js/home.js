@@ -17,7 +17,7 @@ function genIns(ss,wk){
   if(planned){var last=null;for(var i=sorted.length-1;i>=0;i--){if(sorted[i].workout===planned){last=sorted[i];break;}}var done=last&&new Date(last.date).toDateString()===now.toDateString();if(!done)ins.push({type:'info',icon:'📅',text:'<strong>'+planned+'</strong> is scheduled for today'});}
   Object.keys(wk).forEach(function(n){var l=null;for(var i=sorted.length-1;i>=0;i--){if(sorted[i].workout===n){l=sorted[i];break;}}if(l){var d=Math.floor((now-new Date(l.date))/86400000);if(d>insRange)ins.push({type:'warn',icon:'⚠️',text:'<strong>'+n+'</strong> not logged in '+d+' days'});}else{ins.push({type:'info',icon:'💡',text:'<strong>'+n+'</strong> not logged yet'});}});
   if(rangeS.length>=2){var lt=rangeS[rangeS.length-1];var pv=null;for(var i=rangeS.length-2;i>=0;i--){if(rangeS[i].workout===lt.workout){pv=rangeS[i];break;}}if(pv){var vf=function(s){return s.reduce(function(a,x){return a+x.kg*x.reps;},0);};var en=Object.keys(lt.exercises),up=0,dn=0;en.forEach(function(x){if(pv.exercises[x]){var cv=vf(lt.exercises[x]),pvv=vf(pv.exercises[x]);if(cv>pvv)up++;else if(cv<pvv)dn++;}});if(up>dn&&up>0)ins.push({type:'pos',icon:'📈',text:'<strong>'+lt.workout+' volume up</strong> — '+up+' improved'});if(dn>up&&dn>0)ins.push({type:'warn',icon:'📉',text:'<strong>'+lt.workout+' volume dropped</strong> on '+dn});}}
-  if(sorted.length>0){var lt2=sorted[sorted.length-1];if(!lt2.abs)ins.push({type:'info',icon:'💪',text:'<strong>Don\'t forget core</strong>'});}
+  if(sorted.length>0){var lt2=sorted[sorted.length-1];if(!coreDone(lday(lt2.date)))ins.push({type:'info',icon:'💪',text:'<strong>Don\'t forget core</strong>'});}
   return ins;
 }
 
@@ -38,11 +38,11 @@ function rHome(){
     iS.querySelectorAll('.ins-range-btn').forEach(function(b){b.addEventListener('click',function(){insRange=parseInt(b.dataset.r);rHome();});});
   }else{iS.innerHTML='';}
   // Core checkbox
-  var aS=document.getElementById('abs-sec');var tds=new Date().toDateString();var hasWK=false,hasCore=false;
-  ss.forEach(function(s){if(new Date(s.date).toDateString()===tds){hasWK=true;if(s.abs)hasCore=true;}});
+  var aS=document.getElementById('abs-sec');var tds=new Date().toDateString(),today=lday(new Date());var hasWK=false,hasCore=coreDone(today);
+  ss.forEach(function(s){if(new Date(s.date).toDateString()===tds)hasWK=true;});
   if(hasWK){
     aS.innerHTML='<div class="hsec" style="padding:14px 18px"><div style="display:flex;align-items:center;gap:12px"><input type="checkbox" id="core-cb" '+(hasCore?'checked':'')+' style="width:22px;height:22px;accent-color:var(--green)"><label for="core-cb" style="font-family:var(--ff);font-size:14px;font-weight:600;cursor:pointer;flex:1">'+(hasCore?'Core trained today ✓':'Core trained today?')+'</label></div></div>';
-    document.getElementById('core-cb').addEventListener('change',function(){var c=this.checked;var d=gd();d.sessions.forEach(function(s){if(new Date(s.date).toDateString()===tds){s.abs=c;s.mt=Date.now();}});sd(d);toast(c?'Core logged!':'Core unmarked');});
+    document.getElementById('core-cb').addEventListener('change',function(){var c=this.checked;setCoreDone(today,c);toast(c?'Core logged!':'Core unmarked');});
   }else{aS.innerHTML='';}
   // Workouts
   var wS=document.getElementById('wk-sec');var di=gDri();

@@ -58,6 +58,6 @@ function finWK(){
   if(!hd){toast('Add at least one set','var(--orange)');return;}
   var dur=WST?Math.floor((Date.now()-WST)/1000):0;
   if(ESI!==null){var ex2=gs()[ESI];updS(ESI,{id:ex2.id,workout:CW,date:ex2.date,exercises:ed,duration:ex2.duration||0,abs:ex2.abs||false});toast('Updated!');}
-  else{addS({workout:CW,date:new Date().toISOString(),exercises:ed,duration:dur,abs:false});clDr();toast('Saved!');}
+  else{addS({workout:CW,date:new Date().toISOString(),exercises:ed,duration:dur,abs:coreDone(lday(new Date()))});clDr();toast('Saved!');}
   goHome();
 }
