@@ -20,11 +20,17 @@ body{background:var(--bg);position:fixed;inset:0;overflow:hidden}
 .ins.warn{background:var(--warn-bg);border-color:var(--warn-brd)}
 .ins.info{background:var(--info-bg);border-color:var(--info-brd)}
 .ins-icon{font-size:22px;flex-shrink:0;line-height:1}
-.ins-text{flex:1;font-size:14px;line-height:1.5;color:var(--t1)}.ins-text strong{color:var(--t1);font-weight:800}
-.ins-x{background:none;border:none;color:var(--t2);cursor:pointer;font-size:16px;padding:2px 4px;flex-shrink:0}
-.ins-range{display:flex;gap:4px;margin-bottom:10px}
-.ins-range-btn{background:var(--card);border:1px solid var(--brd);color:var(--t2);border-radius:var(--rs);padding:5px 12px;font-family:var(--ff);font-size:11px;font-weight:600;cursor:pointer}
-.ins-range-btn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* Smart banner (js/alerts.js): up to 3 alerts, each with an action and a snooze, then "+N more" */
+.al-wrap{margin:0 16px 14px;display:flex;flex-direction:column;gap:8px}
+.al{padding:10px 4px 10px 12px;gap:10px}
+.al .ins-icon{font-size:20px;margin-top:1px}
+.al-m{flex:1;min-width:0}
+.al-t{font-family:var(--ff);font-size:14px;font-weight:800;color:var(--t1);overflow-wrap:anywhere}
+.al-s{font-size:13px;line-height:1.35;color:var(--t2);margin-top:2px;overflow-wrap:anywhere}
+.al-b{margin-top:8px;min-height:36px;padding:0 14px;border:2px solid var(--t1);border-radius:var(--rs);background:var(--card);color:var(--t1);font-family:var(--ff);font-size:13px;font-weight:700;cursor:pointer}
+.al-x{flex-shrink:0;width:36px;height:36px;margin:-8px 0;border:none;background:none;color:var(--t2);font-size:20px;line-height:1;cursor:pointer}
+.al-more{align-self:center;min-height:36px;padding:0 14px;border:none;background:none;font-family:var(--ff);font-size:13px;font-weight:700;color:var(--t2);cursor:pointer}
+.al-b:active,.al-x:active,.al-more:active{transform:scale(0.95)}
 .wcards{display:flex;flex-direction:column;gap:10px}
 .wcard{background:var(--card);border:2px solid var(--t1);border-radius:var(--r);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.3s ease;box-shadow:var(--sh)}
 .wcard:active{transform:scale(0.98);background:var(--card2)}

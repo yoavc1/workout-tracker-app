@@ -67,10 +67,10 @@ document.getElementById('mov-date').addEventListener('click',function(e){if(e.ta
 // ═══════ INIT ═══════
 (function(){var di=gDri();if(di&&!drHas(di.sets))clDr();})();
 iTheme();
-var ci=parseInt(sessionStorage.getItem('ins_idx')||'0');sessionStorage.setItem('ins_idx',String(ci+1));sessionStorage.removeItem('ins_dis');
 // Sync on launch, when the app comes back to the foreground (iOS resumes home-screen apps rather than relaunching them)
 // and when the connection returns; flush a pending save when it goes to the background.
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')csync();else if(syncT)csync();});
 addEventListener('online',function(){csync();});
 rHome();
+alMidnight();
 csync();

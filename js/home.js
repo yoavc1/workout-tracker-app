@@ -1,42 +1,15 @@
-// Workout Tracker — Navigation, insights, home screen, manage workouts
+// Workout Tracker — Navigation, home screen, manage workouts
 // ═══════ NAV ═══════
 function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.ntab').forEach(function(n){n.classList.remove('active');});var b=document.querySelector('.ntab[data-tab="'+t+'"]');if(b)b.classList.add('active');document.getElementById('nav-wrap').style.display='flex';document.getElementById('bbar').style.display='none';if(t==='home'){document.getElementById('s-home').classList.add('active');rHome();}else if(t==='progress'){document.getElementById('s-prog').classList.add('active');setTimeout(rProg,100);}else if(t==='history'){document.getElementById('s-hist').classList.add('active');rHist();}else if(t==='goals'){document.getElementById('s-goals').classList.add('active');rGoals(true);}}
 function goHome(){CW=null;CL=[];CS={};OE={};ESI=null;WDAY=null;WST=null;clearInterval(RTI);clearInterval(metaInterval);switchTab('home');}
-// ═══════ INSIGHTS ═══════
-var insRange=7;
-function genIns(ss,wk){
-  if(!ss.length)return[];var ins=[];var now=new Date();var wa=new Date(now);wa.setDate(wa.getDate()-insRange);
-  var sorted=ss.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-  var rangeS=sorted.filter(function(s){return new Date(s.date)>=wa;});
-  var ap={},wp=[];sorted.forEach(function(s){Object.keys(s.exercises).forEach(function(x){s.exercises[x].forEach(function(t){var p=ap[x]||0;if(t.kg>p){ap[x]=t.kg;if(new Date(s.date)>=wa)wp.push({x:x,kg:t.kg});}});});});
-  if(wp.length>0){var b=wp[wp.length-1];ins.push({type:'pos',icon:'🏆',text:'<strong>New PR</strong> — '+b.x+' hit '+b.kg+' kg'});}
-  var rd={};rangeS.forEach(function(s){rd[new Date(s.date).toDateString()]=true;});
-  var sc=Object.keys(rd).length;var rl=insRange===7?'week':insRange===14?'2 weeks':'month';
-  if(sc>=1)ins.push({type:'pos',icon:'🔥',text:'<strong>'+sc+' session'+(sc!==1?'s':'')+' this '+rl+'</strong>'});
-  var split=gSplit();var di=(now.getDay()+6)%7;var planned=split[DAYS[di]];
-  if(planned){var last=null;for(var i=sorted.length-1;i>=0;i--){if(sorted[i].workout===planned){last=sorted[i];break;}}var done=last&&new Date(last.date).toDateString()===now.toDateString();if(!done)ins.push({type:'info',icon:'📅',text:'<strong>'+planned+'</strong> is scheduled for today'});}
-  Object.keys(wk).forEach(function(n){var l=null;for(var i=sorted.length-1;i>=0;i--){if(sorted[i].workout===n){l=sorted[i];break;}}if(l){var d=Math.floor((now-new Date(l.date))/86400000);if(d>insRange)ins.push({type:'warn',icon:'⚠️',text:'<strong>'+n+'</strong> not logged in '+d+' days'});}else{ins.push({type:'info',icon:'💡',text:'<strong>'+n+'</strong> not logged yet'});}});
-  if(rangeS.length>=2){var lt=rangeS[rangeS.length-1];var pv=null;for(var i=rangeS.length-2;i>=0;i--){if(rangeS[i].workout===lt.workout){pv=rangeS[i];break;}}if(pv){var vf=function(s){return s.reduce(function(a,x){return a+x.kg*x.reps;},0);};var en=Object.keys(lt.exercises),up=0,dn=0;en.forEach(function(x){if(pv.exercises[x]){var cv=vf(lt.exercises[x]),pvv=vf(pv.exercises[x]);if(cv>pvv)up++;else if(cv<pvv)dn++;}});if(up>dn&&up>0)ins.push({type:'pos',icon:'📈',text:'<strong>'+lt.workout+' volume up</strong> — '+up+' improved'});if(dn>up&&dn>0)ins.push({type:'warn',icon:'📉',text:'<strong>'+lt.workout+' volume dropped</strong> on '+dn});}}
-  if(sorted.length>0){var lt2=sorted[sorted.length-1];if(!coreDone(lday(lt2.date)))ins.push({type:'info',icon:'💪',text:'<strong>Don\'t forget core</strong>'});}
-  return ins;
-}
-
 // ═══════ HOME ═══════
 function uSub(){var n=gs().length,st=gSt();document.getElementById('hsub').textContent=(n===0?'Ready for your first workout?':n+' workout'+(n!==1?'s':'')+' logged')+(gSyncUrl()&&st&&st.ok===false?' · ⚠️ not synced':'');}
 function rHome(){
   document.getElementById('bbar').style.display='none';
-  var ss=gs();var wk=gw();
+  var wk=gw();
   uSub();rToday();
-  // Insight
-  var iS=document.getElementById('ins-sec');var ins=genIns(ss,wk);
-  var ii=parseInt(sessionStorage.getItem('ins_idx')||'0');
-  if(sessionStorage.getItem('ins_dis')){iS.innerHTML='';}
-  else if(ins.length>0){if(ii>=ins.length)ii=0;var ix=ins[ii];
-    var rangeH='<div class="ins-range"><button class="ins-range-btn'+(insRange===7?' active':'')+'" data-r="7">Week</button><button class="ins-range-btn'+(insRange===14?' active':'')+'" data-r="14">2 Weeks</button><button class="ins-range-btn'+(insRange===30?' active':'')+'" data-r="30">Month</button></div>';
-    iS.innerHTML='<div class="hsec"><div class="hsec-t">Insights<button class="ins-x" id="ins-x" style="margin-left:auto">×</button></div>'+rangeH+'<div class="ins '+ix.type+'"><div class="ins-icon">'+(ix.icon||'')+'</div><div class="ins-text">'+ix.text+'</div></div></div>';
-    document.getElementById('ins-x').addEventListener('click',function(){iS.innerHTML='';sessionStorage.setItem('ins_dis','1');sessionStorage.setItem('ins_idx',String(ii+1));});
-    iS.querySelectorAll('.ins-range-btn').forEach(function(b){b.addEventListener('click',function(){insRange=parseInt(b.dataset.r);rHome();});});
-  }else{iS.innerHTML='';}
+  // Alerts, rebuilt from the data (js/alerts.js)
+  rAlerts();
   // Core chip, every day (js/core.js)
   rCoreChip(document.getElementById('abs-sec'),lday(new Date()));
   // Workouts
