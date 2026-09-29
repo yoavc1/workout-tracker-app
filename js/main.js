@@ -10,7 +10,6 @@ document.getElementById('btn-exp').addEventListener('click',expD);
 document.getElementById('btn-impt').addEventListener('click',function(){document.getElementById('impf').click();});
 document.getElementById('impf').addEventListener('change',impD);
 tap2(document.getElementById('btn-clr'),function(){localStorage.removeItem('ironlog_data');clDr();toast(gSyncUrl()?'Cleared on this device':'Cleared');goHome();});
-document.getElementById('csel').addEventListener('change',rChart);
 document.getElementById('nav').addEventListener('click',function(e){var t=e.target.closest('.ntab');if(t&&t.dataset.tab)switchTab(t.dataset.tab);});
 document.getElementById('nav-plus').addEventListener('click',function(){
   var wk=gw();var opts=document.getElementById('quick-opts');
