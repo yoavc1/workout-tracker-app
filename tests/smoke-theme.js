@@ -101,6 +101,8 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     const shot = async (name, t) => { await p.wait(350); await p.shot(path.join(shots, name + '-' + t + '.png')); };
     const closeAll = `document.querySelectorAll('.mov.active,.hmpop-ov.active').forEach(function(m){m.classList.remove('active');});`;
     const sheet = async (name, t, open) => { const r = await p.ev(`(function(){${open}})()`); if (r === false) return console.log('    (skipped ' + name + ')'); await shot(name, t); await p.ev(closeAll + `'ok'`); };
+    // Today's core has a timed and a reps exercise, so both themes show the same logged state
+    await p.ev(`if(typeof setCoreItems==='function')setCoreItems(lday(new Date()),[{name:'Plank',mode:'time',sets:[{secs:60},{secs:60},{secs:45}]},{name:'Leg Raise',mode:'reps',sets:[{reps:15},{reps:12}]}]);'ok'`);
     for (const t of ['light', 'dark']) {
       await p.ev(`sTheme('${t}');goHome();document.getElementById('s-home').scrollTop=0;document.getElementById('toast').classList.remove('show');'ok'`);
       await shot('01-home', t);
@@ -148,6 +150,8 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
         await sheet('21-new-goal', t, `openGoalNew();`);
         await sheet('22-goal-detail', t, `openGoal('${gid}');`);
       } else console.log('    (skipped 20-22 goals)');
+      // Today's core sheet, with a timed and a reps exercise
+      await sheet('23-core-sheet', t, `if(typeof openCore!=='function')return false;switchTab('home');openCore(lday(new Date()));`);
     }
     step('screenshots of every screen and sheet in both themes');
 
