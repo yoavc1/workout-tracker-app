@@ -117,18 +117,30 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
       await shot('07-workout-timer', t);
       await sheet('08-add-exercise', t, `document.getElementById('btn-ae').click();`);
       await sheet('09-set-timer', t, `document.getElementById('btn-ct').click();`);
-      await sheet('10-rename-exercise', t, `var b=document.querySelector('.jren');if(!b)return false;b.click();`);
-      await p.ev(`clDr();goHome();switchTab('progress');'ok'`); await p.wait(1600);
-      await shot('11-progress', t);
-      await sheet('12-calendar-day', t, `var c=document.querySelector('.hmc.clk');if(!c)return false;c.click();`);
+      // Dragging an exercise by its handle (Sortable's fallback clone carries the drag shadow), released mid-list
+      const hd = await p.ev(`(function(){var e=document.querySelectorAll('#elist .ecard .jdrag')[1];if(!e)return null;var r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()`);
+      if (hd) {
+        const mouse = (type, x, y) => p.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+        await mouse('mousePressed', hd.x, hd.y);
+        for (let i = 1; i <= 8; i++) { await mouse('mouseMoved', hd.x + i * 2, hd.y - i * 22); await p.wait(40); }
+        await shot('10-drag-exercise', t); await mouse('mouseReleased', hd.x + 16, hd.y - 176); await p.wait(300);
+      } else console.log('    (skipped 10-drag-exercise)');
+      // Finish with a changed list: "Also update Legs?"
+      await sheet('11-also-update', t, `if(typeof askTpl!=='function')return false;addEx('Leg Press');var ch=tplDiff();if(!ch)return false;askTpl(ch,function(){});`);
+      await p.ev(`clDr();goHome();document.getElementById('toast').classList.remove('show');'ok'`);
+      await sheet('12-edit-exercises', t, `if(typeof showExEd!=='function')return false;showManage();showExEd('Legs');`);
+      await sheet('13-rename-exercise', t, `if(typeof showExEd!=='function')return false;showManage();showExEd('Legs');var b=document.querySelector('#exed .exr .jer');if(!b)return false;b.click();`);
+      await p.ev(`switchTab('progress');'ok'`); await p.wait(1600);
+      await shot('14-progress', t);
+      await sheet('15-calendar-day', t, `var c=document.querySelector('.hmc.clk');if(!c)return false;c.click();`);
       // A chart with data (all time), then the section below it
       await p.ev(`var b=document.querySelector('#cttog [data-range="ALL"]');if(b)b.click();var s=document.getElementById('csel');if(s&&s.querySelector('option[value="Squat - Dumbbell"]')){s.value='Squat - Dumbbell';s.dispatchEvent(new Event('change'));}var o=document.querySelector('#ovtog [data-range="ALL"]');if(o)o.click();var c=document.getElementById('ccont');if(c)document.getElementById('s-prog').scrollTop=c.offsetTop-150;'ok'`); await p.wait(1400);
-      await shot('13-progress-chart', t);
+      await shot('16-progress-chart', t);
       await p.ev(`switchTab('history');'ok'`); await p.wait(200);
-      await p.ev(`toast('Core added');'ok'`); await p.wait(300); await shot('14-history', t);
+      await p.ev(`toast('Core added');'ok'`); await p.wait(300); await shot('17-history', t);
       await p.ev(`document.getElementById('toast').classList.remove('show');'ok'`);
-      await sheet('15-change-date', t, `var b=document.querySelector('.hwg.open .jdt');if(!b)return false;b.click();`);
-      await p.ev(`goSet();'ok'`); await shot('16-settings', t);
+      await sheet('18-change-date', t, `var b=document.querySelector('.hwg.open .jdt');if(!b)return false;b.click();`);
+      await p.ev(`goSet();'ok'`); await shot('19-settings', t);
     }
     step('screenshots of every screen and sheet in both themes');
 
