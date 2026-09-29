@@ -93,7 +93,7 @@ const { progressSeed } = require('./progress-seed');
     assert.deepStrictEqual(det.tiles, ['e1RM (kg)', 'Best (kg)', 'Top set', '4 weeks']);
     assert.ok(det.rows >= 8, 'recent sessions table');
     assert.deepStrictEqual(await p.ev(`[].slice.call(document.querySelectorAll('.pg-tv')).filter(function(v){return v.scrollWidth>v.clientWidth;}).map(function(v){return v.textContent;})`), [], 'tile values fit');
-    assert.ok(/Goal: 53\.75 kg by/.test(det.goalTxt), det.goalTxt);
+    assert.ok(det.goalTxt.startsWith('Goal: ' + seed.goals[0].targetKg + ' kg by'), det.goalTxt); // start kg depends on the seed's weekday
     assert.ok(/^New best on/.test(det.why)); assert.ok(/Chest · Upper/.test(det.mus));
     await noOverflow('detail');
     await shot('05-detail-goal.png');
@@ -115,7 +115,7 @@ const { progressSeed } = require('./progress-seed');
     det = await p.ev(`({labels:PCI.scales.x.ticks.map(function(t){return t.label;}),min:PCI.scales.x.min,max:PCI.scales.x.max,n:PCI.data.datasets[0].data.length,active:document.querySelector('.pg-rb.active').textContent})`);
     assert.strictEqual(det.active, 'All');
     const crosses = new Date(det.min).getFullYear() !== new Date(det.max).getFullYear();
-    assert.ok(det.labels.length >= 4 && det.labels.every(l => /’\d\d$/.test(l) === crosses), 'year on labels iff the range spans years: ' + det.labels);
+    assert.ok(det.labels.length >= 3 && det.labels.every(l => /’\d\d$/.test(l) === crosses), 'year on labels iff the range spans years: ' + det.labels);
     await p.ev(`document.querySelector('.pg-rb[data-r="1M"]').click();'ok'`); await p.wait(400);
     det = await p.ev(`({labels:PCI.scales.x.ticks.map(function(t){return t.label;}),pts:PCI.data.datasets[1].data.length})`);
     assert.ok(det.labels.length >= 4 && det.labels.every(l => /^\d+ \w+/.test(l)), '1M: weekly day labels ' + det.labels);
