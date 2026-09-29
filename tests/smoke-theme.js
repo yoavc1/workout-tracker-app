@@ -74,8 +74,8 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
 
     // Charts take their colours from CSS variables as they draw, so a live flip must redraw the open ones:
     // Progress v2's exercise detail and a goal's detail sheet
-    const charts = async () => p.ev(`(function(){var t1=getComputedStyle(document.documentElement).getPropertyValue('--t1').trim(),o={};
-      if(typeof PCI!=='undefined'&&PCI)o.prog=JSON.stringify(PCI.config.data.datasets.map(function(x){return x.borderColor;})).indexOf(t1)>=0||JSON.stringify(PCI.config.options.scales).indexOf(getComputedStyle(document.documentElement).getPropertyValue('--t2').trim())>=0;
+    const charts = async () => p.ev(`(function(){var v=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();},t1=v('--t1'),o={};
+      if(typeof PCI!=='undefined'&&PCI){var x=PCI.config.options.scales.x;o.prog=x.grid.color===v('--brd')&&x.ticks.color===v('--t3')&&PCI.config.data.datasets[0].pointBackgroundColor===v('--card');}
       if(typeof GCI!=='undefined'&&GCI)o.goal=GCI.config.data.datasets.some(function(x){return x.borderColor===t1;});return o;})()`);
     const hasPg = await p.ev(`typeof pgOpen==='function'`), hasGoals = await p.ev(`typeof openGoal==='function'`);
     if (hasPg) {
@@ -121,10 +121,10 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
 
     // Screenshots of every screen and sheet in both themes. Sheets that another track has since replaced are skipped.
     const shot = async (name, t) => { await p.wait(350); await p.shot(path.join(shots, name + '-' + t + '.png')); };
-    const closeAll = `document.querySelectorAll('.mov.active,.hmpop-ov.active').forEach(function(m){m.classList.remove('active');});`;
+    const closeAll = `document.querySelectorAll('.mov.active,.hmpop-ov.active,.sch.active').forEach(function(m){m.classList.remove('active');});`;
     const sheet = async (name, t, open) => { const r = await p.ev(`(function(){${open}})()`); if (r === false) return console.log('    (skipped ' + name + ')'); await shot(name, t); await p.ev(closeAll + `'ok'`); };
-    // Today's core has a timed and a reps exercise, so both themes show the same logged state
-    await p.ev(`if(typeof setCoreItems==='function')setCoreItems(lday(new Date()),[{name:'Plank',mode:'time',sets:[{secs:60},{secs:60},{secs:45}]},{name:'Leg Raise',mode:'reps',sets:[{reps:15},{reps:12}]}]);'ok'`);
+    // Today's core has a timed and a reps exercise, and there's a week plan, so both themes show the same state
+    await p.ev(`if(typeof setCoreItems==='function')setCoreItems(lday(new Date()),[{name:'Plank',mode:'time',sets:[{secs:60},{secs:60},{secs:45}]},{name:'Leg Raise',mode:'reps',sets:[{reps:15},{reps:12}]}]);sSplit({Mon:'Legs',Wed:'Upper Pull',Fri:'Upper Push'});'ok'`);
     for (const t of ['light', 'dark']) {
       await p.ev(`sTheme('${t}');goHome();document.getElementById('s-home').scrollTop=0;document.getElementById('toast').classList.remove('show');'ok'`);
       await shot('01-home', t);
@@ -133,8 +133,11 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
       await shot('02-home-insights', t);
       await sheet('03-start-workout', t, `document.getElementById('nav-plus').click();`);
       await sheet('04-manage-workouts', t, `showManage();`);
-      await sheet('05-weekly-split', t, `if(typeof openSplitEditor!=='function')return false;sSplit({Mon:'Legs',Wed:'Upper Pull',Fri:'Upper Push'});openSplitEditor();`);
-      await sheet('06-split-day', t, `if(typeof openSD!=='function')return false;openSD('Mon');`);
+      // Schedule: Today and the week plan, a day's workout picker, the month calendar and a day's pop-up
+      await sheet('05-schedule', t, `openSched();`);
+      await sheet('06-split-day', t, `openSched();pickDay('Mon');`);
+      await sheet('06b-schedule-calendar', t, `openSched();document.getElementById('sch-cal').scrollIntoView({block:'end'});`);
+      await sheet('06c-calendar-day', t, `openSched();openDay(lday(gs()[gs().length-1].date));`);
       // Workout: one exercise open with a new-PR set, and the rest timer running
       await p.ev(`openWK('Legs');var h=document.querySelector('.ecard .jtog');if(h)h.click();var a=document.querySelector('.jadd');if(a)a.click();'ok'`); await p.wait(150);
       await p.ev(`var k=document.querySelector('.jkg'),r=document.querySelector('.jrp');if(k){k.value='99';k.dispatchEvent(new Event('input'));}if(r){r.value='8';r.dispatchEvent(new Event('input'));}startT(90);'ok'`);
@@ -156,10 +159,12 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
       await sheet('13-rename-exercise', t, `if(typeof showExEd!=='function')return false;showManage();showExEd('Legs');var b=document.querySelector('#exed .exr .jer');if(!b)return false;b.click();`);
       await p.ev(`switchTab('progress');'ok'`); await p.wait(1600);
       await shot('14-progress', t);
-      await sheet('15-calendar-day', t, `var c=document.querySelector('.hmc.clk');if(!c)return false;c.click();`);
-      // A chart with data (all time), then the section below it
-      await p.ev(`var b=document.querySelector('#cttog [data-range="ALL"]');if(b)b.click();var s=document.getElementById('csel');if(s&&s.querySelector('option[value="Squat - Dumbbell"]')){s.value='Squat - Dumbbell';s.dispatchEvent(new Event('change'));}var o=document.querySelector('#ovtog [data-range="ALL"]');if(o)o.click();var c=document.getElementById('ccont');if(c)document.getElementById('s-prog').scrollTop=c.offsetTop-150;'ok'`); await p.wait(1400);
-      await shot('16-progress-chart', t);
+      // An exercise's detail chart, then its muscle group picker and Merge into…
+      await p.ev(`pgOpen('Squat - Dumbbell');'ok'`); await p.wait(600);
+      await shot('15-progress-detail', t);
+      await sheet('16-progress-muscle', t, `pgMus('Squat - Dumbbell');`);
+      await sheet('16b-progress-merge', t, `pgMerge('Squat - Dumbbell');`);
+      await p.ev(`pgBack();'ok'`);
       await p.ev(`switchTab('history');'ok'`); await p.wait(200);
       await p.ev(`toast('Core added');'ok'`); await p.wait(300); await shot('17-history', t);
       await p.ev(`document.getElementById('toast').classList.remove('show');'ok'`);
