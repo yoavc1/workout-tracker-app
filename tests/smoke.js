@@ -16,6 +16,10 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await p.go(APP); await p.ev(SEED); await p.go(APP);
     await p.shot(path.join(shots, '1-home.png'));
 
+    // Markup: every screen, the nav and each overlay sit directly in <body>. An unclosed tag from a merge once nested
+    // them inside the Progress screen, hiding the nav and the other tabs.
+    const nested = await p.ev(`[].slice.call(document.querySelectorAll('.screen,#nav-wrap,#bbar,.mov,.hmpop-ov,.sch')).filter(function(e){return e.parentNode!==document.body;}).map(function(e){return e.id||e.className;})`);
+    assert.deepStrictEqual(nested, [], 'top-level elements nested inside something else');
     // Layout: the nav sits fully on screen and scrolled content ends above it
     const nav = await p.ev(`(function(){var r=document.getElementById('nav').getBoundingClientRect();return {top:r.top,bottom:r.bottom,h:innerHeight};})()`);
     assert.ok(nav.top > 0 && nav.bottom <= nav.h, 'nav on screen ' + JSON.stringify(nav));
