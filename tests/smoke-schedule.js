@@ -13,7 +13,7 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
   var d=gd(),at=function(n,h){var x=new Date();x.setDate(x.getDate()+n);x.setHours(h,0,0,0);return x.toISOString();};
   d.sessions.push({id:'two',mt:1,workout:'Legs',date:at(-3,19),exercises:{'Squat - Dumbbell':[{kg:50,reps:8}]},duration:1800});
   [-3,-2].forEach(function(n){var k2='c'+addD(t,n);d.core[k2]={id:k2,mt:1,date:k2.slice(1),done:true,items:[]};});
-  d.schedule={week:wk,wkm:Date.now()-7*864e5,moves:{}};sd(d);return 'ok';})()`;
+  d.schedule={week:wk,wkm:new Date(at(-7,12)).getTime(),moves:{}};sd(d);return 'ok';})()`;
 
 (async () => {
   const root = path.join(__dirname, '..');
@@ -100,13 +100,14 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
       var c=T.cal(-6);r.done=[c.classList.contains('done'),getComputedStyle(c).backgroundColor===T.col(wColor('Upper Push'))];
       c=T.cal(-3);r.two=/linear-gradient/.test(getComputedStyle(c).backgroundImage)&&!!c.querySelector('.cal-k');
       c=T.cal(-4);r.miss=!!c.querySelector('.cal-m')&&!c.classList.contains('done');
+      r.miss7=!!T.cal(-7).querySelector('.cal-m');
       c=T.cal(-2);r.core=!!c.querySelector('.cal-k')&&!c.querySelector('.cal-m');
       c=T.cal(1);r.plan=c.classList.contains('plan')&&getComputedStyle(c).borderTopColor===T.col(wColor('Upper Push'));
       c=T.cal(0);r.today=c.classList.contains('today')&&c.classList.contains('plan');
       c=T.cal(-1);r.moved=!c.querySelector('.cal-m');
       c=T.cal(-8);r.before=!c.querySelector('.cal-m')&&missedOn(T.day(-8)).length===0&&plannedOn(T.day(-8))[0]==='Legs';
       return r;})()`);
-    assert.deepStrictEqual(cal, { done: [true, true], two: true, miss: true, core: true, plan: true, today: true, moved: true, before: true });
+    assert.deepStrictEqual(cal, { done: [true, true], two: true, miss: true, core: true, plan: true, today: true, moved: true, before: true, miss7: true });
     await p.ev(`SCM=0;rCal(gd());document.getElementById('sch-cal').scrollIntoView({block:'end'});'ok'`); await p.wait(100);
     await shot('08-calendar.png');
     const m0 = await text('.cal-t');
@@ -136,8 +137,13 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await click('#hp-det [data-act="log"][data-w="Legs"]'); await p.wait(200);
     assert.deepStrictEqual(await p.ev('__wk.pop()'), ['Legs', null, null, await p.ev('T.day(-4)')], 'opens the workout for that date');
     assert.deepStrictEqual(await p.ev(`[schOpen(),document.getElementById('hmpop-ov').classList.contains('active'),document.getElementById('s-wk').classList.contains('active')]`), [false, false, true]);
-    await click('#btn-bk'); await p.wait(200);
-    step('day pop-up: details of a logged day, and logging a missed past day');
+    // Logging it saves the session on that day, which fills the calendar cell and clears its red dot
+    assert.strictEqual(await text('#wmeta'), await p.ev(`fds(T.day(-4)+'T12:00')`), 'the workout screen shows the date being logged');
+    await p.ev(`document.querySelector('.ecard .jtog').click();document.querySelector('.ecard .jadd').click();var k=document.querySelector('.jkg'),r=document.querySelector('.jrp');k.value='52.5';k.dispatchEvent(new Event('input'));r.value='8';r.dispatchEvent(new Event('input'));document.getElementById('btn-fin').click();'ok'`); await p.wait(300);
+    const logged = await p.ev(`(function(){var s=gs().filter(function(x){return x.workout==='Legs'&&x.exercises['Squat - Dumbbell']&&x.exercises['Squat - Dumbbell'][0].kg===52.5;}),c=T.cal(-4);
+      return {n:s.length,day:s.length&&lday(s[0].date),miss:missedOn(T.day(-4)),done:c.classList.contains('done'),dot:!!c.querySelector('.cal-m'),home:document.getElementById('s-home').classList.contains('active')};})()`);
+    assert.deepStrictEqual(logged, { n: 1, day: await p.ev('T.day(-4)'), miss: [], done: true, dot: false, home: true }, 'session saved on the chosen past day');
+    step('day pop-up: details of a logged day, and logging a missed past day on that date');
 
     // Week plan: tap a rest day and pick a workout
     await click('#btn-split'); await p.wait(400);
@@ -170,8 +176,8 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     assert.deepStrictEqual(sw.today, ['Upper Push'], 'the Today card follows');
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.deepStrictEqual([s.schedule.week[d0], s.schedule.week[d1], s.schedule.week[rest]], ['Upper Push', 'Upper Pull', 'Muay Thai'], 'plan synced');
-    // Changing the plan starts it afresh: day -4's red dot goes, and so does anything to move
-    assert.deepStrictEqual(await p.ev(`[!!T.cal(-4).querySelector('.cal-m'),missedDays(3).length,planFrom(gd())===T.t]`), [false, 0, true]);
+    // Changing the plan starts it afresh: day -7's red dot goes, and so does anything to move
+    assert.deepStrictEqual(await p.ev(`[!!T.cal(-7).querySelector('.cal-m'),missedDays(3).length,planFrom(gd())===T.t]`), [false, 0, true]);
     await p.ev(`SCM=0;rCal(gd());'ok'`);
     step('week plan: drag to swap two days, synced; red dots count from the change');
 
