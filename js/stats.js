@@ -90,6 +90,12 @@ function groupTrend(list,now){
   var ch=[];list.forEach(function(e){if(e.idle)return;var c=pctChange(e.pts,ST.TREND_DAYS,now);if(c!=null)ch.push(c);});
   return ch.length?Math.round(ch.reduce(function(a,b){return a+b;},0)/ch.length*10)/10:null;
 }
+// The latest day ticked done in the daily core record (noon that local day, in ms); null if none
+function lastCoreDay(d){
+  var t=null;Object.keys(d.core||{}).forEach(function(k){var r=d.core[k],m=r&&r.done&&/^(\d{4})-(\d\d)-(\d\d)$/.exec(r.date||k.slice(1));
+    if(m){var x=new Date(+m[1],m[2]-1,+m[3],12).getTime();if(t==null||x>t)t=x;}});
+  return t;
+}
 // Muscle groups in MUSCLES order (then Other), each with its trained sub-groups:
 // {main, status, trend, spw (sets per week), last, ex: [names], subs: [{sub, status, trend, spw, last, ex}]}
 function groupStats(ex,d,now){
@@ -106,6 +112,10 @@ function groupStats(ex,d,now){
     var subs=(MUSCLES[g]||[]).slice();list.forEach(function(e){if(subs.indexOf(e.sub)<0)subs.push(e.sub);});
     var o=agg(list,g,{main:g});
     o.subs=subs.map(function(sb){var l=list.filter(function(e){return e.sub===sb;});return l.length?agg(l,g+'/'+sb,{sub:sb}):null;}).filter(Boolean);
+    // Core ticked in the daily core record is Core training too: it keeps the card from reading "not trained lately",
+    // while status and trend still come from the lifts (voting on their last verdicts when none was lifted lately)
+    var cd=g==='Core'&&lastCoreDay(d);
+    if(cd&&cd>o.last){o.last=cd;if(o.status==='idle'&&now-cd<=ST.IDLE_DAYS*864e5)o.status=groupStatus(list.map(function(e){return{status:e.status};}));}
     out.push(o);
   });
   return out;

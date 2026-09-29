@@ -15,7 +15,7 @@ const S = (daysAgo, exercises, workout = 'W') => ({ id: 'x' + (++sid), mt: 1, wo
 const W = (kg, ...reps) => reps.map(r => ({ kg, reps: r }));
 const B = (...reps) => reps.map(r => ({ kg: 0, reps: r }));
 const app = loadApp(FILES, {});
-const { exStats, groupStats, groupStatus, groupTrend, pctChange, trainFreq, status, ST, pgTicks, pgRange, pgPace, pgDay } = app;
+const { exStats, groupStats, groupStatus, groupTrend, pctChange, trainFreq, status, lastCoreDay, ST, pgTicks, pgRange, pgPace, pgDay } = app;
 const pts = vs => vs.map(([d, v]) => ({ t: NOW - d * DAY, v }));
 
 // ── pctChange: latest session vs the last one at least `days` before now ──
@@ -86,6 +86,21 @@ const G2 = J(groupStats(exStats(d, NOW), d, NOW)), arms2 = G2.find(g => g.main =
 assert.ok(arms2.subs.find(s => s.sub === 'Triceps').ex.includes('Dips'));
 assert.ok(!G2.find(g => g.main === 'Chest').subs.some(s => s.sub === 'Lower'), 'Chest · Lower now empty');
 assert.strictEqual(Math.round((arms2.spw - byMain.Arms.spw) * 4), dips, 'dips sets moved to Arms');
+// Daily core ticks count as Core training: they keep the card active and set its last day, but never make a card
+const core = (...days) => Object.fromEntries(days.map(([k, done]) => ['c' + k, { id: 'c' + k, mt: 1, date: k, done, items: [] }]));
+const dayAgo = n => { const x = new Date(NOW - n * DAY); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+assert.strictEqual(lastCoreDay({ core: {} }), null);
+assert.strictEqual(lastCoreDay({ core: core([dayAgo(9), true], [dayAgo(2), false], [dayAgo(30), true]) }), pgDay(dayAgo(9)) + 12 * 36e5, 'latest done day, at noon');
+d.muscles = {}; ex = exStats(d, NOW);
+const coreCard = c => J(groupStats(ex, Object.assign({}, d, { core: c }), NOW)).find(g => g.main === 'Core');
+assert.strictEqual(coreCard({}).status, 'idle', 'no core days: the lift decides');
+let cc = coreCard(core([dayAgo(3), true]));
+assert.strictEqual(cc.status, 'progressing', 'core ticked 3 days ago: active, judged on the lift\'s last verdict');
+assert.strictEqual(cc.last, pgDay(dayAgo(3)) + 12 * 36e5); assert.strictEqual(cc.trend, null); assert.strictEqual(cc.spw, 0);
+assert.strictEqual(coreCard(core([dayAgo(3), false])).status, 'idle', 'an unticked day is not training');
+cc = coreCard(core([dayAgo(25), true]));
+assert.strictEqual(cc.status, 'idle', 'core days older than 3 weeks'); assert.strictEqual(cc.last, pgDay(dayAgo(25)) + 12 * 36e5, 'but they still count as the last day trained');
+assert.ok(!J(groupStats(exStats({ sessions: [S(3, { Squat: W(60, 5) })] }, NOW), { sessions: [S(3, { Squat: W(60, 5) })], core: core([dayAgo(1), true]) }, NOW)).some(g => g.main === 'Core'), 'core days alone add no Core card');
 // Unknown names go to Other, after the real groups
 G = J(groupStats(exStats({ sessions: [S(3, { 'Sled Push': W(80, 10) }), S(2, { Squat: W(60, 5) })] }, NOW), { sessions: [S(3, { 'Sled Push': W(80, 10) }), S(2, { Squat: W(60, 5) })] }, NOW));
 assert.deepStrictEqual(G.map(g => g.main), ['Legs', 'Other']);
