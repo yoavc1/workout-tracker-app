@@ -73,8 +73,7 @@ function gSyncUrl(){return localStorage.getItem('ironlog_sync_url')||'';}
 function sSyncUrl(u){localStorage.setItem('ironlog_sync_url',u);}
 function gPRs(){var p={};gss().forEach(function(s){Object.keys(s.exercises).forEach(function(x){s.exercises[x].forEach(function(t){if(!p[x]||t.kg>p[x])p[x]=t.kg;});});});return p;}
 // ═══════ STATE ═══════
-var CW=null,CL=[],CS={},OE={},ESI=null,WDAY=null,PCI=null,WST=null,RTI=null,RS=0,HMO=0,CTR='W',OVTR='W';
-var DWM={},DABS={},DPROG={};
+var CW=null,CL=[],CS={},OE={},ESI=null,WDAY=null,PCI=null,WST=null,RTI=null,RS=0,CTR='W',OVTR='W';
 var metaInterval=null;
 // Helpers
 function gLast(n){var s=gss();for(var i=s.length-1;i>=0;i--)if(s[i].workout===n)return s[i];return null;}

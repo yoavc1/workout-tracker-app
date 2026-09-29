@@ -1,7 +1,11 @@
 // Workout Tracker — Event wiring and start-up (loads last)
 // ═══════ EVENTS ═══════
 document.getElementById('btn-set').addEventListener('click',goSet);
-document.getElementById('btn-split').addEventListener('click',openSplitEditor);
+document.getElementById('btn-split').addEventListener('click',openSched);
+document.getElementById('sch-x').addEventListener('click',closeSched);
+['today-sec','sch','hp-det'].forEach(function(id){document.getElementById(id).addEventListener('click',schClick);});
+// A home-screen app resumes rather than relaunches, so the Today views must catch up when the date has changed
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&TDAY&&TDAY!==lday(new Date()))refreshView();});
 document.getElementById('btn-bk').addEventListener('click',function(){if(ESI===null)autoSave();goHome();});
 document.getElementById('btn-bs').addEventListener('click',goHome);
 document.getElementById('btn-fin').addEventListener('click',finWK);
@@ -14,9 +18,8 @@ document.getElementById('csel').addEventListener('change',rChart);
 document.getElementById('nav').addEventListener('click',function(e){var t=e.target.closest('.ntab');if(t&&t.dataset.tab)switchTab(t.dataset.tab);});
 document.getElementById('nav-plus').addEventListener('click',function(){
   var wk=gw();var opts=document.getElementById('quick-opts');
-  var colors=['#2ecc71','#3498db','#e74c3c','#f39c12','#9b59b6','#1abc9c','#e67e22','#2c3e50'];
   var h='<div style="display:flex;flex-direction:column;gap:10px">';
-  var ci=0;Object.keys(wk).forEach(function(n){var col=colors[ci%colors.length];ci++;
+  Object.keys(wk).forEach(function(n){var col=wColor(n,wk);
     h+='<button class="jqk" data-w="'+ea(n)+'" style="background:var(--card);border:2px solid var(--t1);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;font-family:var(--fb);transition:all 0.2s"><div style="width:6px;height:36px;border-radius:3px;background:'+col+';flex-shrink:0"></div><div><div style="font-family:var(--ff);font-size:16px;font-weight:700;color:var(--t1)">'+eh(n)+'</div><div style="font-size:12px;color:var(--t2);margin-top:2px">'+wk[n].length+' exercises</div></div></button>';
   });
   h+='</div>';opts.innerHTML=h;
