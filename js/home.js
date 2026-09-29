@@ -37,13 +37,8 @@ function rHome(){
     document.getElementById('ins-x').addEventListener('click',function(){iS.innerHTML='';sessionStorage.setItem('ins_dis','1');sessionStorage.setItem('ins_idx',String(ii+1));});
     iS.querySelectorAll('.ins-range-btn').forEach(function(b){b.addEventListener('click',function(){insRange=parseInt(b.dataset.r);rHome();});});
   }else{iS.innerHTML='';}
-  // Core checkbox
-  var aS=document.getElementById('abs-sec');var tds=new Date().toDateString(),today=lday(new Date());var hasWK=false,hasCore=coreDone(today);
-  ss.forEach(function(s){if(new Date(s.date).toDateString()===tds)hasWK=true;});
-  if(hasWK){
-    aS.innerHTML='<div class="hsec" style="padding:14px 18px"><div style="display:flex;align-items:center;gap:12px"><input type="checkbox" id="core-cb" '+(hasCore?'checked':'')+' style="width:22px;height:22px;accent-color:var(--green)"><label for="core-cb" style="font-family:var(--ff);font-size:14px;font-weight:600;cursor:pointer;flex:1">'+(hasCore?'Core trained today ✓':'Core trained today?')+'</label></div></div>';
-    document.getElementById('core-cb').addEventListener('change',function(){var c=this.checked;setCoreDone(today,c);toast(c?'Core logged!':'Core unmarked');});
-  }else{aS.innerHTML='';}
+  // Core chip, every day (js/core.js)
+  rCoreChip(document.getElementById('abs-sec'),lday(new Date()));
   // Workouts
   var wS=document.getElementById('wk-sec');var di=gDri();
   var h='<div class="hsec"><div class="hsec-t">My Workouts<button class="ibtn" id="btn-manage" style="width:28px;height:28px;font-size:12px">⚙</button></div><div class="wcards">';
