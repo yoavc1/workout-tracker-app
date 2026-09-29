@@ -5,7 +5,7 @@ const path = require('path'), fs = require('fs'), os = require('os'), assert = r
 const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
 
 // SEED logs a session every 3 days from 60 to 3 days ago (Legs, Upper Pull, Upper Push, Muay Thai in turn; 3 days ago
-// is Muay Thai). On top: a plan relative to today, a second session 3 days ago, and core on days -3 and -2.
+// is Muay Thai). On top: a plan relative to today, set 7 days ago, a second session 3 days ago, and core on days -3 and -2.
 //   day -4: Legs planned, nothing logged (missed, outside the Today card's 3 days)   day -3: Muay Thai + Legs, core
 //   day -2: rest, core only    day -1: Legs planned, missed    today: Upper Pull    tomorrow: Upper Push
 const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(addD(t,n))];},wk={};DAYS.forEach(function(x){wk[x]='';});
@@ -13,7 +13,7 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
   var d=gd(),at=function(n,h){var x=new Date();x.setDate(x.getDate()+n);x.setHours(h,0,0,0);return x.toISOString();};
   d.sessions.push({id:'two',mt:1,workout:'Legs',date:at(-3,19),exercises:{'Squat - Dumbbell':[{kg:50,reps:8}]},duration:1800});
   [-3,-2].forEach(function(n){var k2='c'+addD(t,n);d.core[k2]={id:k2,mt:1,date:k2.slice(1),done:true,items:[]};});
-  d.schedule={week:wk,wkm:Date.now(),moves:{}};sd(d);return 'ok';})()`;
+  d.schedule={week:wk,wkm:Date.now()-7*864e5,moves:{}};sd(d);return 'ok';})()`;
 
 (async () => {
   const root = path.join(__dirname, '..');
@@ -71,44 +71,13 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await p.send('Emulation.setDeviceMetricsOverride', { width: 393, height: 852, deviceScaleFactor: 1, mobile: true }); await p.wait(200);
     step('Schedule sheet opens full screen: Today, Week plan, Calendar');
 
-    // Week plan: tap a rest day and pick a workout
-    const rest = await p.ev('T.k(2)');
-    await click(`.wp-p[data-day="${rest}"] .wp-b`); await p.wait(150);
-    assert.strictEqual(await text('#sd-title'), (await p.ev(`DAYL[DAYS.indexOf('${rest}')]`)));
-    assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('#sd-opts .jsd'),function(b){return b.dataset.v+(b.classList.contains('pri')?'*':'');})`), ['*', 'Legs', 'Upper Pull', 'Upper Push', 'Muay Thai'], 'Rest is the current choice');
-    await shot('04-day-picker.png');
-    await click('#sd-opts .jsd[data-v="Muay Thai"]'); await p.wait(100);
-    assert.strictEqual(await p.ev(`gSplit()['${rest}']`), 'Muay Thai');
-    assert.strictEqual(await text(`.wp-p[data-day="${rest}"] .wp-b`), 'Muay Thai', 'the list redraws');
-    step('week plan: tap a day to pick a workout');
-
-    // Week plan: drag today's workout onto tomorrow's to swap the two days
-    await p.ev(`document.getElementById('sch-wp').scrollIntoView({block:'center'});'ok'`); await p.wait(100);
-    const [d0, d1] = [await p.ev('T.k(0)'), await p.ev('T.k(1)')];
-    const pt = sel => p.ev(`(function(){var r=document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];})()`);
-    const [sx, sy] = await pt(`.wp-p[data-day="${d0}"] .wp-h`), [tx, ty] = await pt(`.wp-p[data-day="${d1}"] .wp-h`);
-    const mouse = (type, x, y) => p.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1, pointerType: 'mouse' });
-    await mouse('mousePressed', sx, sy); await p.wait(60);
-    for (let i = 1; i <= 12; i++) { await mouse('mouseMoved', sx + (tx - sx) * i / 12, sy + (ty - sy) * i / 12); await p.wait(30); }
-    await p.wait(150);
-    assert.strictEqual(await p.ev(`document.querySelectorAll('.wp-sw').length`), 1, 'the target is highlighted while dragging');
-    await shot('05-week-drag.png');
-    await mouse('mouseReleased', tx, ty); await p.wait(400);
-    const sw = await p.ev(`({a:gSplit()['${d0}'],b:gSplit()['${d1}'],rows:[].map.call(document.querySelectorAll('#wp-l .wp-p'),function(e){return e.dataset.day;}),
-      today:[].map.call(document.querySelectorAll('#sch-td .td-go'),function(e){return e.dataset.w;})})`);
-    assert.deepStrictEqual([sw.a, sw.b], ['Upper Push', 'Upper Pull'], 'days swapped');
-    assert.deepStrictEqual(sw.rows, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], 'rows keep their days');
-    assert.deepStrictEqual(sw.today, ['Upper Push'], 'the Today card follows');
-    await p.ev(`sSyncUrl('${SYNC}');new Promise(function(r){csync(r);})`); let s = await store();
-    assert.deepStrictEqual([s.schedule.week[d0], s.schedule.week[d1], s.schedule.week[rest]], ['Upper Push', 'Upper Pull', 'Muay Thai'], 'plan synced');
-    step('week plan: drag to swap two days, synced');
-
     // Move yesterday's missed Legs to today, then undo, then move it to tomorrow
     const [t, y, tm] = [await p.ev('T.t'), await p.ev('T.day(-1)'), await p.ev('T.day(1)')];
+    await p.ev(`sSyncUrl('${SYNC}');new Promise(function(r){csync(r);})`); let s;
     await click(`#sch-td [data-act="mv"][data-to="${t}"]`); await p.wait(100);
     const mv = await p.ev(`({plan:plannedOn(T.t),miss:missedDays(3),sub:[].map.call(document.querySelectorAll('#today-sec .td-s'),function(e){return e.textContent;}),
       dot:!!T.cal(-1).querySelector('.cal-m')})`);
-    assert.deepStrictEqual(mv.plan, ['Upper Push', 'Legs']); assert.deepStrictEqual(mv.miss, [], 'no longer missed');
+    assert.deepStrictEqual(mv.plan, ['Upper Pull', 'Legs']); assert.deepStrictEqual(mv.miss, [], 'no longer missed');
     assert.ok(mv.sub.includes('Moved from yesterday · Undo'), 'home card shows the move with Undo: ' + mv.sub);
     assert.strictEqual(mv.dot, false, 'no red dot on the day it moved from');
     await p.ev(`document.getElementById('sch').scrollTop=0;'ok'`); await shot('06-moved-today.png');
@@ -120,22 +89,24 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.deepStrictEqual(Object.keys(s.schedule.moves), []); assert.ok(s.deleted[moves[0].id], 'undo syncs as a tombstone');
     await click(`#sch-td [data-act="mv"][data-to="${tm}"]`); await p.wait(100);
-    assert.deepStrictEqual(await p.ev(`plannedOn(T.day(1))`), ['Upper Pull', 'Legs']);
+    assert.deepStrictEqual(await p.ev(`plannedOn(T.day(1))`), ['Upper Push', 'Legs']);
     assert.ok(/Tomorrow\s*Legs\s*Moved from yesterday · Undo/.test(await text('#sch-td')), 'tomorrow section');
     await p.ev(`document.getElementById('sch').scrollTop=0;'ok'`); await shot('07-moved-tomorrow.png');
     step('move a missed day: Do it today / Tomorrow / Undo, synced as schedule.moves');
 
-    // Calendar: done days in the workout's colour, two workouts split, upcoming planned outlined, missed red dot, core C
+    // Calendar: done days in the workout's colour, two workouts split, upcoming planned outlined, missed red dot, core C.
+    // Red dots only count from when the plan was set (7 days ago): day -8 had Legs planned and nothing logged.
     const cal = await p.ev(`(function(){var r={};
       var c=T.cal(-6);r.done=[c.classList.contains('done'),getComputedStyle(c).backgroundColor===T.col(wColor('Upper Push'))];
       c=T.cal(-3);r.two=/linear-gradient/.test(getComputedStyle(c).backgroundImage)&&!!c.querySelector('.cal-k');
       c=T.cal(-4);r.miss=!!c.querySelector('.cal-m')&&!c.classList.contains('done');
       c=T.cal(-2);r.core=!!c.querySelector('.cal-k')&&!c.querySelector('.cal-m');
-      c=T.cal(1);r.plan=c.classList.contains('plan')&&getComputedStyle(c).borderTopColor===T.col(wColor('Upper Pull'));
+      c=T.cal(1);r.plan=c.classList.contains('plan')&&getComputedStyle(c).borderTopColor===T.col(wColor('Upper Push'));
       c=T.cal(0);r.today=c.classList.contains('today')&&c.classList.contains('plan');
       c=T.cal(-1);r.moved=!c.querySelector('.cal-m');
+      c=T.cal(-8);r.before=!c.querySelector('.cal-m')&&missedOn(T.day(-8)).length===0&&plannedOn(T.day(-8))[0]==='Legs';
       return r;})()`);
-    assert.deepStrictEqual(cal, { done: [true, true], two: true, miss: true, core: true, plan: true, today: true, moved: true });
+    assert.deepStrictEqual(cal, { done: [true, true], two: true, miss: true, core: true, plan: true, today: true, moved: true, before: true });
     await p.ev(`SCM=0;rCal(gd());document.getElementById('sch-cal').scrollIntoView({block:'end'});'ok'`); await p.wait(100);
     await shot('08-calendar.png');
     const m0 = await text('.cal-t');
@@ -167,6 +138,42 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     assert.deepStrictEqual(await p.ev(`[schOpen(),document.getElementById('hmpop-ov').classList.contains('active'),document.getElementById('s-wk').classList.contains('active')]`), [false, false, true]);
     await click('#btn-bk'); await p.wait(200);
     step('day pop-up: details of a logged day, and logging a missed past day');
+
+    // Week plan: tap a rest day and pick a workout
+    await click('#btn-split'); await p.wait(400);
+    const rest = await p.ev('T.k(2)');
+    await click(`.wp-p[data-day="${rest}"] .wp-b`); await p.wait(150);
+    assert.strictEqual(await text('#sd-title'), (await p.ev(`DAYL[DAYS.indexOf('${rest}')]`)));
+    assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('#sd-opts .jsd'),function(b){return b.dataset.v+(b.classList.contains('pri')?'*':'');})`), ['*', 'Legs', 'Upper Pull', 'Upper Push', 'Muay Thai'], 'Rest is the current choice');
+    await shot('04-day-picker.png');
+    await click('#sd-opts .jsd[data-v="Muay Thai"]'); await p.wait(100);
+    assert.strictEqual(await p.ev(`gSplit()['${rest}']`), 'Muay Thai');
+    assert.strictEqual(await text(`.wp-p[data-day="${rest}"] .wp-b`), 'Muay Thai', 'the list redraws');
+    step('week plan: tap a day to pick a workout');
+
+    // Week plan: drag today's workout onto tomorrow's to swap the two days
+    await p.ev(`document.getElementById('sch-wp').scrollIntoView({block:'center'});'ok'`); await p.wait(100);
+    const [d0, d1] = [await p.ev('T.k(0)'), await p.ev('T.k(1)')];
+    const pt = sel => p.ev(`(function(){var r=document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];})()`);
+    const [sx, sy] = await pt(`.wp-p[data-day="${d0}"] .wp-h`), [tx, ty] = await pt(`.wp-p[data-day="${d1}"] .wp-h`);
+    const mouse = (type, x, y) => p.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1, pointerType: 'mouse' });
+    await mouse('mousePressed', sx, sy); await p.wait(60);
+    for (let i = 1; i <= 12; i++) { await mouse('mouseMoved', sx + (tx - sx) * i / 12, sy + (ty - sy) * i / 12); await p.wait(30); }
+    await p.wait(150);
+    assert.strictEqual(await p.ev(`document.querySelectorAll('.wp-sw').length`), 1, 'the target is highlighted while dragging');
+    await shot('05-week-drag.png');
+    await mouse('mouseReleased', tx, ty); await p.wait(400);
+    const sw = await p.ev(`({a:gSplit()['${d0}'],b:gSplit()['${d1}'],rows:[].map.call(document.querySelectorAll('#wp-l .wp-p'),function(e){return e.dataset.day;}),
+      today:[].map.call(document.querySelectorAll('#sch-td .td-go'),function(e){return e.dataset.w;})})`);
+    assert.deepStrictEqual([sw.a, sw.b], ['Upper Push', 'Upper Pull'], 'days swapped');
+    assert.deepStrictEqual(sw.rows, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], 'rows keep their days');
+    assert.deepStrictEqual(sw.today, ['Upper Push'], 'the Today card follows');
+    await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
+    assert.deepStrictEqual([s.schedule.week[d0], s.schedule.week[d1], s.schedule.week[rest]], ['Upper Push', 'Upper Pull', 'Muay Thai'], 'plan synced');
+    // Changing the plan starts it afresh: day -4's red dot goes, and so does anything to move
+    assert.deepStrictEqual(await p.ev(`[!!T.cal(-4).querySelector('.cal-m'),missedDays(3).length,planFrom(gd())===T.t]`), [false, 0, true]);
+    await p.ev(`SCM=0;rCal(gd());'ok'`);
+    step('week plan: drag to swap two days, synced; red dots count from the change');
 
     // Start from the sheet closes it; the old split editor and the Progress heatmap are gone
     await click('#btn-split'); await p.wait(400); await click('#sch-td .td-go'); await p.wait(200);

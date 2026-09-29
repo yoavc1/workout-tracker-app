@@ -4,7 +4,7 @@ const assert = require('assert');
 const { loadApp } = require('./lib');
 const APP = ['data.js', 'sync.js', 'stats.js', 'schedule.js'];
 const J = x => JSON.parse(JSON.stringify(x));
-const eq = (a, b, msg) => assert.deepStrictEqual(J(a), J(b), msg);
+const eq = (a, b, ...msg) => assert.deepStrictEqual(J(a), J(b), ...msg);
 
 // Fixed dates: Monday 21 Sep 2026 to Wednesday 30 Sep 2026, with "today" passed in explicitly where it matters.
 // Sessions are stored as ISO timestamps; `at` builds one at a local hour, so the tests hold in any time zone.
@@ -46,7 +46,29 @@ eq(missedOn('2026-09-21', d), [], 'done'); eq(missedOn('2026-09-22', d), [], 're
 eq(missedOn('2026-09-14', d), [], 'days before the first logged session never count');
 eq(missedOn('2026-09-28', { sessions: [], schedule: { week } }), [], 'nothing logged ever: nothing missed');
 
+// planFrom: only the current plan is stored, so it only judges days since it was last set
+const { planFrom } = app;
+const never = w => ({ sessions: [S('2026-07-01', 'Legs')], schedule: { week, wkm: w, moves: {} } }); // trained once, long ago
+const ts = day => new Date(at(day)).getTime();
+d = never(ts('2026-09-24')); // plan edited 5 days ago
+assert.strictEqual(planFrom(d, TODAY), '2026-09-24');
+eq(['2026-09-21', '2026-09-23', '2026-09-25', '2026-09-28'].map(x => missedOn(x, d, TODAY)), [[], [], ['Upper Push'], ['Legs']], 'no misses before the plan was set');
+eq(missedDays(10, d, TODAY), [{ day: '2026-09-25', workout: 'Upper Push' }, { day: '2026-09-28', workout: 'Legs' }], 'the Today card agrees');
+d = never(ts(TODAY));
+eq(missedDays(3, d, TODAY), [], 'editing the plan today starts it afresh');
+d = never(1); // adopted from the old device-only storage: real date unknown
+assert.strictEqual(planFrom(d, TODAY), '2026-09-01', 'no further back than 28 days');
+eq([missedOn('2026-08-31', d, TODAY), missedOn('2026-09-02', d, TODAY)], [[], ['Upper Pull']]);
+assert.strictEqual(planFrom(Object.assign(never(1), { sessions: [S('2026-09-10', 'Legs')] }), TODAY), '2026-09-10', '...nor before the first session');
+assert.strictEqual(planFrom({ sessions: [S('2026-07-01', 'Legs')] }, TODAY), '2026-09-01', 'no plan edit at all (only moves): as adopted');
+assert.strictEqual(planFrom({ sessions: [], schedule: { week, wkm: ts('2026-09-24') } }, TODAY), null, 'nothing logged yet');
+// Moves made before a later plan edit: a day moved to before the edit is no longer judged; one moved after it still is
+d = never(ts('2026-09-24'));
+d.schedule.moves = { a: { id: 'a', mt: 1, from: '2026-09-21', to: '2026-09-22', workout: 'Legs' }, b: { id: 'b', mt: 2, from: '2026-09-23', to: '2026-09-26', workout: 'Upper Pull' } };
+eq([missedOn('2026-09-22', d, TODAY), missedOn('2026-09-26', d, TODAY)], [[], ['Upper Pull']]);
+
 // missedDays: the last n days before today that still need doing
+d = base();
 eq(missedDays(3, d, TODAY), [{ day: '2026-09-28', workout: 'Legs' }]);
 eq(missedDays(4, d, TODAY), [{ day: '2026-09-28', workout: 'Legs' }], 'Friday was made up by the Upper Push on Saturday');
 eq(missedDays(3, d, '2026-09-28'), [], 'today itself is never missed');

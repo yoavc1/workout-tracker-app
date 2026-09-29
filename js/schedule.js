@@ -15,16 +15,24 @@ function plannedOn(day,d){
 }
 // A day counts as done for a workout when a session of it was logged on that local day
 function isDone(day,workout,d){d=d||gd();return d.sessions.some(function(s){return s.workout===workout&&lday(s.date)===day;});}
-// Planned but not logged that day. Days before the first logged session never count: nothing was being tracked yet.
-function missedOn(day,d){
-  d=d||gd();var f=null;d.sessions.forEach(function(s){var x=lday(s.date);if(!f||x<f)f=x;});
+// The first day a planned day can count as missed. Only the current plan is stored, so it only judges days since it
+// was last set (wkm). A plan adopted from the old device-only storage (wkm 1) has no real date: it counts from the
+// first logged session, but no further back than 28 days. null when nothing has been logged yet.
+function planFrom(d,today){
+  d=d||gd();today=today||lday(new Date());var f=null,w=(d.schedule||{}).wkm||0;
+  d.sessions.forEach(function(s){var x=lday(s.date);if(!f||x<f)f=x;});if(!f)return null;
+  var p=w>1?lday(w):addD(today,-28);return p>f?p:f;
+}
+// Planned but not logged that day, from planFrom on. Earlier days were planned under a plan we no longer know.
+function missedOn(day,d,today){
+  d=d||gd();var f=planFrom(d,today);
   return f&&day>=f?plannedOn(day,d).filter(function(w){return!isDone(day,w,d);}):[];
 }
 // Missed days in the last n days (before today) that still need doing, oldest first: [{day, workout}]. A moved day is
 // no longer planned there, and a later session of the same workout makes the day up, so there's nothing left to move.
 function missedDays(n,d,today){
   d=d||gd();today=today||lday(new Date());var out=[];
-  for(var i=n;i>=1;i--){var day=addD(today,-i);missedOn(day,d).forEach(function(w){
+  for(var i=n;i>=1;i--){var day=addD(today,-i);missedOn(day,d,today).forEach(function(w){
     if(!d.sessions.some(function(s){var x=lday(s.date);return s.workout===w&&x>day&&x<=today;}))out.push({day:day,workout:w});});}
   return out;
 }
