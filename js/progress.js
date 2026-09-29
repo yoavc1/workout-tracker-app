@@ -1,7 +1,7 @@
 // Workout Tracker — Progress screen: heatmap, weight chart, exercise overview
 function tcut(r){var n=new Date(),c=null;if(r==='W'){c=new Date(n);c.setDate(c.getDate()-7);}else if(r==='M'){c=new Date(n);c.setMonth(c.getMonth()-1);}else if(r==='3M'){c=new Date(n);c.setMonth(c.getMonth()-3);}else if(r==='6M'){c=new Date(n);c.setMonth(c.getMonth()-6);}return c;}
 // ═══════ PROGRESS ═══════
-function rProg(){rHMnav();rHM();rPE();rChart();sCT();rOV();sOV();}
+function rProg(){rHMnav();rHM();rPE();rChart();sCT();rOV();sOV();if(typeof rCoreProg==='function')rCoreProg(document.getElementById('prog-core'));}
 
 function rHMnav(){var n=document.getElementById('hmnav');var vd=new Date(new Date().getFullYear(),new Date().getMonth()+HMO,1);var mn=vd.toLocaleString('en',{month:'long',year:'numeric'});var fw=HMO<0;n.innerHTML='<button class="hmnav-b" id="hm-p">‹</button><div class="hmnav-t">'+mn+'</div><button class="hmnav-b'+(fw?'':' dis')+'" id="hm-n">›</button>';document.getElementById('hm-p').addEventListener('click',function(){HMO--;rHMnav();rHM();});document.getElementById('hm-n').addEventListener('click',function(){if(HMO<0){HMO++;rHMnav();rHM();}});}
 
