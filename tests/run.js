@@ -1,6 +1,6 @@
 // Runs every test file that exists, in order; stops at the first failure. Usage: npm test
 const { spawnSync } = require('child_process'), fs = require('fs'), path = require('path');
-for (const f of ['merge.test.js', 'stats.test.js', 'goals.test.js', 'backend.test.js', 'smoke.js', 'smoke-workout.js']) {
+for (const f of ['merge.test.js', 'stats.test.js', 'goals.test.js', 'backend.test.js', 'smoke.js', 'smoke-workout.js', 'smoke-goals.js']) {
   const p = path.join(__dirname, f);
   if (!fs.existsSync(p)) continue;
   console.log('▶ ' + f);
