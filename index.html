@@ -12,12 +12,13 @@
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>Workout Tracker</title>
 <!-- Bump ?v= on every release so phones never mix new HTML with cached old CSS/JS -->
-<link rel="stylesheet" href="css/app.css?v=20260929c">
+<link rel="stylesheet" href="css/app.css?v=20260929b">
 </head>
 <body>
 <div id="toast" class="toast"></div>
 <div id="hmpop-ov" class="hmpop-ov"><div class="hmpop"><div class="hmpop-date" id="hp-date"></div><div class="hmpop-wk" id="hp-wk"></div><div class="hmpop-detail" id="hp-det"></div><button class="hmpop-close" id="hp-close">Close</button></div></div>
 <div id="mov-ex" class="mov"><div class="modal"><h3>Add Exercise</h3><p class="msub">Just for this session. When you finish, you can add it to the workout.</p><input type="text" class="minp" id="new-ex" placeholder="Exercise name" autocomplete="off"><div class="macts"><button class="mbtn sec" id="ex-cancel">Cancel</button><button class="mbtn pri" id="ex-add">Add</button></div></div></div>
+<div id="mov-goal" class="mov"><div class="modal gmodal" id="goal-m"></div></div>
 <div id="mov-timer" class="mov"><div class="modal"><h3>Set Timer</h3><div class="tinp-row"><input type="number" class="tinp" id="cmin" value="1" inputmode="numeric"><span class="tlabel">min</span><input type="number" class="tinp" id="csec" value="30" inputmode="numeric"><span class="tlabel">sec</span></div><div class="macts"><button class="mbtn sec" id="tm-cancel">Cancel</button><button class="mbtn pri" id="tm-start">Start</button></div></div></div>
 <div id="mov-manage" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:320px;width:90%;max-height:80vh;overflow-y:auto"><h3 id="manage-title" style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Manage Workouts</h3><div id="manage-body"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="manage-close">Close</button></div></div></div>
 <div id="mov-splitday" class="hmpop-ov"><div class="hmpop" style="text-align:left;max-width:300px;width:85%;max-height:80vh;overflow-y:auto"><h3 id="sd-title" style="font-family:var(--ff);font-size:17px;font-weight:700;margin-bottom:14px">Monday</h3><div id="sd-opts"></div><div class="macts" style="margin-top:14px"><button class="mbtn sec" id="sd-cancel">Cancel</button></div></div></div>
@@ -63,6 +64,8 @@
   </div>
 </div>
 
+<div id="s-goals" class="screen"><div class="header"><h1>🎯 Goals</h1><button class="ibtn gplus" id="btn-gnew" aria-label="New goal">+</button></div><div id="glist" class="glist"></div></div>
+
 <div id="s-hist" class="screen"><div class="header"><h1>📒 History</h1><div style="width:40px"></div></div><div id="hlist" class="hlist"></div></div>
 
 <div id="s-set" class="screen">
@@ -78,20 +81,22 @@
 <nav class="nav" id="nav">
   <button class="ntab active" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Workouts</button>
   <button class="ntab" data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>Progress</button>
+  <button class="ntab" data-tab="goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Goals</button>
   <button class="ntab" data-tab="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</button>
 </nav>
 <button class="nav-plus" id="nav-plus"><span>+</span></button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.7/Sortable.min.js"></script>
-<script src="js/data.js?v=20260929c"></script>
-<script src="js/sync.js?v=20260929c"></script>
-<script src="js/stats.js?v=20260929c"></script>
-<script src="js/ui.js?v=20260929c"></script>
-<script src="js/home.js?v=20260929c"></script>
-<script src="js/workout.js?v=20260929c"></script>
-<script src="js/progress.js?v=20260929c"></script>
-<script src="js/history.js?v=20260929c"></script>
-<script src="js/settings.js?v=20260929c"></script>
-<script src="js/main.js?v=20260929c"></script>
+<script src="js/data.js?v=20260929b"></script>
+<script src="js/sync.js?v=20260929b"></script>
+<script src="js/stats.js?v=20260929b"></script>
+<script src="js/ui.js?v=20260929b"></script>
+<script src="js/home.js?v=20260929b"></script>
+<script src="js/workout.js?v=20260929b"></script>
+<script src="js/progress.js?v=20260929b"></script>
+<script src="js/history.js?v=20260929b"></script>
+<script src="js/settings.js?v=20260929b"></script>
+<script src="js/goals.js?v=20260929b"></script>
+<script src="js/main.js?v=20260929b"></script>
 </body></html>
