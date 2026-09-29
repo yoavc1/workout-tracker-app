@@ -163,6 +163,7 @@ const { progressSeed } = require('./progress-seed');
     await p.ev(`document.querySelector('#mov-merge .ta-i').click();document.getElementById('mg-go').click();'ok'`); await p.wait(100);
     assert.ok(await p.ev(`gs().some(function(s){return s.exercises['Seated Machine Leg Curl'];})`), 'nothing merged while the draft is open');
     assert.ok(/Finish your Legs workout first/.test(await p.ev(`document.getElementById('toast').textContent`)));
+    assert.deepStrictEqual(await p.ev(`(function(){var d=gDri();return [d.v,d.list.indexOf('Seated Machine Leg Curl')>=0];})()`), [2, true], 'old draft migrated by gDri(); its list is what blocks');
     await p.ev(`localStorage.removeItem('ironlog_draft');document.getElementById('mg-cancel').click();pgBack();'ok'`);
 
     const before = await p.ev(`({old:gs().filter(function(s){return s.exercises['Incline Chest Press Machine'];}).length,cur:gs().filter(function(s){return s.exercises['Incline Chest Press (Smith/Machine)'];}).length})`);
