@@ -141,6 +141,13 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
       await p.ev(`document.getElementById('toast').classList.remove('show');'ok'`);
       await sheet('18-change-date', t, `var b=document.querySelector('.hwg.open .jdt');if(!b)return false;b.click();`);
       await p.ev(`goSet();'ok'`); await shot('19-settings', t);
+      // Goals: the list, a new goal, and a goal's detail chart (colours read from CSS variables as it draws)
+      const gid = await p.ev(`(function(){if(typeof openGoal!=='function')return null;var g=gGoals().filter(function(x){return x.exercise==='Squat - Dumbbell';})[0];if(g)return g.id;var a=new Date(),b=new Date();a.setDate(a.getDate()-60);b.setMonth(b.getMonth()+4);return addGoal({exercise:'Squat - Dumbbell',startKg:40,startDate:lday(a),targetKg:70,targetDate:lday(b),archived:false});})()`);
+      if (gid) {
+        await p.ev(`switchTab('goals');'ok'`); await shot('20-goals', t);
+        await sheet('21-new-goal', t, `openGoalNew();`);
+        await sheet('22-goal-detail', t, `openGoal('${gid}');`);
+      } else console.log('    (skipped 20-22 goals)');
     }
     step('screenshots of every screen and sheet in both themes');
 
