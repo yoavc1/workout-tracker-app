@@ -158,6 +158,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
 
     // Rename with history: past sessions and other workouts follow, so progress stays in one chart
     const logged = await p.ev(`gs().filter(function(s){return s.exercises['Seated Machine Leg Extension']}).length`); assert.ok(logged > 0);
+    await p.ev(`addGoal({exercise:'Seated Machine Leg Extension',startKg:50,startDate:lday(new Date()),targetKg:60,targetDate:lday(Date.now()+90*864e5)});'ok'`);
     await p.ev(`sw(Object.assign(gw(),{'Leg Day B':['Seated Machine Leg Extension']}));showExEd('Legs');document.querySelector('#exed .exr[data-x="Seated Machine Leg Extension"] .jer').click();'ok'`); await p.wait(150);
     assert.strictEqual(await p.ev(`getComputedStyle(document.getElementById('rename-hist-row')).display`), 'flex', 'history option shown for a logged exercise');
     await p.ev(`document.getElementById('rename-inp').value='Leg Extension';'ok'`);
@@ -165,6 +166,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await p.ev(`document.getElementById('rename-save').click();'ok'`); await p.wait(150);
     const rn = await p.ev(`({legs:gw().Legs,b:gw()['Leg Day B'],old:gs().filter(function(s){return s.exercises['Seated Machine Leg Extension']}).length,nw:gs().filter(function(s){return s.exercises['Leg Extension']}).length})`);
     assert.deepStrictEqual(rn, { legs: ['Nordic Curl', 'Squat - Dumbbell', 'Leg Extension', 'Leg Press'], b: ['Leg Extension'], old: 0, nw: logged });
+    assert.strictEqual(await p.ev(`gGoals()[0].exercise`), 'Leg Extension', 'a goal follows the rename');
     // Without the tick, only this workout's list changes
     await p.ev(`document.querySelector('#exed .exr[data-x="Squat - Dumbbell"] .jer').click();document.getElementById('rename-inp').value='Goblet Squat';document.getElementById('rename-hist').checked=false;document.getElementById('rename-save').click();'ok'`); await p.wait(150);
     assert.ok(await p.ev(`gw().Legs.indexOf('Goblet Squat')>=0&&gs().some(function(s){return s.exercises['Squat - Dumbbell']})&&!gs().some(function(s){return s.exercises['Goblet Squat']})`));
@@ -172,7 +174,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await p.ev(`document.querySelector('#exed .exr[data-x="Leg Press"] .jer').click();'ok'`);
     assert.strictEqual(await p.ev(`document.getElementById('rename-hist-row').style.display`), 'none');
     await p.ev(`document.getElementById('rename-cancel').click();'ok'`);
-    step('rename can carry history and other workouts along');
+    step('rename can carry history, goals and other workouts along');
 
     // ── A draft saved by the previous app version (sets keyed by position) moves to names ──
     await p.ev(`localStorage.setItem('ironlog_draft',JSON.stringify({workout:'Legs',sets:{0:[{kg:'5',reps:'5'}],2:[{kg:'7',reps:'7'}],9:[{kg:'1',reps:'1'}]},ts:Date.now()}));'ok'`);

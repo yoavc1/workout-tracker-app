@@ -59,15 +59,16 @@ function delGoal(id){var d=gd();d.goals=(d.goals||[]).filter(function(g){return 
 // Muscle group overrides ('Main/Sub'); defaults are guessed in stats.js
 function setMuscle(name,ms){var d=gd();d.muscles=d.muscles||{};if(ms)d.muscles[name]=ms;else delete d.muscles[name];d.mm=Date.now();sd(d);}
 // Moves an exercise's logged history to another name (a rename, or a merge into an existing exercise). A session that has
-// both keeps one entry at the position of whichever came first, with that one's sets first. A muscle override moves too.
-// Returns how many sessions changed.
+// both keeps one entry at the position of whichever came first, with that one's sets first. Goals and a muscle override
+// move too. Returns how many sessions changed.
 function renameExHist(from,to){
-  if(!from||!to||from===to)return 0;var d=gd(),now=Date.now(),n=0;
+  if(!from||!to||from===to)return 0;var d=gd(),now=Date.now(),n=0,g=0;
   d.sessions.forEach(function(s){var ex=s.exercises||{};if(!ex[from])return;var o={};
     Object.keys(ex).forEach(function(k){if(k===from||k===to)o[to]=(o[to]||[]).concat(ex[k]);else o[k]=ex[k];});
     s.exercises=o;s.mt=now;n++;});
+  (d.goals||[]).forEach(function(x){if(x.exercise===from){x.exercise=to;x.mt=now;g++;}});
   var mu=d.muscles||{};if(mu[from]){if(!mu[to])mu[to]=mu[from];delete mu[from];d.muscles=mu;d.mm=now;}
-  if(n||d.mm===now)sd(d);return n;
+  if(n||g||d.mm===now)sd(d);return n;
 }
 function gSyncUrl(){return localStorage.getItem('ironlog_sync_url')||'';}
 function sSyncUrl(u){localStorage.setItem('ironlog_sync_url',u);}
