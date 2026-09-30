@@ -105,6 +105,19 @@ assert.ok(!J(groupStats(exStats({ sessions: [S(3, { Squat: W(60, 5) })] }, NOW),
 G = J(groupStats(exStats({ sessions: [S(3, { 'Sled Push': W(80, 10) }), S(2, { Squat: W(60, 5) })] }, NOW), { sessions: [S(3, { 'Sled Push': W(80, 10) }), S(2, { Squat: W(60, 5) })] }, NOW));
 assert.deepStrictEqual(G.map(g => g.main), ['Legs', 'Other']);
 
+// ── Muscle group filter chips: n = the exercises listed under each group ──
+const chips = (dd, a = app) => J(a.pgGroups(a.exStats(dd, NOW), dd)).map(x => x.group + ' ' + x.n).join(', ');
+assert.strictEqual(chips(progressSeed(NOW)), 'Chest 4, Back 4, Shoulders 3, Arms 2, Legs 5, Core 1');
+let dd = { sessions: [S(3, { 'Sled Push': W(80, 10) }), S(2, { Squat: W(60, 5) })], core: {} };
+assert.strictEqual(chips(dd), 'Chest 0, Back 0, Shoulders 0, Arms 0, Legs 1, Other 1', 'Core and Other only once something is in them');
+dd.core = core([dayAgo(40), true]);
+assert.strictEqual(chips(dd), 'Chest 0, Back 0, Shoulders 0, Arms 0, Legs 1, Core 0, Other 1', 'a core day logged is enough for Core');
+// The daily core record's exercises count toward Core too; one that is also a core lift counts once
+const withCore = loadApp(FILES.concat('core.js'), {});
+dd = { sessions: [S(3, { Squat: W(60, 5), Plank: [{ secs: 60 }] })], core: core([dayAgo(1), true]) };
+dd.core['c' + dayAgo(1)].items = [{ name: 'Plank', mode: 'time', sets: [{ secs: 50 }] }, { name: 'Dead Bug', mode: 'reps', sets: [{ reps: 10 }] }];
+assert.strictEqual(chips(dd, withCore), 'Chest 0, Back 0, Shoulders 0, Arms 0, Legs 1, Core 2');
+
 // ── Chart axis helpers ──
 const labels = (a, b) => J(pgTicks(a, b)).map(t => t.l);
 const T = (y, m, dd) => new Date(y, m - 1, dd).getTime();

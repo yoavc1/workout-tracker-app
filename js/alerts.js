@@ -112,7 +112,8 @@ function rAlerts(){
 function alGo(a){
   if(a.go==='start')openWK(a.arg);
   else if(a.go==='goal'){switchTab('goals');openGoal(a.arg);}
-  else if(a.go==='prog'){PGX=a.arg||null;PGALL=false;PGSC=0;switchTab('progress');}
+  // An alert can be about any muscle group, so Progress opens unfiltered
+  else if(a.go==='prog'){PGX=a.arg||null;PGALL=false;PGSC=0;PGF='';switchTab('progress');}
   else if(a.go==='core')openCore(lday(new Date()));
 }
 // Rebuild just after midnight, so day counts and "this week" roll over even if the app stays open

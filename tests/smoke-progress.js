@@ -131,6 +131,47 @@ const { progressSeed } = require('./progress-seed');
     assert.ok(Math.abs((await p.ev(`document.getElementById('s-prog').scrollTop`)) - listScroll) < 2, 'scroll position restored');
     step('back returns to the list at the same place');
 
+    // ── Muscle group filter: the same chips as Goals. Each chip is [group, label, count, active] ──
+    const chips = () => p.ev(`[].map.call(document.querySelectorAll('#pg-glance .gf-c'),function(b){return [b.dataset.g,b.firstChild.textContent,+b.querySelector('em').textContent,b.classList.contains('active')];})`);
+    const view = () => p.ev(`({glance:!!document.querySelector('#pg-glance .pg-h'),cards:[].map.call(document.querySelectorAll('.pg-gc'),function(c){return c.dataset.g;}),groups:[].map.call(document.querySelectorAll('.pg-el'),function(e){return e.textContent;}),
+      n:document.querySelectorAll('.pg-xr').length,core:getComputedStyle(document.getElementById('prog-core')).display!=='none',on:[].map.call(document.querySelectorAll('#pg-glance .gf-c.active'),function(b){return b.dataset.g;})})`);
+    const pick = g => p.ev(`document.querySelector('#pg-glance .gf-c[data-g="${g}"]').click();'ok'`);
+    const ALL = { glance: true, cards: ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'], groups: ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'], n: 19, core: true, on: [''] };
+    assert.deepStrictEqual(await chips(), [['', 'All', 19, true], ['Chest', 'Chest', 4, false], ['Back', 'Back', 4, false], ['Shoulders', 'Shoulders', 3, false], ['Arms', 'Arms', 2, false], ['Legs', 'Legs', 5, false], ['Core', 'Core', 1, false]], 'counts are the exercises listed');
+    assert.deepStrictEqual(await view(), ALL);
+    await pick('Legs');
+    assert.deepStrictEqual(await view(), { glance: true, cards: ['Legs'], groups: ['Legs'], n: 5, core: false, on: ['Legs'] }, 'one group: its card and exercises, no Core card');
+    assert.strictEqual(await p.ev(`document.querySelector('#pg-glance .gf-c[data-g="Legs"]').getAttribute('aria-pressed')`), 'true');
+    await p.ev(`document.getElementById('s-prog').scrollTop=0;'ok'`); await p.wait(100);
+    await noOverflow('filtered');
+    await shot('04b-filter-legs.png');
+    await pick('Core');
+    assert.deepStrictEqual(await view(), { glance: true, cards: ['Core'], groups: ['Core'], n: 1, core: true, on: ['Core'] }, 'Core keeps the Core card');
+    await pick('Core');
+    assert.deepStrictEqual(await view(), ALL, 'tapping it again shows all');
+    // The filter stays through an exercise's detail and on other tabs
+    await pick('Arms');
+    await p.ev(`document.querySelector('.pg-xr').click();'ok'`); await p.wait(300);
+    assert.strictEqual(await p.ev(`PGX`), 'Hammer Curl - Dumbbell');
+    await p.ev(`document.getElementById('pg-bk').click();switchTab('home');switchTab('progress');'ok'`); await p.wait(300);
+    assert.deepStrictEqual(await view(), { glance: true, cards: ['Arms'], groups: ['Arms'], n: 2, core: false, on: ['Arms'] });
+    // Your own muscle picks move exercises between chips: Other shows up once something is in it (no card, just the list),
+    // and a group left with nothing says so
+    await p.ev(`setMuscle('Hammer Curl - Dumbbell','Other');setMuscle('Triceps Pulldown - Rope','Back/Mid back');rProg();'ok'`);
+    assert.deepStrictEqual((await chips()).map(c => c[0] + ' ' + c[2]), [' 19', 'Chest 4', 'Back 5', 'Shoulders 3', 'Arms 0', 'Legs 5', 'Core 1', 'Other 1']);
+    assert.deepStrictEqual(await view(), { glance: false, cards: [], groups: [], n: 0, core: false, on: ['Arms'] });
+    assert.strictEqual(await p.ev(`document.querySelector('#pg-glance .empty h3').textContent`), 'No lifts for Arms yet');
+    await shot('04c-filter-empty.png');
+    await pick('Other');
+    assert.deepStrictEqual(await view(), { glance: false, cards: [], groups: ['Other'], n: 1, core: false, on: ['Other'] });
+    // The filter lets go when its group has gone, and when an alert opens Progress
+    await p.ev(`setMuscle('Hammer Curl - Dumbbell',null);setMuscle('Triceps Pulldown - Rope',null);rProg();'ok'`);
+    assert.deepStrictEqual(await view(), ALL, 'Other gone, so all');
+    await pick('Legs'); await p.ev(`switchTab('home');alGo({go:'prog',arg:null});'ok'`); await p.wait(300);
+    assert.deepStrictEqual(await view(), ALL, 'an alert opens Progress unfiltered');
+    await p.ev(`document.getElementById('s-prog').scrollTop=0;'ok'`);
+    step('filter by muscle group: counts, one group, Core card, stays through detail and tabs, empty group, Other, lets go');
+
     // ── Bodyweight detail + muscle override ──
     await p.ev(`pgOpen('Dips');'ok'`); await p.wait(500);
     det = await p.ev(`({sets:PCI.data.datasets.map(function(s){return s.label;}),tiles:[].slice.call(document.querySelectorAll('.pg-tl')).map(function(e){return e.textContent;}),y:PCI.data.datasets[0].data.map(function(p){return p.y;}),leg:document.querySelector('.pg-leg').textContent,tick:PCI.scales.y.ticks[0].label})`);
@@ -210,8 +251,9 @@ const { progressSeed } = require('./progress-seed');
     step('sync refreshes the open detail');
 
     // Nothing logged yet: a friendly empty state, and the Core hook is still there
-    await p.ev(`localStorage.setItem('ironlog_data',JSON.stringify({sessions:[{id:'m1',mt:1,workout:'Muay Thai',date:new Date().toISOString(),exercises:{'Session Complete':[{kg:0,reps:0}]}}]}));sSyncUrl('');PGX=null;rProg();'ok'`);
+    await p.ev(`localStorage.setItem('ironlog_data',JSON.stringify({sessions:[{id:'m1',mt:1,workout:'Muay Thai',date:new Date().toISOString(),exercises:{'Session Complete':[{kg:0,reps:0}]}}]}));sSyncUrl('');PGX=null;PGF='Legs';rProg();'ok'`);
     assert.ok(/No lifts yet/.test(await p.ev(`document.getElementById('pg-glance').textContent`)));
+    assert.deepStrictEqual(await p.ev(`[document.querySelectorAll('#pg-glance .gf').length,PGF,getComputedStyle(document.getElementById('prog-core')).display]`), [0, '', 'block'], 'no filter without lifts');
     assert.ok(await p.ev(`!!document.querySelector('#pg-main > #prog-core:last-child')`), 'prog-core hook kept at the end');
     await p.ev(`document.getElementById('toast').classList.remove('show');'ok'`); await p.wait(500);
     await shot('12-empty.png');

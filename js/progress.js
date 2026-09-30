@@ -1,7 +1,8 @@
 // Workout Tracker — Progress screen: muscle groups at a glance, exercises by muscle, exercise detail with chart
 // ═══════ PROGRESS ═══════
-// PGX: exercise open in the detail view (null = overview); PGR: chart range; PGO: expanded group cards
-var PGX=null,PGR='3M',PGO={},PGSC=0,PGALL=false,PGMT=null,PGTA=null,pgBound=false;
+// PGX: exercise open in the detail view (null = overview); PGR: chart range; PGO: expanded group cards;
+// PGF: the muscle group the overview is filtered to ('' = all of them)
+var PGX=null,PGR='3M',PGO={},PGSC=0,PGALL=false,PGMT=null,PGTA=null,pgBound=false,PGF='';
 var PG_LBL={progressing:'Progressing',stalled:'Stalled',regressing:'Regressing','new':'New',steady:'Steady',idle:'Not lately'};
 var PG_CLS={progressing:'up',stalled:'flat',regressing:'down','new':'new',steady:'new',idle:'idle'};
 var PG_RANGES={'1M':1,'3M':3,'6M':6,ALL:0};
@@ -46,6 +47,14 @@ function pgPace(g,a,b){
   return[{x:x0,y:at(x0)},{x:x1,y:at(x1)}];
 }
 function pgGoal(d,name){var g=(d.goals||[]).filter(function(g){return!g.archived&&g.exercise===name;});return g.length?g[g.length-1]:null;}
+// The muscle group filter's chips: [{group, n}], n = the exercises listed under the group. Core also counts the ones in
+// the daily core record (its card shows them), and shows once there's a core lift or a core day logged.
+function pgGroups(ex,d){
+  var n={},cs=typeof coreStats==='function'&&d.core?coreStats(d):[];
+  Object.keys(ex).forEach(function(x){var m=ex[x].main;n[m]=(n[m]||0)+1;});
+  cs.forEach(function(c){if(!ex[c.name]||ex[c.name].main!=='Core')n.Core=(n.Core||0)+1;});
+  return mfGroups({Core:n.Core||lastCoreDay(d),Other:n.Other}).map(function(k){return{group:k,n:n[k]||0};});
+}
 
 // ─── Merge (Merge into…) ───
 // Joins an exercise's history into another (a renamed exercise and its new name become one chart); renameExHist
@@ -73,19 +82,27 @@ function pgOpen(x){var s=document.getElementById('s-prog');PGSC=s.scrollTop;PGX=
 function pgBack(){PGX=null;rProg();document.getElementById('s-prog').scrollTop=PGSC;}
 
 function rPMain(d,ex,now){
-  var gl=document.getElementById('pg-glance'),xl=document.getElementById('pg-exl'),names=Object.keys(ex);
-  if(!names.length){gl.innerHTML='<div class="empty"><h3>No lifts yet</h3><p>Log a workout and your progress shows up here.</p></div>';xl.innerHTML='';return;}
-  var G=groupStats(ex,d,now),f=trainFreq(d,ST.SETS_DAYS,now);
-  var h='<h3 class="pg-h">At a glance</h3><div class="pg-sub">Last 4 weeks: '+f.lifts+' workout'+(f.lifts!==1?'s':'')+(f.acts?' · '+f.acts+' activit'+(f.acts!==1?'ies':'y'):'')+'</div><div class="pg-gl">';
-  G.forEach(function(g){if(g.main==='Other')return;
+  var gl=document.getElementById('pg-glance'),xl=document.getElementById('pg-exl'),pc=document.getElementById('prog-core'),names=Object.keys(ex);
+  if(!names.length){PGF='';pc.style.display='';gl.innerHTML='<div class="empty"><h3>No lifts yet</h3><p>Log a workout and your progress shows up here.</p></div>';xl.innerHTML='';return;}
+  var G=groupStats(ex,d,now),f=trainFreq(d,ST.SETS_DAYS,now),gg=pgGroups(ex,d);
+  // Muscle group filter: it narrows the cards, the exercises and (unless it's Core) hides the Core card
+  if(!gg.some(function(x){return x.group===PGF;}))PGF='';
+  G=G.filter(function(g){return!PGF||g.main===PGF;});pc.style.display=!PGF||PGF==='Core'?'':'none';
+  var h=mfChips(gg,gg.reduce(function(a,x){return a+x.n;},0),PGF),cards=G.filter(function(g){return g.main!=='Other';});
+  if(!G.length&&PGF!=='Core')h+='<div class="empty"><h3>No lifts for '+eh(PGF)+' yet</h3><p>Log one and its progress shows up here, or tap All to see the rest.</p></div>';
+  if(cards.length)h+='<h3 class="pg-h">At a glance</h3><div class="pg-sub">Last 4 weeks: '+f.lifts+' workout'+(f.lifts!==1?'s':'')+(f.acts?' · '+f.acts+' activit'+(f.acts!==1?'ies':'y'):'')+'</div><div class="pg-gl">';
+  cards.forEach(function(g){
     var meta=g.status==='idle'?'Last trained '+pgDate(g.last,now):pgPct(g.trend)+'<span class="pg-dim">6 wk</span><span class="pg-dot">·</span>'+pgSpw(g.spw);
     h+='<div class="pg-gc'+(PGO[g.main]?' open':'')+'" data-g="'+ea(g.main)+'"><button class="pg-gh"><div class="pg-gt"><span class="pg-gn">'+eh(g.main)+'</span>'+pgChip(g.status)+'</div><div class="pg-gm">'+meta+'<span class="pg-chv">▾</span></div></button><div class="pg-gb">';
     g.subs.forEach(function(s){
       h+='<div class="pg-sr"><div class="pg-sn"><div>'+eh(s.sub||'Other')+'</div><div class="pg-sx">'+s.ex.map(eh).join(' · ')+'</div></div><div class="pg-sv">'+(s.status==='idle'?'<span class="pg-pct">'+pgDate(s.last,now)+'</span>':pgPct(s.trend))+'<div class="pg-dim">'+pgSpw(s.spw)+'</div></div>'+pgChip(s.status)+'</div>';});
     h+='</div></div>';});
-  gl.innerHTML=h+'</div>';
+  gl.innerHTML=h+(cards.length?'</div>':'');
+  // Tap a group to show only its progress; tap it again, or All, to show them all
+  gl.querySelectorAll('.gf-c').forEach(function(b){b.addEventListener('click',function(){PGF=PGF===b.dataset.g?'':b.dataset.g;rProg();});});
   gl.querySelectorAll('.pg-gh').forEach(function(b){b.addEventListener('click',function(){var c=b.parentNode,g=c.dataset.g;PGO[g]=!PGO[g];c.classList.toggle('open',PGO[g]);});});
   // Exercises by main group: recently trained first (by sub-group), the ones not trained lately at the bottom
+  if(!G.length){xl.innerHTML='';return;}
   h='<h3 class="pg-h">Exercises</h3>';
   G.forEach(function(g){var subs=(MUSCLES[g.main]||[]);
     var l=g.ex.map(function(x){return ex[x];}).sort(function(a,b){return(a.idle-b.idle)||(subs.indexOf(a.sub)-subs.indexOf(b.sub))||(b.last-a.last);});
