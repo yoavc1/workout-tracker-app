@@ -6,7 +6,8 @@ var GT={
   RECENT:14,    // current kg = best top set of the last 14 days, else the latest top set
   LEAD:28       // the detail chart also shows the 4 weeks before the goal started, for context
 };
-var GCI=null,GJUST={},GARC=false,gBound=false;
+// GF: the muscle group the list is filtered to ('' = all of them)
+var GCI=null,GJUST={},GARC=false,gBound=false,GF='';
 // Goal dates are local days ('YYYY-MM-DD'), so parse them as local midnight rather than UTC
 function gDay(s){var p=String(s).split('-');return new Date(+p[0],p[1]-1,+p[2]);}
 function gDays(a,b){return Math.round((gDay(b)-gDay(a))/864e5);}
@@ -52,6 +53,15 @@ function goalErr(f,d,now){
   var c=goalCur(f.exercise,d,now);if(c&&c.src==='recent'&&c.kg>=f.targetKg)return'You lifted '+gKg(c.kg)+' lately. Aim higher';
   return'';
 }
+// A goal's main muscle group, from its exercise: your pick in Progress, else the guess from its name
+function goalGroup(g,d){return muscleOf(g.exercise,d).main;}
+// The filter's groups in MUSCLES order: Chest, Back, Shoulders, Arms and Legs always, Core and Other only once a goal
+// is in them. [{group, n}], n = how many of `act` are in it.
+function goalGroups(all,act,d){
+  var of=function(g){return goalGroup(g,d);},has={};all.forEach(function(g){has[of(g)]=1;});
+  return Object.keys(MUSCLES).concat('Other').filter(function(k){return(k!=='Core'&&k!=='Other')||has[k];})
+    .map(function(k){return{group:k,n:act.filter(function(g){return of(g)===k;}).length};});
+}
 // ─── Screen ───
 function gLab(st){return{ahead:'Ahead',on:'On track',behind:'Behind',done:'🎉 Reached'}[st];}
 function gStatsH(s){
@@ -72,10 +82,16 @@ function rGoals(open){
   if(fresh.length){fresh.forEach(function(g){GJUST[g.id]=1;archiveGoal(g.id);});d=gd();
     toast(fresh.length>1?'🎉 '+fresh.length+' goals reached!':'🎉 Goal reached!');}
   var all=d.goals||[],act=all.filter(function(g){return!g.archived||GJUST[g.id];}),arc=all.filter(function(g){return g.archived&&!GJUST[g.id];});
+  // Muscle group filter: it narrows both lists. A goal reached just now is always shown, so the filter lets go for it.
+  var gg=goalGroups(all,act,d),nAct=act.length,inF=function(g){return!GF||goalGroup(g,d)===GF;};
+  if(!all.length||!gg.some(function(x){return x.group===GF;})||!fresh.every(inF))GF='';
+  act=act.filter(inF);arc=arc.filter(inF);
   var by=function(a,b){return a.targetDate<b.targetDate?-1:a.targetDate>b.targetDate?1:0;};
   act.sort(function(a,b){return(GJUST[b.id]?1:0)-(GJUST[a.id]?1:0)||by(a,b);});arc.sort(function(a,b){return by(b,a);});
-  var h='';
-  if(!act.length)h+='<div class="empty gempty"><h3>'+(arc.length?'No active goals':'No goals yet')+'</h3><p>Pick a lift, a target kg and a date. You\'ll see the pace you need and whether you\'re ahead or behind it.</p><button class="mbtn pri" id="g-first">New goal</button></div>';
+  var chip=function(k,n){return'<button class="gf-c'+(GF===k?' active':'')+'" data-g="'+ea(k)+'" aria-pressed="'+(GF===k)+'">'+(k?eh(k):'All')+'<em>'+n+'</em></button>';};
+  var h=all.length?'<div class="gf" role="group" aria-label="Filter by muscle group">'+chip('',nAct)+gg.map(function(x){return chip(x.group,x.n);}).join('')+'</div>':'';
+  if(!act.length)h+=GF?'<div class="empty gempty"><h3>No active goals for '+eh(GF)+'</h3><p>Tap All to see your other goals, or set a new one.</p><button class="mbtn pri" id="g-first">New goal</button></div>':
+    '<div class="empty gempty"><h3>'+(arc.length?'No active goals':'No goals yet')+'</h3><p>Pick a lift, a target kg and a date. You\'ll see the pace you need and whether you\'re ahead or behind it.</p><button class="mbtn pri" id="g-first">New goal</button></div>';
   act.forEach(function(g){h+=gCard(g,goalStatus(g,d,now),!!GJUST[g.id]);});
   if(arc.length){
     h+='<div class="garch'+(GARC?' open':'')+'"><div class="garch-h"><span>Archived<em>'+arc.length+'</em></span><span class="garch-chv">▾</span></div><div class="garch-b">';
@@ -83,6 +99,8 @@ function rGoals(open){
     h+='</div></div>';
   }
   c.innerHTML=h;
+  // Tap a group to show only its goals; tap it again, or All, to show them all
+  c.querySelectorAll('.gf-c').forEach(function(b){b.addEventListener('click',function(){GF=GF===b.dataset.g?'':b.dataset.g;rGoals();});});
   c.querySelectorAll('.gcard,.garow').forEach(function(el){el.addEventListener('click',function(){openGoal(el.dataset.id);});});
   var ah=c.querySelector('.garch-h');if(ah)ah.addEventListener('click',function(){GARC=!GARC;ah.parentNode.classList.toggle('open',GARC);});
   var f=document.getElementById('g-first');if(f)f.addEventListener('click',openGoalNew);
@@ -128,6 +146,8 @@ function openGoalNew(){
     var f={exercise:name(),startKg:parseFloat(si.value),targetKg:parseFloat(ti.value),targetDate:when()},e=goalErr(f,gd());
     if(e){toast(e,'var(--orange)');return;}
     addGoal({exercise:f.exercise,startKg:f.startKg,startDate:today,targetKg:f.targetKg,targetDate:f.targetDate,archived:false});
+    // A new goal outside the filter would vanish as it's saved, so show them all
+    if(GF&&goalGroup(f,gd())!==GF)GF='';
     closeGoalM();rGoals();toast('Goal set 🎯');});
   sum();document.getElementById('mov-goal').classList.add('active');setTimeout(function(){ex.focus();},100);
 }

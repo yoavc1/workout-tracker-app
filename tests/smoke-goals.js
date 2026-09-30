@@ -51,13 +51,20 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     assert.ok(nv.right <= nv.w && nv.bottom <= nv.h, 'nav and + button on screen');
     step('nav has four tabs that fit at 393 wide');
 
-    // Opening the tab: statuses, and the goal that hit its target is celebrated and archived
-    await p.ev(`document.querySelector('.ntab[data-tab="goals"]').click();'ok'`); await p.wait(900);
+    // The muscle group filter: each chip is [group, label, count, active]
+    const chips = () => p.ev(`[].map.call(document.querySelectorAll('#glist .gf-c'),function(b){return [b.dataset.g,b.firstChild.textContent,+b.querySelector('em').textContent,b.classList.contains('active')];})`);
+    const view = () => p.ev(`({cards:[].map.call(document.querySelectorAll('#glist .gcard'),function(c){return c.dataset.id;}),arc:[].map.call(document.querySelectorAll('.garow'),function(r){return r.dataset.id;}),on:[].map.call(document.querySelectorAll('.gf-c.active'),function(b){return b.dataset.g;})})`);
+    const pick = g => p.ev(`document.querySelector('.gf-c[data-g="${g}"]').click();'ok'`);
+
+    // Opening the tab: statuses, and the goal that hit its target is celebrated and archived. It's a Shoulders goal, so a
+    // Back filter left on lets go to show it.
+    await p.ev(`GF='Back';document.querySelector('.ntab[data-tab="goals"]').click();'ok'`); await p.wait(900);
     assert.strictEqual(await p.ev(`document.querySelector('.screen.active').id`), 's-goals');
     const cards = await p.ev(`[].map.call(document.querySelectorAll('#glist .gcard'),function(c){return [c.dataset.id,c.querySelector('.gchip').className.split(' ')[1],c.classList.contains('won')];})`);
     assert.deepStrictEqual(cards, [['gE', 'done', true], ['gB', 'behind', false], ['gA', 'on', false], ['gC', 'ahead', false]], 'celebrated first, then by target date');
     assert.strictEqual(await p.ev(`document.getElementById('toast').textContent`), '🎉 Goal reached!', 'toast');
     assert.ok(await p.ev(`document.querySelector('.gcard.won').classList.contains('pop')`), 'celebration animation');
+    assert.deepStrictEqual(await chips(), [['', 'All', 4, true], ['Chest', 'Chest', 1, false], ['Back', 'Back', 1, false], ['Shoulders', 'Shoulders', 1, false], ['Arms', 'Arms', 0, false], ['Legs', 'Legs', 1, false]], 'a goal reached just now clears the filter');
     assert.strictEqual(await p.ev(`gGoals().filter(function(g){return g.id==='gE'})[0].archived`), true, 'reached goal archived');
     // The card shows goalStatus's numbers
     const a = await p.ev(`(function(){var g=gGoals().filter(function(g){return g.id==='gA'})[0],s=goalStatus(g,gd());var b=[].map.call(document.querySelectorAll('.gcard[data-id="gA"] .gstats b'),function(x){return x.textContent;});return {b:b,exp:gKg(s.exp),cur:gKg(s.cur),wk:'+'+gKg(s.perWk),m:document.querySelector('.gcard[data-id="gA"] .gbar-m').style.left,e:s.expPct};})()`);
@@ -78,6 +85,30 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('#glist .gcard'),function(c){return c.dataset.id;})`), ['gB', 'gA', 'gC']);
     assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('.garow'),function(r){return r.dataset.id;})`), ['gE', 'gD', 'gF']);
     step('archived section: collapsed, viewable, and the celebrated goal joins it');
+
+    // Filter by muscle group: a group's active and archived goals; tap it again for all of them
+    assert.deepStrictEqual((await chips()).map(c => c[2]), [3, 1, 1, 0, 0, 1], 'counts are active goals');
+    await pick('Legs');
+    assert.deepStrictEqual(await view(), { cards: ['gC'], arc: ['gD'], on: ['Legs'] });
+    assert.strictEqual(await p.ev(`document.querySelector('.gf-c[data-g="Legs"]').getAttribute('aria-pressed')`), 'true');
+    await p.ev(`document.getElementById('s-goals').scrollTop=0;'ok'`); await p.shot(path.join(shots, '2b-goals-legs.png'));
+    await pick('Chest');
+    assert.deepStrictEqual(await view(), { cards: ['gA'], arc: ['gF'], on: ['Chest'] });
+    await pick('Chest');
+    assert.deepStrictEqual(await view(), { cards: ['gB', 'gA', 'gC'], arc: ['gE', 'gD', 'gF'], on: [''] }, 'tapping it again shows all');
+    // A group with nothing active says so, and the filter stays while you're on another tab
+    await pick('Shoulders');
+    assert.deepStrictEqual(await view(), { cards: [], arc: ['gE'], on: ['Shoulders'] });
+    assert.strictEqual(await p.ev(`document.querySelector('.gempty h3').textContent`), 'No active goals for Shoulders');
+    await p.shot(path.join(shots, '2c-goals-empty-group.png'));
+    await p.ev(`switchTab('home');switchTab('goals');'ok'`);
+    assert.deepStrictEqual((await view()).on, ['Shoulders']);
+    // A muscle group you picked in Progress moves the goal with it
+    await p.ev(`setMuscle('Dips','Shoulders/Front');rGoals();'ok'`);
+    assert.deepStrictEqual((await view()).arc, ['gE', 'gF']);
+    await p.ev(`setMuscle('Dips',null);'ok'`); await pick('');
+    assert.deepStrictEqual(await view(), { cards: ['gB', 'gA', 'gC'], arc: ['gE', 'gD', 'gF'], on: [''] });
+    step('filter by muscle group: counts, active and archived, an empty group, your own muscle picks');
 
     // Detail: chart of top sets with the pace line, in theme colours
     await p.ev(`document.getElementById('s-goals').scrollTop=0;document.querySelector('.gcard[data-id="gA"]').click();'ok'`); await p.wait(400);
@@ -116,7 +147,9 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     assert.strictEqual(await p.ev(`!!document.querySelector('.gcard[data-id="gC"]')`), false);
     step('two-tap delete');
 
-    // New goal: type-ahead, start kg from the best top set of the last 14 days, 6 months, saved and synced
+    // New goal: type-ahead, start kg from the best top set of the last 14 days, 6 months, saved and synced. It's a Legs
+    // goal set while filtered to Chest, so the filter clears to show it.
+    await pick('Chest');
     await p.ev(`sSyncUrl('${SYNC}');document.getElementById('btn-gnew').click();var i=document.getElementById('gn-ex');i.focus();i.value='calf';i.dispatchEvent(new Event('input'));'ok'`); await p.wait(200);
     assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('#goal-m .ta-i'),function(b){return b.textContent;})`), [CALF]);
     await p.shot(path.join(shots, '5-new-goal-typeahead.png'));
@@ -133,6 +166,7 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     assert.ok(ng.id && ng.mt, 'record fields for merge');
     assert.strictEqual(await p.ev(`document.getElementById('mov-goal').classList.contains('active')`), false);
     assert.ok(await p.ev(`!!document.querySelector('.gcard[data-id="${ng.id}"]')`), 'card shown');
+    assert.deepStrictEqual((await view()).on, [''], 'a new goal outside the filter clears it');
     await p.wait(2600); let s = await store();
     assert.ok(s && s.goals.some(g => g.id === ng.id && g.targetDate === six), 'new goal synced');
     assert.ok(s.goals.find(g => g.id === 'gE').archived && s.deleted.gC, 'archive and delete synced');
@@ -164,6 +198,7 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     await e.go(APP); await e.ev(SEED); await e.go(APP);
     await e.ev(`switchTab('goals');'ok'`); await e.wait(300);
     assert.strictEqual(await e.ev(`document.querySelector('.gempty h3').textContent`), 'No goals yet');
+    assert.strictEqual(await e.ev(`document.querySelectorAll('.gf').length`), 0, 'no filter without goals');
     await e.shot(path.join(shots, '7-goals-empty.png'));
     await e.ev(`document.getElementById('g-first').click();'ok'`);
     assert.strictEqual(await e.ev(`document.getElementById('mov-goal').classList.contains('active')`), true);
@@ -177,6 +212,7 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     assert.ok(nv.right <= nv.w, '+ button on screen at 320');
     await n.ev(`switchTab('goals');'ok'`); await n.wait(900);
     assert.strictEqual(await n.ev(`document.getElementById('s-goals').scrollWidth<=innerWidth`), true, 'no sideways scroll at 320');
+    assert.strictEqual(await n.ev(`[].every.call(document.querySelectorAll('.gf-c'),function(b){var r=b.getBoundingClientRect();return r.right<=innerWidth-16&&r.height>=36;})`), true, 'filter chips wrap inside the screen');
     assert.strictEqual(await n.ev(`[].some.call(document.querySelectorAll('.gstats b, .gchip'),function(b){var r=b.getBoundingClientRect(),c=b.closest('.gcard').getBoundingClientRect();return r.right>c.right-2;})`), false, 'numbers stay inside the card');
     await n.shot(path.join(shots, '8-goals-320.png'));
     await n.ev(`document.querySelector('.gcard[data-id="gA"]').click();'ok'`); await n.wait(400);

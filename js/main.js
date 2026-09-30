@@ -3,7 +3,7 @@
 document.getElementById('btn-set').addEventListener('click',goSet);
 document.getElementById('btn-split').addEventListener('click',openSched);
 document.getElementById('sch-x').addEventListener('click',closeSched);
-['today-sec','sch','hp-det'].forEach(function(id){document.getElementById(id).addEventListener('click',schClick);});
+['today-sec','cal-sec','sch','hp-det'].forEach(function(id){document.getElementById(id).addEventListener('click',schClick);});
 // A home-screen app resumes rather than relaunches, so the Today views must catch up when the date has changed
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&TDAY&&TDAY!==lday(new Date()))refreshView();});
 document.getElementById('btn-bk').addEventListener('click',function(){if(ESI===null)autoSave();goHome();});

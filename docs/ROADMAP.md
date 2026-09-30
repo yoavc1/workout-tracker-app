@@ -19,7 +19,7 @@ Baseline: PR #1 (merged) fixed the cut-off bottom nav and replaced last-writer-w
 | Schedule button | All four: **weekly plan editor**, **calendar of done vs planned**, **start today's workout**, **move a missed day**. |
 | Balance alerts | Alerts are about **muscle groups** first and name the 1–2 exercises causing the problem. |
 | Muscle groups | **Two levels**: a main group with sub-groups, e.g. Back → Upper lats, Lower back; Shoulders → Front, Side, Rear (full list in §5 D). |
-| Calendars | **One calendar**, in the Schedule sheet. The Progress page's calendar moves there. |
+| Calendars | **One calendar**. The Progress page's calendar moves to the Schedule sheet; since 30 Sep it sits on the home screen, under the Today card. |
 | Dark mode | **Fully working dark mode** as its own track (G). |
 
 ## 2. Overlap with PR #1
@@ -162,9 +162,9 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 - A full-screen sheet with, from top to bottom:
   1. **Today:** the planned workout with a **Start** button, or "Rest day".
   2. **Week plan:** Mon–Sun rows. Tap to choose a workout or Rest, drag to swap days. Synced across devices.
-  3. **Month calendar:** done days (coloured by workout), upcoming planned days (outlined), missed planned days (red dot). Tap a day to see what you logged or to log it.
+  3. **Month calendar:** done days (coloured by workout), upcoming planned days (outlined), missed planned days (red dot). Tap a day to see what you logged or to log it. *(30 Sep: moved to the home screen, under the Today card.)*
 - **Move a missed day:** a missed planned day from the last 3 days gets **Do it today** or **Tomorrow**. This records a `move`, so the calendar and alerts both understand it.
-- The home screen gets the same **Today** card at the top.
+- The home screen gets the same **Today** card at the top. Tapping anywhere on it opens the sheet; its buttons (Start, the moves, Undo) keep their own actions.
 - The progression calendar on the Progress page moves here (§8), so there's one calendar, not two.
 - *Done when:* the plan matches on phone and laptop; a missed Monday leg day moved to Tuesday shows as planned on Tuesday and is no longer reported as missed.
 
@@ -239,6 +239,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
   - The kg per week still needed.
 - Detail: the exercise chart with the pace line overlaid.
 - Reaching a target celebrates and archives the goal; archived goals stay viewable.
+- A **muscle group filter** above the list (All · Chest · Back · Shoulders · Arms · Legs, plus Core and Other once a goal is in them) narrows active and archived goals to one group. It goes by the exercise's muscle group, including one you picked in Progress.
 - *Done when:* the example 40 → 65 kg over 6 months shows the right expected kg for today, and flips to Behind once you fall below the tolerance.
 
 **G · Dark mode**
@@ -297,5 +298,5 @@ GitHub Pages hosting, Google Apps Script with the Sheet, Chart.js and SortableJS
 
 1. **Current Apps Script:** read directly from your Drive, so no copy-paste was needed. Findings are in §2.
 2. **Muscle groups:** two levels, main group plus sub-groups (§5 D).
-3. **Calendars:** one calendar, in the Schedule sheet.
+3. **Calendars:** one calendar, in the Schedule sheet (moved to the home screen on 30 Sep).
 4. **Dark mode:** fully working, as track G.

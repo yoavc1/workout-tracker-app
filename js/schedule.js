@@ -54,21 +54,24 @@ function dname(day,today){today=today||lday(new Date());var k=[addD(today,-1),to
   return k>=0?['yesterday','today','tomorrow'][k]:Math.abs(pday(day)-pday(today))<6.5*864e5?DAYL[dow(day)]:fds(pday(day));}
 
 // ═══════ UI ═══════
-// SCM: calendar month offset. TDAY: the day the Today views were drawn for. SDRAG: a week-plan drag is in progress.
+// SCM: the home calendar's month offset, back to this month whenever the Workouts tab opens. TDAY: the day the Today
+// views were drawn for. SDRAG: a week-plan drag is in progress.
 var SCM=0,TDAY=null,SSRT=null,SDRAG=false;
 function schOpen(){return document.getElementById('sch').classList.contains('active');}
-function openSched(){SCM=0;rSched(gd());var s=document.getElementById('sch');s.classList.add('active');s.scrollTop=0;}
+function openSched(){rSched(gd());var s=document.getElementById('sch');s.classList.add('active');s.scrollTop=0;}
 function closeSched(){document.getElementById('sch').classList.remove('active');}
-// Redraws every Today view: the home card, and the sheet when it's open. keepWeek leaves the week list as a drag left it.
-function rToday(keepWeek){var d=gd();TDAY=lday(new Date());document.getElementById('today-sec').innerHTML=todayHTML(d,true);if(schOpen()&&!SDRAG)rSched(d,keepWeek);}
-function rSched(d,keepWeek){document.getElementById('sch-td').innerHTML=todayHTML(d);if(!keepWeek)rWeek(d);rCal(d);}
+// Redraws every Today view: the home card and calendar, and the sheet when it's open. keepWeek leaves the week list as
+// a drag left it.
+function rToday(keepWeek){var d=gd();TDAY=lday(new Date());document.getElementById('today-sec').innerHTML=todayHTML(d,true);rCal(d);if(schOpen()&&!SDRAG)rSched(d,keepWeek);}
+function rSched(d,keepWeek){document.getElementById('sch-td').innerHTML=todayHTML(d);if(!keepWeek)rWeek(d);}
 
 function tdRow(n,sub,btn,w){return'<div class="td-r"><i class="td-bar" style="background:'+wColor(n,w)+'"></i><div class="td-m"><div class="td-n">'+eh(n)+'</div><div class="td-s">'+sub+'</div></div>'+btn+'</div>';}
 function undoB(m){return'<button class="td-u" data-act="undo" data-id="'+ea(m.id)+'">Undo</button>';}
 function todayHTML(d,home){
   var today=lday(new Date()),tm=addD(today,1),w=gw(),dr=gDri(),pl=plannedOn(today,d),mv=vals((d.schedule||{}).moves),wk=(d.schedule||{}).week||{},done=[];
   d.sessions.forEach(function(s){if(lday(s.date)===today&&done.indexOf(s.workout)<0)done.push(s.workout);});
-  var h='<div class="hsec td"><div class="hsec-t">Today · '+fdf(new Date())+(home?'<button class="td-lnk" data-act="open">Schedule ›</button>':'')+'</div>';
+  // On home the whole card opens the sheet; its buttons keep their own actions (schClick takes the nearest data-act)
+  var h='<div class="hsec td"'+(home?' data-act="open"':'')+'><div class="hsec-t">Today · '+fdf(new Date())+(home?'<button class="td-lnk" data-act="open">Schedule ›</button>':'')+'</div>';
   pl.concat(done.filter(function(x){return pl.indexOf(x)<0;})).forEach(function(n){
     var ok=done.indexOf(n)>=0,m=null;mv.forEach(function(x){if(x.to===today&&x.from<today&&x.workout===n)m=x;});
     var sub=ok?'Done':m?'Moved from '+dname(m.from,today)+' · '+undoB(m):w[n]?w[n].length+' exercise'+(w[n].length!==1?'s':''):'No longer one of your workouts';
@@ -110,8 +113,8 @@ function pickDay(k){
   o.querySelectorAll('.jsd').forEach(function(b){b.addEventListener('click',function(){sp[k]=b.dataset.v;sSplit(sp);document.getElementById('mov-splitday').classList.remove('active');rToday();});});
 }
 
-// Month calendar: done days filled with the workout's colour, upcoming planned days outlined, missed planned days
-// with a red dot, core days marked C
+// Month calendar, on home under the Today card: done days filled with the workout's colour, upcoming planned days
+// outlined, missed planned days with a red dot, core days marked C
 function rCal(d){
   var t=new Date(),today=lday(t),vd=new Date(t.getFullYear(),t.getMonth()+SCM,1),yr=vd.getFullYear(),mo=vd.getMonth(),w=gw();
   var dim=new Date(yr,mo+1,0).getDate(),by={},nd=0,nm=0,c='';
@@ -127,7 +130,7 @@ function rCal(d){
   }
   var lg='';Object.keys(w).forEach(function(n){lg+='<span><i style="background:'+wColor(n,w)+'"></i>'+eh(n)+'</span>';});
   lg+='<span><i class="o"></i>Planned</span><span><i class="m"></i>Missed</span><span><b>C</b>Core</span>';
-  document.getElementById('sch-cal').innerHTML='<div class="hsec"><div class="hsec-t">Calendar<span class="hsec-n">'+nd+' workout day'+(nd!==1?'s':'')+(nm?' · '+nm+' missed':'')+'</span></div>'+
+  document.getElementById('cal-sec').innerHTML='<div class="hsec"><div class="hsec-t">Calendar<span class="hsec-n">'+nd+' workout day'+(nd!==1?'s':'')+(nm?' · '+nm+' missed':'')+'</span></div>'+
     '<div class="cal-nav"><button class="cal-nb" data-act="mp" aria-label="Previous month">‹</button><div class="cal-t">'+vd.toLocaleString('en',{month:'long',year:'numeric'})+'</div><button class="cal-nb" data-act="mn" aria-label="Next month">›</button></div>'+
     '<div class="cal-dh"><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div></div><div class="cal-g">'+c+'</div><div class="cal-leg">'+lg+'</div></div>';
 }
@@ -149,7 +152,7 @@ function openDay(day){
   document.getElementById('hp-det').innerHTML=h;
   document.getElementById('hmpop-ov').classList.add('active');
 }
-// One click handler for the home card, the sheet and the day pop-up (buttons carry data-act)
+// One click handler for the home card and calendar, the sheet and the day pop-up (buttons carry data-act)
 function schClick(e){
   var b=e.target.closest('[data-act]');if(!b)return;var a=b.dataset.act,x=b.dataset,today=lday(new Date());
   if(a==='open')openSched();
