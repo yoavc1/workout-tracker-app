@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Nunito:wght@400;500;600;700;800;900&display=swap');
-:root{--sab:env(safe-area-inset-bottom,0px);--navpb:max(10px,calc(var(--sab) - 8px));--on-accent:#fff;--on-color:#fff;--on-bright:#000;--bg-glass:rgba(232,240,248,0.85);--bg-glass-strong:rgba(232,240,248,0.95);--brd-faint:rgba(0,0,0,0.04);--scrim:rgba(0,0,0,0.3);--pos-bg:#d4f5e2;--pos-brd:#1a8a4a;--warn-bg:#fef3d0;--warn-brd:#c8900a;--info-bg:#d6ebfa;--info-brd:#2471a8;--bg:#e8f0f8;--bg2:#dce8f2;--card:#ffffff;--card2:#f5f8fb;--input:#f0f4f8;--brd:rgba(0,0,0,0.07);--brd2:rgba(0,0,0,0.12);--t1:#1a1a2e;--t2:#5a6070;--t3:#9aa0b0;--accent:#1a1a2e;--adim:rgba(0,0,0,0.04);--green:#2ecc71;--gdim:rgba(46,204,113,0.1);--red:#e74c3c;--rdim:rgba(231,76,60,0.08);--orange:#f39c12;--blue:#3498db;--bdim:rgba(52,152,219,0.1);--r:18px;--rs:12px;--ff:'Nunito',sans-serif;--fb:'DM Sans',sans-serif;--tr:0.25s cubic-bezier(0.4,0,0.2,1);--glass:saturate(120%) blur(20px);--sh:0 2px 12px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03);--sh-sm:0 1px 4px rgba(0,0,0,0.06);--sh-xs:0 1px 3px rgba(0,0,0,0.04);--sh-nav:0 2px 12px rgba(0,0,0,0.08);--sh-plus:0 4px 16px rgba(26,26,46,0.1);--sh-fin:0 4px 16px rgba(26,26,46,0.15);--sh-upd:0 4px 16px rgba(46,204,113,0.2);--sh-pop:0 8px 40px rgba(0,0,0,0.15);--sh-modal:0 -4px 20px rgba(0,0,0,0.1);--bbrd:rgba(91,140,247,0.2);--rbrd:rgba(239,95,95,0.2);--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%235a6070' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");color-scheme:light}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#11141c;--bg2:#0c0f15;--card:#1b1f2a;--card2:#222735;--input:#272c3a;--brd:rgba(255,255,255,0.08);--brd2:rgba(255,255,255,0.16);--brd-faint:rgba(255,255,255,0.04);--t1:#e4e8f1;--t2:#a3aabb;--t3:#7d8497;--accent:#e4e8f1;--on-accent:#11141c;--adim:rgba(255,255,255,0.05);--gdim:rgba(46,204,113,0.14);--rdim:rgba(231,76,60,0.14);--bdim:rgba(52,152,219,0.14);--bg-glass:rgba(17,20,28,0.85);--bg-glass-strong:rgba(17,20,28,0.95);--scrim:rgba(0,0,0,0.6);--pos-bg:#15301f;--pos-brd:#2ecc71;--warn-bg:#352c12;--warn-brd:#f0b429;--info-bg:#142a3d;--info-brd:#4aa3e0;--sh:0 2px 12px rgba(0,0,0,0.3),0 0 0 1px rgba(0,0,0,0.2);--sh-sm:0 1px 4px rgba(0,0,0,0.3);--sh-xs:0 1px 3px rgba(0,0,0,0.25);--sh-nav:0 4px 16px rgba(0,0,0,0.45);--sh-plus:0 4px 16px rgba(0,0,0,0.45);--sh-fin:0 4px 16px rgba(0,0,0,0.4);--sh-pop:0 8px 40px rgba(0,0,0,0.5);--sh-modal:0 -4px 24px rgba(0,0,0,0.5);--bbrd:rgba(91,140,247,0.3);--rbrd:rgba(239,95,95,0.35);--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23a3aabb' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E")}
+:root{--sab:env(safe-area-inset-bottom,0px);--navpb:max(10px,calc(var(--sab) - 8px));--on-accent:#fff;--on-color:#fff;--on-bright:#000;--bg-glass:rgba(232,240,248,0.85);--bg-glass-strong:rgba(232,240,248,0.95);--brd-faint:rgba(0,0,0,0.04);--scrim:rgba(0,0,0,0.3);--pos-bg:#d4f5e2;--pos-brd:#1a8a4a;--warn-bg:#fef3d0;--warn-brd:#c8900a;--info-bg:#d6ebfa;--info-brd:#2471a8;--bg:#e8f0f8;--bg2:#dce8f2;--card:#ffffff;--card2:#f5f8fb;--input:#f0f4f8;--brd:rgba(0,0,0,0.07);--brd2:rgba(0,0,0,0.12);--t1:#1a1a2e;--t2:#5a6070;--t3:#9aa0b0;--accent:#1a1a2e;--adim:rgba(0,0,0,0.04);--green:#2ecc71;--gdim:rgba(46,204,113,0.1);--red:#e74c3c;--rdim:rgba(231,76,60,0.08);--orange:#f39c12;--blue:#3498db;--bdim:rgba(52,152,219,0.1);--r:18px;--rs:12px;--ff:'Nunito',sans-serif;--fb:'DM Sans',sans-serif;--tr:0.25s cubic-bezier(0.4,0,0.2,1);--glass:saturate(120%) blur(20px);--sh:0 2px 12px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.03);--sh-sm:0 1px 4px rgba(0,0,0,0.06);--sh-xs:0 1px 3px rgba(0,0,0,0.04);--sh-nav:0 2px 12px rgba(0,0,0,0.08);--sh-plus:0 4px 16px rgba(26,26,46,0.1);--sh-fin:0 4px 16px rgba(26,26,46,0.15);--sh-upd:0 4px 16px rgba(46,204,113,0.2);--sh-pop:0 8px 40px rgba(0,0,0,0.15);--sh-modal:0 -4px 20px rgba(0,0,0,0.1);--bbrd:rgba(91,140,247,0.2);--rbrd:rgba(239,95,95,0.2);--gbrd:rgba(26,138,74,0.35);--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%235a6070' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#11141c;--bg2:#0c0f15;--card:#1b1f2a;--card2:#222735;--input:#272c3a;--brd:rgba(255,255,255,0.08);--brd2:rgba(255,255,255,0.16);--brd-faint:rgba(255,255,255,0.04);--t1:#e4e8f1;--t2:#a3aabb;--t3:#7d8497;--accent:#e4e8f1;--on-accent:#11141c;--adim:rgba(255,255,255,0.05);--gdim:rgba(46,204,113,0.14);--rdim:rgba(231,76,60,0.14);--bdim:rgba(52,152,219,0.14);--bg-glass:rgba(17,20,28,0.85);--bg-glass-strong:rgba(17,20,28,0.95);--scrim:rgba(0,0,0,0.6);--pos-bg:#15301f;--pos-brd:#2ecc71;--warn-bg:#352c12;--warn-brd:#f0b429;--info-bg:#142a3d;--info-brd:#4aa3e0;--sh:0 2px 12px rgba(0,0,0,0.3),0 0 0 1px rgba(0,0,0,0.2);--sh-sm:0 1px 4px rgba(0,0,0,0.3);--sh-xs:0 1px 3px rgba(0,0,0,0.25);--sh-nav:0 4px 16px rgba(0,0,0,0.45);--sh-plus:0 4px 16px rgba(0,0,0,0.45);--sh-fin:0 4px 16px rgba(0,0,0,0.4);--sh-pop:0 8px 40px rgba(0,0,0,0.5);--sh-modal:0 -4px 24px rgba(0,0,0,0.5);--bbrd:rgba(91,140,247,0.3);--rbrd:rgba(239,95,95,0.35);--gbrd:rgba(46,204,113,0.4);--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23a3aabb' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E")}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html{touch-action:pan-y;-ms-touch-action:pan-y;background:var(--bg)}
 html,body{font-family:var(--fb);background:var(--bg);color:var(--t1);min-height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior:none;-webkit-text-size-adjust:100%}
@@ -120,7 +120,6 @@ body{background:var(--bg);position:fixed;inset:0;overflow:hidden}
 .hcard-date{font-size:12px;color:var(--t3);margin-left:8px}
 .hcard-stats{font-size:12px;color:var(--t2);margin-bottom:6px}
 .hcard-ex{font-size:12px;color:var(--t3);line-height:1.7}.hcard-ex strong{color:var(--t2);font-weight:600}
-.hcard-core{font-size:11px;color:var(--green);font-family:var(--ff);font-weight:600;margin-top:4px}
 .hcard-acts{display:flex;gap:4px;flex-shrink:0}
 .hcard-btn{background:var(--card);border:1px solid var(--brd);color:var(--t2);cursor:pointer;font-size:13px;padding:6px 10px;border-radius:var(--rs);box-shadow:var(--sh-xs)}
 /* Settings */
@@ -239,7 +238,7 @@ input[type=number]{-moz-appearance:textfield}
 .ctick.on{background:var(--green);border-color:var(--green);color:var(--on-color)}
 .ctick.pop{animation:cpop 0.3s ease-out}
 @keyframes cpop{0%{transform:scale(0.85)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
-@media (prefers-reduced-motion:reduce){.ctick.pop{animation:none}.cchip:active,.ctick:active{transform:none}}
+@media (prefers-reduced-motion:reduce){.ctick.pop{animation:none}.cchip:active,.ctick:active,.hcx:active{transform:none}}
 .cchip-m{flex:1;min-width:0}
 .cchip-t{font-family:var(--ff);font-size:15px;font-weight:700;color:var(--t1);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .cchip-n{font-family:var(--fb);font-size:11px;font-weight:500;color:var(--t2);white-space:nowrap}
@@ -276,12 +275,19 @@ input[type=number]{-moz-appearance:textfield}
 .cadd-in .ta{flex-direction:column-reverse;margin:0 0 6px}
 .cadd-row .mbtn{flex:0 0 auto;height:46px;padding:0 18px}
 .csh-done{width:100%}
-.hcl{display:block;width:100%;min-height:36px;margin-top:6px;padding:8px 0 0;border:none;border-top:1px solid var(--brd);background:none;text-align:left;font-family:var(--ff);font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;line-height:1.5}
-.hcl.on{color:var(--t2);font-weight:700}
-.hcl-ok{color:var(--green);font-weight:800}
+/* History: every workout card has the day's core as a small chip, green when done, with the same tick as the home chip */
+.hcx{display:flex;align-items:center;gap:10px;margin-top:10px;padding:7px 12px 7px 7px;border:1px solid var(--brd2);border-radius:var(--rs);background:var(--card2);cursor:pointer;transition:transform 0.15s ease}
+.hcx:active{transform:scale(0.98)}
+.hcx.on{background:var(--gdim);border-color:var(--gbrd)}
+.hcx .ctick,.hco .ctick{min-width:36px;height:36px;font-size:16px}
+/* An empty tick sits on the card colour and a darker ring, so it reads as a box to tick, not a faint mark */
+.hcx .ctick:not(.on){background:var(--card);border-color:var(--t3)}
+.hcx-m{flex:1;min-width:0}
+.hcx-t{font-family:var(--ff);font-size:14px;font-weight:700;color:var(--t1)}
+.hcx-s{font-size:12px;color:var(--t2);margin-top:1px;overflow-wrap:anywhere}
+.hcx-go{color:var(--t3);font-size:16px;flex-shrink:0}
 .hco{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--brd);cursor:pointer}
 .hco:active{background:var(--card2)}
-.hco-i{width:26px;height:26px;border-radius:13px;background:var(--green);color:var(--on-color);font-family:var(--ff);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .hco-m{flex:1;min-width:0}
 .hco-t{font-family:var(--ff);font-size:14px;font-weight:700}
 .hco-s{font-size:12px;color:var(--t2);margin-top:2px;overflow-wrap:anywhere}

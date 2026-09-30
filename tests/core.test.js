@@ -81,6 +81,16 @@ eq([sw[0].mode, sw[0].best, sw[0].pts.length], ['reps', 8, 1], 'after a mode swi
 
 // History: days with core but no workout get their own card
 eq(app.coreOnlyDays(), [ago(20), ago(10), ago(4), ago(1)].sort());
+// Each workout card's core row: the tick in the day's state, then what was logged, or a prompt to add it. A day that was
+// never ticked, or was unticked, still gets the tick, so the control is there in both states.
+app.document.createElement = () => { let t = ''; return { set textContent(v) { t = String(v); }, get innerHTML() { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); } }; };
+const row = day => { const h = app.coreLine(day); return [/^<div class="hcx jhc on"/.test(h), (h.match(/<button class="ctick jhct( on)?( pop)?" data-day="([^"]+)" aria-label="Core done" aria-pressed="(\w+)">/) || []).slice(1), (h.match(/<div class="hcx-s">(.*?)<\/div>/) || [])[1]]; };
+eq(row(ago(6)), [true, [' on', null, ago(6), 'true'], 'Plank 45s, Leg Raise 2×12']);
+eq(row(ago(3)), [true, [' on', null, ago(3), 'true'], 'Done · tap to add exercises'], 'old abs tick, nothing logged');
+eq(row(ago(8)), [false, [null, null, ago(8), 'false'], 'Not done · tap to add exercises'], 'unticked day');
+eq(row(ago(9)), [false, [null, null, ago(9), 'false'], 'Not done · tap to add exercises'], 'no record at all');
+app.CPOP = ago(6); eq(row(ago(6))[1].slice(0, 2), [' on', ' pop'], 'the day just ticked pops'); assert.strictEqual(row(ago(1))[1][1], undefined); app.CPOP = null;
+assert.ok(app.coreLine('2026-01-05', { 'c2026-01-05': { done: true, items: [R('Crunch <b>', 5)] } }).includes('>Crunch &lt;b&gt; 5<'), 'names are escaped as text');
 
 // ── Writing ──
 // Adding an exercise with no sets doesn't tick the day; the first set does, and the day's sessions get abs

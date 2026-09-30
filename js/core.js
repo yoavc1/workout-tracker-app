@@ -1,5 +1,5 @@
 // Workout Tracker — Core: the daily chip (home and workout screens), the day sheet (exercises, sets, stopwatch),
-// History's core line and the Progress core section
+// History's core rows and the Progress core section
 // ═══════ CORE ═══════
 var CORE_DEF=['Plank','Side Plank','Leg Raise','Hanging Leg Raise','Crunch','Dead Bug','Russian Twist','Ab Wheel'];
 var COD=null,CSWI=null,CPOP=null,CCD=null,coreBound=false;
@@ -120,9 +120,12 @@ function coreAdd(name){name=String(name||'').trim();if(!name){toast('Enter a nam
   if(citem(coreItems(COD),name)){toast(name+' is already on the list','var(--orange)');return;}
   var m=coreMode(name);coreEdit(COD,function(its){its.push({name:name,mode:m,sets:[]});});rCoreSheet();}
 
-// ─── History line ───
+// ─── History: a core row on every workout card, and a card of its own on a rest day ───
+// The same tick as the chip, so marking core done looks and works the same everywhere
+function coreTickB(day,on){return'<button class="ctick jhct'+(on?' on':'')+(on&&CPOP===day?' pop':'')+'" data-day="'+day+'" aria-label="Core done" aria-pressed="'+on+'">✓</button>';}
+// Tapping the tick flips the day; tapping the rest opens the day's sheet to add or edit exercises
 function coreLine(day,cm){var on=coreDone(day,cm),sum=coreSum(coreItems(day,cm));
-  return'<button class="hcl jhc'+(on?' on':'')+'" data-day="'+day+'">'+(on?'<span class="hcl-ok">✓</span> Core'+(sum?': '+eh(sum):''):'+ Core')+'</button>';}
+  return'<div class="hcx jhc'+(on?' on':'')+'" data-day="'+day+'">'+coreTickB(day,on)+'<div class="hcx-m"><div class="hcx-t">Core</div><div class="hcx-s">'+(sum?eh(sum):(on?'Done':'Not done')+' · tap to add exercises')+'</div></div><span class="hcx-go">→</span></div>';}
 
 // ─── Progress section ───
 function cspark(pts){var p=pts.slice(-12),n=p.length,W=64,H=24;if(n<2)return'<svg class="cp-spark" viewBox="0 0 '+W+' '+H+'"></svg>';
