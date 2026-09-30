@@ -135,6 +135,9 @@ var MUSCLES={
   Legs:['Quads','Hamstrings','Glutes','Calves','Adductors'],
   Core:['Abs','Obliques']
 };
+// The groups a muscle group filter offers (Goals, Progress), in MUSCLES order: Chest, Back, Shoulders, Arms and Legs
+// always, Core and Other only once something is in them (has[group] truthy)
+function mfGroups(has){return Object.keys(MUSCLES).concat('Other').filter(function(k){return(k!=='Core'&&k!=='Other')||has[k];});}
 // First match wins, so the specific rules sit above the general ones
 // (e.g. "Triceps Pulldown" before pulldowns, "Hamstring Curl" before curls, "Chest Supported Row" before chest).
 var MUSCLE_RULES=[

@@ -1,10 +1,16 @@
-// Workout Tracker — Shared UI pieces: exercise names and type-ahead suggestions
+// Workout Tracker — Shared UI pieces: exercise names, type-ahead suggestions and the muscle group filter chips
 // Every exercise ever logged or saved in a workout, most recently logged first (activities like Muay Thai left out)
 function exNames(d){
   d=d||gd();var seen={},out=[];function add(x){if(x&&!seen[x]){seen[x]=1;out.push(x);}}
   d.sessions.slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(s){if(!isActivity(s))Object.keys(s.exercises||{}).forEach(add);});
   var w=d.workouts||DW;Object.keys(w).forEach(function(k){(w[k]||[]).forEach(add);});
   return out;
+}
+// Muscle group filter chips above a list (Goals, Progress): All with nAll, then each of gg [{group, n}] with its n.
+// cur: the group picked ('' = all). The screen binds the clicks: tapping the picked chip again, or All, shows everything.
+function mfChips(gg,nAll,cur){
+  var chip=function(k,n){return'<button class="gf-c'+(cur===k?' active':'')+'" data-g="'+ea(k)+'" aria-pressed="'+(cur===k)+'">'+(k?eh(k):'All')+'<em>'+n+'</em></button>';};
+  return'<div class="gf" role="group" aria-label="Filter by muscle group">'+chip('',nAll)+gg.map(function(x){return chip(x.group,x.n);}).join('')+'</div>';
 }
 // Suggestions under an input as you type. items() gives the candidates in preferred order; matches at the start of the
 // name rank first, then at the start of a word, then anywhere. onPick(name) runs when one is tapped.

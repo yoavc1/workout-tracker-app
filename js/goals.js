@@ -55,12 +55,10 @@ function goalErr(f,d,now){
 }
 // A goal's main muscle group, from its exercise: your pick in Progress, else the guess from its name
 function goalGroup(g,d){return muscleOf(g.exercise,d).main;}
-// The filter's groups in MUSCLES order: Chest, Back, Shoulders, Arms and Legs always, Core and Other only once a goal
-// is in them. [{group, n}], n = how many of `act` are in it.
+// The filter's groups (mfGroups: Core and Other only once a goal is in them). [{group, n}], n = how many of `act` are in it.
 function goalGroups(all,act,d){
   var of=function(g){return goalGroup(g,d);},has={};all.forEach(function(g){has[of(g)]=1;});
-  return Object.keys(MUSCLES).concat('Other').filter(function(k){return(k!=='Core'&&k!=='Other')||has[k];})
-    .map(function(k){return{group:k,n:act.filter(function(g){return of(g)===k;}).length};});
+  return mfGroups(has).map(function(k){return{group:k,n:act.filter(function(g){return of(g)===k;}).length};});
 }
 // ─── Screen ───
 function gLab(st){return{ahead:'Ahead',on:'On track',behind:'Behind',done:'🎉 Reached'}[st];}
@@ -88,8 +86,7 @@ function rGoals(open){
   act=act.filter(inF);arc=arc.filter(inF);
   var by=function(a,b){return a.targetDate<b.targetDate?-1:a.targetDate>b.targetDate?1:0;};
   act.sort(function(a,b){return(GJUST[b.id]?1:0)-(GJUST[a.id]?1:0)||by(a,b);});arc.sort(function(a,b){return by(b,a);});
-  var chip=function(k,n){return'<button class="gf-c'+(GF===k?' active':'')+'" data-g="'+ea(k)+'" aria-pressed="'+(GF===k)+'">'+(k?eh(k):'All')+'<em>'+n+'</em></button>';};
-  var h=all.length?'<div class="gf" role="group" aria-label="Filter by muscle group">'+chip('',nAct)+gg.map(function(x){return chip(x.group,x.n);}).join('')+'</div>':'';
+  var h=all.length?mfChips(gg,nAct,GF):'';
   if(!act.length)h+=GF?'<div class="empty gempty"><h3>No active goals for '+eh(GF)+'</h3><p>Tap All to see your other goals, or set a new one.</p><button class="mbtn pri" id="g-first">New goal</button></div>':
     '<div class="empty gempty"><h3>'+(arc.length?'No active goals':'No goals yet')+'</h3><p>Pick a lift, a target kg and a date. You\'ll see the pace you need and whether you\'re ahead or behind it.</p><button class="mbtn pri" id="g-first">New goal</button></div>';
   act.forEach(function(g){h+=gCard(g,goalStatus(g,d,now),!!GJUST[g.id]);});

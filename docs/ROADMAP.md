@@ -186,6 +186,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
    - A chart with an e1RM line, top-set points, and a goal line if a goal exists.
    - A table of recent sessions.
    - Range 1M / 3M / 6M / All, defaulting to 3M.
+- A **muscle group filter** above the overview, the same chips as Goals (All · Chest · Back · Shoulders · Arms · Legs, plus Core and Other once something is in them, each with its number of exercises), narrows the cards and exercises to one group. The Core card shows for All and Core only.
 - **Status rules** (adjustable constants):
   - *Progressing:* a new e1RM best in the last 3 sessions.
   - *Stalled:* no new best in 3+ sessions.
