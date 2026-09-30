@@ -137,11 +137,11 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
       await shot('02-home-insights', t);
       await sheet('03-start-workout', t, `document.getElementById('nav-plus').click();`);
       await sheet('04-manage-workouts', t, `showManage();`);
-      // Schedule: Today and the week plan, a day's workout picker, the month calendar and a day's pop-up
+      // Schedule: Today and the week plan, a day's workout picker, then the month calendar on home and a day's pop-up
       await sheet('05-schedule', t, `openSched();`);
       await sheet('06-split-day', t, `openSched();pickDay('Mon');`);
-      await sheet('06b-schedule-calendar', t, `openSched();document.getElementById('sch-cal').scrollIntoView({block:'end'});`);
-      await sheet('06c-calendar-day', t, `openSched();openDay(lday(gs()[gs().length-1].date));`);
+      await sheet('06b-home-calendar', t, `document.getElementById('cal-sec').scrollIntoView({block:'center'});`);
+      await sheet('06c-calendar-day', t, `openDay(lday(gs()[gs().length-1].date));`);
       // Workout: one exercise open with a new-PR set, and the rest timer running
       await p.ev(`openWK('Legs');var h=document.querySelector('.ecard .jtog');if(h)h.click();var a=document.querySelector('.jadd');if(a)a.click();'ok'`); await p.wait(150);
       await p.ev(`var k=document.querySelector('.jkg'),r=document.querySelector('.jrp');if(k){k.value='99';k.dispatchEvent(new Event('input'));}if(r){r.value='8';r.dispatchEvent(new Event('input'));}startT(90);'ok'`);

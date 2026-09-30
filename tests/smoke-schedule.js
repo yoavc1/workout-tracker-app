@@ -1,5 +1,6 @@
-// End-to-end test of the Schedule sheet (Track B) in headless Chrome at iPhone size (393x852), against a mock sync server:
-// the Today card, the week plan (tap to pick, drag to swap), moving a missed day, the month calendar and its day pop-up.
+// End-to-end test of the Schedule (Track B) in headless Chrome at iPhone size (393x852), against a mock sync server:
+// the Today card and the month calendar under it on home, the sheet's week plan (tap to pick, drag to swap), moving a
+// missed day, and the calendar's day pop-up.
 // Usage: node tests/smoke-schedule.js   (SHOTS=<dir> keeps the screenshots there)
 const path = require('path'), fs = require('fs'), os = require('os'), assert = require('assert');
 const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
@@ -56,8 +57,27 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await shot('02-home-today.png');
     await click('#today-sec .td-go'); await p.wait(200);
     assert.strictEqual(await text('#wk-t'), 'Upper Pull'); assert.deepStrictEqual(await p.ev('__wk.pop()'), ['Upper Pull']);
+    assert.strictEqual(await p.ev(`schOpen()`), false, 'Start opens the workout, not the sheet');
     await click('#btn-bk'); await p.wait(200);
     step('home Today card: planned workout starts, missed day offers a move');
+
+    // Tapping anywhere else on the Today card opens the sheet; its own buttons (move, Undo) don't
+    for (const sel of ['#today-sec .td-n', '#today-sec .hsec-t', '#today-sec .td-bar', '#today-sec .td-lnk']) {
+      await click(sel); assert.strictEqual(await p.ev(`schOpen()`), true, sel + ' opens the sheet');
+      await click('#sch-x');
+    }
+    await click(`#today-sec [data-act="mv"][data-to="${home.tm}"]`); await p.wait(100);
+    assert.deepStrictEqual([await p.ev(`schOpen()`), await p.ev(`plannedOn(T.day(1))`)], [false, ['Upper Push', 'Legs']], 'a move from the card stays on home');
+    await click('#today-sec [data-act="undo"]'); await p.wait(100);
+    assert.deepStrictEqual([await p.ev(`schOpen()`), await p.ev(`missedDays(3)`)], [false, home.miss], 'Undo stays on home');
+    step('the whole Today card opens the sheet, its buttons keep their own actions');
+
+    // The month calendar sits under the Today card on home, and has left the sheet
+    assert.deepStrictEqual(await p.ev(`(function(){var c=document.getElementById('cal-sec');return [document.getElementById('today-sec').nextElementSibling===c,!!c.querySelector('.cal-g'),!!document.querySelector('#sch .cal-g'),c.getBoundingClientRect().right<=innerWidth];})()`), [true, true, false, true]);
+    await p.ev(`document.getElementById('cal-sec').scrollIntoView({block:'center'});'ok'`); await p.wait(100);
+    await shot('02b-home-calendar.png');
+    await p.ev(`document.getElementById('s-home').scrollTop=0;'ok'`);
+    step('the month calendar is on home, under the Today card');
 
     // The sheet covers the whole screen, nav included, and never scrolls sideways (also on a 320px phone)
     await click('#btn-split'); await p.wait(450);
@@ -67,9 +87,9 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     assert.strictEqual(await p.ev(`document.querySelector('.wp-d .tdy').textContent`), await p.ev('T.k(0)'), "today's row is highlighted");
     await shot('03-schedule-sheet.png');
     await p.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 568, deviceScaleFactor: 1, mobile: true }); await p.wait(200);
-    assert.ok(await p.ev(`(function(){var s=document.getElementById('sch');return s.scrollWidth<=s.clientWidth&&document.querySelector('.cal-g').getBoundingClientRect().right<=320;})()`), 'fits 320px');
+    assert.ok(await p.ev(`(function(){var s=document.getElementById('sch'),h=document.getElementById('s-home');return s.scrollWidth<=s.clientWidth&&h.scrollWidth<=h.clientWidth&&document.querySelector('#cal-sec .cal-g').getBoundingClientRect().right<=320;})()`), 'fits 320px');
     await p.send('Emulation.setDeviceMetricsOverride', { width: 393, height: 852, deviceScaleFactor: 1, mobile: true }); await p.wait(200);
-    step('Schedule sheet opens full screen: Today, Week plan, Calendar');
+    step('Schedule sheet opens full screen: Today and Week plan');
 
     // Move yesterday's missed Legs to today, then undo, then move it to tomorrow
     const [t, y, tm] = [await p.ev('T.t'), await p.ev('T.day(-1)'), await p.ev('T.day(1)')];
@@ -108,7 +128,7 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
       c=T.cal(-8);r.before=!c.querySelector('.cal-m')&&missedOn(T.day(-8)).length===0&&plannedOn(T.day(-8))[0]==='Legs';
       return r;})()`);
     assert.deepStrictEqual(cal, { done: [true, true], two: true, miss: true, core: true, plan: true, today: true, moved: true, before: true, miss7: true });
-    await p.ev(`SCM=0;rCal(gd());document.getElementById('sch-cal').scrollIntoView({block:'end'});'ok'`); await p.wait(100);
+    await p.ev(`closeSched();SCM=0;rCal(gd());document.getElementById('cal-sec').scrollIntoView({block:'center'});'ok'`); await p.wait(100);
     await shot('08-calendar.png');
     const m0 = await text('.cal-t');
     await click('.cal-nb[data-act="mp"]'); const mPrev = await text('.cal-t');
