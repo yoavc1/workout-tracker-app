@@ -20,23 +20,26 @@ function rHist(){
     var body='<div class="hwb"><div class="hwb-in">';
     g.items.forEach(function(item){
       if(item.core){body+='<div class="hco jhc" data-day="'+item.core+'">'+coreTickB(item.core,true)+'<div class="hco-m"><div><span class="hco-t">Core</span><span class="hcard-date">'+fdf(item.core+'T12:00')+'</span></div><div class="hco-s">'+(eh(coreSum(coreItems(item.core,coreM)))||'Done · tap to add exercises')+'</div></div><span class="hco-go">→</span></div>';return;}
-      var s=item.s;var idx=item.idx;var sday=lday(s.date);var ee=Object.entries(s.exercises);var ts=ee.reduce(function(a,e){return a+e[1].length;},0);
+      var s=item.s;var idx=item.idx;var ee=Object.entries(s.exercises);var ts=ee.reduce(function(a,e){return a+e[1].length;},0);
       var bd=ee.map(function(e){return'<div><strong>'+eh(e[0])+':</strong> '+e[1].map(function(x){return x.kg+'kg×'+x.reps;}).join(', ')+'</div>';}).join('');
       var dur=s.duration?' · '+fdur(s.duration):'';var day=fdf(s.date);
-      // Core is one record per day, yet every workout card shows it, so it's there whichever card of a two-workout day
-      // you look at; the day's rows all show the same record and flip together
-      var cl=coreLine(sday,coreM);
+      // Every workout card has a core row, ticked on the workout core went with, so on a two-workout day each card
+      // has its own tick
+      var cl=coreLine(s,d);
       body+='<div class="hcard"><div class="hcard-top"><div><span class="hcard-name">'+eh(s.workout)+'</span><span class="hcard-date">'+day+'</span></div><div class="hcard-acts"><button class="hcard-btn jdt" data-i="'+idx+'">📅</button><button class="hcard-btn je" data-i="'+idx+'">Edit</button><button class="hcard-btn jd" data-i="'+idx+'">Delete</button></div></div><div class="hcard-stats">'+ee.length+' exercise'+(ee.length!==1?'s':'')+' · '+ts+' sets'+dur+'</div><div class="hcard-ex">'+bd+'</div>'+cl+'</div>';
     });
     body+='</div></div>';el.innerHTML=hdr+body;
     el.querySelector('.hwh').addEventListener('click',function(){el.classList.toggle('open');});
     el.querySelectorAll('.je').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var i=parseInt(b.dataset.i);var s=gs()[i];if(s)openWK(s.workout,s.exercises,i);});});
     el.querySelectorAll('.jd').forEach(function(b){tap2(b,function(){delS(parseInt(b.dataset.i));rHist();toast('Deleted','var(--red)');});});
-    el.querySelectorAll('.jhc').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openCore(b.dataset.day);});});
-    // Unticking a rest day's card makes the card go away, so it asks for a second tap like a day with sets does
-    el.querySelectorAll('.jhct').forEach(function(b){var day=b.dataset.day;bindTick(b,day,coreDone(day,coreM),!!coreSum(coreItems(day,coreM))||!!b.closest('.hco'),rHist);});
+    el.querySelectorAll('.jhc').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();openCore(b.dataset.day,b.dataset.sid);});});
+    // Unticking a rest day's card makes the card go away, so it asks for a second tap like a day with sets does.
+    // A workout's tick asks only when it's the day's last workout with core and there are sets, since that clears them.
+    el.querySelectorAll('.jhct').forEach(function(b){var day=b.dataset.day,sid=b.dataset.sid,sets=!!coreSum(coreItems(day,coreM));
+      if(!sid){bindTick(b,day,coreDone(day,coreM),true,rHist);return;}
+      var w=coreWith(day,d),on=w.some(function(x){return x.id===sid;});bindTick(b,day,on,sets&&w.length===1,rHist,sid);});
     el.querySelectorAll('.jdt').forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();var s=gs()[parseInt(b.dataset.i)];editDateId=s.id;document.getElementById('date-inp').value=lday(s.date);document.getElementById('mov-date').classList.add('active');});});
     c.appendChild(el);
   });
-  CPOP=null; // the tick's pop plays once, on every card of the day just ticked
+  CPOP=null; // the tick's pop plays once, on the card just ticked (every card core is on, when the day was ticked)
 }

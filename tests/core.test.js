@@ -81,19 +81,22 @@ eq([sw[0].mode, sw[0].best, sw[0].pts.length], ['reps', 8, 1], 'after a mode swi
 
 // History: days with core but no workout get their own card
 eq(app.coreOnlyDays(), [ago(20), ago(10), ago(4), ago(1)].sort());
-// Each workout card's core row: the tick in the day's state, then what was logged, or a prompt to add it. A day that was
-// never ticked, or was unticked, still gets the tick, so the control is there in both states.
+// Each workout card's core row: the tick in that workout's state, then what was logged, or a prompt to add it. A day that
+// was never ticked, or was unticked, still gets the tick, so the control is there in both states.
 app.document.createElement = () => { let t = ''; return { set textContent(v) { t = String(v); }, get innerHTML() { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); } }; };
-const row = day => { const h = app.coreLine(day); return [/^<div class="hcx jhc on"/.test(h), (h.match(/<button class="ctick jhct( on)?( pop)?" data-day="([^"]+)" aria-label="Core done" aria-pressed="(\w+)">/) || []).slice(1), (h.match(/<div class="hcx-s">(.*?)<\/div>/) || [])[1]]; };
-eq(row(ago(6)), [true, [' on', null, ago(6), 'true'], 'Plank 45s, Leg Raise 2×12']);
-eq(row(ago(3)), [true, [' on', null, ago(3), 'true'], 'Done · tap to add exercises'], 'old abs tick, nothing logged');
-eq(row(ago(8)), [false, [null, null, ago(8), 'false'], 'Not done · tap to add exercises'], 'unticked day');
-eq(row(ago(9)), [false, [null, null, ago(9), 'false'], 'Not done · tap to add exercises'], 'no record at all');
-app.CPOP = ago(6); eq(row(ago(6))[1].slice(0, 2), [' on', ' pop'], 'the day just ticked pops'); assert.strictEqual(row(ago(1))[1][1], undefined); app.CPOP = null;
-assert.ok(app.coreLine('2026-01-05', { 'c2026-01-05': { done: true, items: [R('Crunch <b>', 5)] } }).includes('>Crunch &lt;b&gt; 5<'), 'names are escaped as text');
+const S = id => app.gs().find(s => s.id === id), Q = n => ({ id: 'q' + n, date: at(n) });
+const row = (s, d) => { const h = app.coreLine(s, d); return [/^<div class="hcx jhc on"/.test(h), (h.match(/<button class="ctick jhct( on)?( pop)?" data-day="([^"]+)" data-sid="([^"]+)" aria-label="Core done" aria-pressed="(\w+)">/) || []).slice(1), (h.match(/<div class="hcx-s">(.*?)<\/div>/) || [])[1]]; };
+eq(row(S('s6')), [true, [' on', null, ago(6), 's6', 'true'], 'Plank 45s, Leg Raise 2×12'], 'day ticked as a whole: on its only workout');
+eq(row(S('s3')), [true, [' on', null, ago(3), 's3', 'true'], 'Done · tap to add exercises'], 'old abs tick, nothing logged');
+eq(row(Q(8)), [false, [null, null, ago(8), 'q8', 'false'], 'Not done · tap to add exercises'], 'unticked day');
+eq(row(Q(9)), [false, [null, null, ago(9), 'q9', 'false'], 'Not done · tap to add exercises'], 'no record at all');
+app.CPOP = ago(6); eq(row(S('s6'))[1].slice(0, 2), [' on', ' pop'], 'the day just ticked pops'); assert.strictEqual(row(S('s3'))[1][1], undefined);
+app.CPOP = 's6'; eq(row(S('s6'))[1].slice(0, 2), [' on', ' pop'], 'the workout just ticked pops'); assert.strictEqual(row(S('s3'))[1][1], undefined); app.CPOP = null;
+const esc = { id: 'e', date: '2026-01-05T12:00' };
+assert.ok(app.coreLine(esc, { sessions: [esc], core: { 'c2026-01-05': { done: true, items: [R('Crunch <b>', 5)] } } }).includes('>Crunch &lt;b&gt; 5<'), 'names are escaped as text');
 
 // ── Writing ──
-// Adding an exercise with no sets doesn't tick the day; the first set does, and the day's sessions get abs
+// Adding an exercise with no sets doesn't tick the day; the first set does, and the day's workouts are left as they are
 const s3 = J(app.gs().find(s => s.id === 's3'));
 app.setCoreItems(ago(2), [T('Plank')]);
 assert.strictEqual(app.coreDone(ago(2)), false);
@@ -102,9 +105,10 @@ app.setCoreItems(ago(3), [T('Plank', 30)]);
 let rec = app.gd().core['c' + ago(3)];
 assert.strictEqual(rec.done, true); assert.ok(rec.mt > 1000, 'a real edit time'); eq(rec.items, [T('Plank', 30)]);
 eq(app.gs().find(s => s.id === 's3'), s3, 'abs already set: the session is left alone, mt included');
-// A day with a session and no tick: the first set flips abs once
+// Logging sets on a day doesn't flag its workouts: core shows on the day's latest one until a card is ticked
 app.setCoreItems(ago(6), [T('Plank', 45), R('Leg Raise', 12, 12, 10)]);
-assert.strictEqual(app.gs().find(s => s.id === 's6').abs, true);
+assert.strictEqual(app.gs().find(s => s.id === 's6').abs, undefined);
+eq(app.coreWith(ago(6)).map(s => s.id), ['s6']);
 const s6mt = app.gs().find(s => s.id === 's6').mt;
 app.setCoreItems(ago(6), [T('Plank', 45, 40)]);
 assert.strictEqual(app.gs().find(s => s.id === 's6').mt, s6mt, 'later set edits do not touch the session');
@@ -135,5 +139,51 @@ eq(app.coreItems(today).map(i => i.name), ['Plank'], 'a stopwatch for a removed 
 const other = J(app.gd()); other.core['c' + today] = { id: 'c' + today, mt: Date.now() + 5000, date: today, done: true, items: [T('Plank', 61, 58)] };
 const m = app.mergeD(J(app.gd()), other);
 eq(m.core['c' + today].items, [T('Plank', 61, 58)]);
+
+// ── History's tick on one workout: a two-workout day, ticked as a whole with sets logged ──
+const x10 = new Date(t0); x10.setDate(x10.getDate() - 2); x10.setHours(10);
+const x19 = new Date(x10); x19.setHours(19);
+const X = ago(2), two = () => ({ sessions: [
+  { id: 'a', mt: 50, workout: 'Legs', date: x10.toISOString(), exercises: {} },
+  { id: 'b', mt: 50, workout: 'Muay Thai', date: x19.toISOString(), exercises: {} }],
+  core: C(2, true, [T('Plank', 60)]) });
+app = loadApp(APP, { ironlog_data: JSON.stringify(two()) });
+const on = () => app.coreWith(X).map(s => s.id).sort(), mts = () => app.gs().map(s => s.mt);
+eq(on(), ['b'], 'ticked for the day: on the latest workout only');
+app.coreTickS('a', true);
+eq(on(), ['a', 'b'], 'ticking the other card adds it; the one showing core keeps it');
+app.coreTickS('b', false);
+eq(on(), ['a'], 'unticking one workout leaves the other');
+eq([app.coreDone(X), app.coreItems(X)], [true, [T('Plank', 60)]], 'the day and its exercises stay');
+const mt0 = mts(); app.coreTickS('a', true); eq(mts(), mt0, 'no flip, no mt change');
+app.coreTickS('a', false);
+eq([app.coreDone(X), app.coreItems(X), on()], [false, [], []], "the day's last workout with core: the day is unticked and cleared");
+eq(app.gs().map(s => !!s.abs), [false, false]);
+app.coreTickS('b', true);
+eq([app.coreDone(X), on()], [true, ['b']], 'ticking one workout on an unticked day ticks the day, for that workout only');
+app.coreTickS('nope', false); eq(on(), ['b'], 'an unknown workout changes nothing');
+// A stale flag on an unticked day doesn't come back with the next tick
+app = loadApp(APP, { ironlog_data: JSON.stringify(Object.assign(two(), { core: C(2, false, []) })) });
+const dd = app.gd(); dd.sessions[0].abs = true; app.sd(dd);
+eq(on(), [], 'not done: on no workout');
+app.coreTickS('b', true); eq(on(), ['b']);
+// Unticking the whole day (chip, sheet) takes core off every workout
+app.coreTickS('a', true); app.coreTick(X, false);
+eq([app.coreDone(X), app.gs().map(s => !!s.abs)], [false, [false, false]]);
+
+// The sheet opened from a card: core started there goes with that card's workout, unless another workout has it
+app = loadApp(APP, { ironlog_data: JSON.stringify(Object.assign(two(), { core: {} })) });
+app.COD = X; app.COS = 'a';
+app.coreEdit(X, its => { its.push(T('Plank')); });
+eq([app.coreDone(X), on()], [false, []], 'an exercise with no sets ticks nothing');
+app.coreEdit(X, its => { its[0].sets.push({ secs: 40 }); });
+eq(on(), ['a'], 'the first set: on the card that opened the sheet, not the latest');
+app.COS = 'b'; app.coreEdit(X, its => { its[0].sets.push({ secs: 30 }); });
+eq(on(), ['a'], 'another card opening it later does not add its workout');
+app.coreTick(X, false); app.coreTick(X, true);
+eq(on(), ['b'], "the sheet's own tick goes with the card that opened it");
+app.COS = null; app.COD = null; app.coreTick(X, false); app.coreTick(X, true);
+eq(on(), ['b'], 'from the chip: no workout flagged, shown on the latest');
+eq(app.gs().map(s => !!s.abs), [false, false]);
 
 console.log('core tests pass');
