@@ -3,7 +3,7 @@
 const assert = require('assert');
 const { loadApp } = require('./lib');
 const app = loadApp(['data.js', 'sync.js', 'stats.js', 'ui.js', 'goals.js']);
-const { goalStatus, goalCur, goalHit, goalErr, gMonths, gDays, bestRecent, lday, GT } = app;
+const { goalStatus, goalCur, goalHit, goalErr, goalGroup, goalGroups, gMonths, gDays, bestRecent, lday, GT } = app;
 const J = x => JSON.parse(JSON.stringify(x));
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, (msg || '') + ': ' + a + ' ≠ ' + b);
 
@@ -106,6 +106,13 @@ assert.strictEqual(err({ exercise: EX.toUpperCase() }, { sessions: [], goals: [O
 assert.strictEqual(err({}, { sessions: [], goals: [Object.assign({}, g, { archived: true })] }), '', 'an archived goal does not block a new one');
 assert.strictEqual(err({ targetKg: 60 }, D(S(back(now, 3), 60))), 'You lifted 60 kg lately. Aim higher');
 assert.strictEqual(err({ targetKg: 60 }, D(S(back(now, 40), 60))), '', 'getting back to an old best is fine');
+
+// ── Muscle group filter ──
+const GS = [{ id: 'a', exercise: EX }, { id: 'b', exercise: 'Lat Pulldown' }, { id: 'c', exercise: 'Plank' }, { id: 'd', exercise: 'Muay Thai' }];
+assert.deepStrictEqual(J(goalGroups(GS, GS.slice(0, 2), D())), [{ group: 'Chest', n: 1 }, { group: 'Back', n: 1 }, { group: 'Shoulders', n: 0 }, { group: 'Arms', n: 0 },
+  { group: 'Legs', n: 0 }, { group: 'Core', n: 0 }, { group: 'Other', n: 0 }], 'n counts the active goals only');
+assert.deepStrictEqual(J(goalGroups(GS.slice(0, 2), GS.slice(0, 2), D())).map(x => x.group), ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs'], 'Core and Other only once a goal is in them');
+assert.strictEqual(goalGroup(GS[0], { sessions: [], muscles: { [EX]: 'Shoulders/Front' } }), 'Shoulders', 'your own pick in Progress wins');
 
 // Tolerance constants are the roadmap's
 assert.deepStrictEqual([GT.TOL_KG, GT.TOL_PCT, GT.RECENT], [2.5, 10, 14]);

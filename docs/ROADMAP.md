@@ -239,6 +239,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
   - The kg per week still needed.
 - Detail: the exercise chart with the pace line overlaid.
 - Reaching a target celebrates and archives the goal; archived goals stay viewable.
+- A **muscle group filter** above the list (All · Chest · Back · Shoulders · Arms · Legs, plus Core and Other once a goal is in them) narrows active and archived goals to one group. It goes by the exercise's muscle group, including one you picked in Progress.
 - *Done when:* the example 40 → 65 kg over 6 months shows the right expected kg for today, and flips to Behind once you fall below the tolerance.
 
 **G · Dark mode**

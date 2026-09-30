@@ -193,6 +193,13 @@ input[type=number]{-moz-appearance:textfield}
 .gstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
 .gstats b{display:block;font-family:var(--ff);font-size:15px;font-weight:700;color:var(--t1);white-space:nowrap}
 .gstats span{display:block;font-family:var(--ff);font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Muscle group filter above the list; the chips wrap so every group stays in view */
+.gf{display:flex;flex-wrap:wrap;gap:6px}
+.gf-c{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;background:var(--card);border:1px solid var(--brd2);border-radius:999px;font-family:var(--ff);font-size:13px;font-weight:700;color:var(--t1);cursor:pointer;transition:transform 0.15s ease}
+.gf-c em{font-style:normal;font-size:11px;font-weight:600;color:var(--t2)}
+.gf-c.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}.gf-c.active em{color:inherit;opacity:0.75}
+.gf-c:active{transform:scale(0.95)}
+@media (prefers-reduced-motion:reduce){.gf-c:active{transform:none}}
 .gempty{padding:40px 16px}.gempty p{font-size:13px;line-height:1.5;margin:4px 0 18px;max-width:300px}.gempty .mbtn{flex:none;padding:12px 28px}
 .garch{background:var(--card);border:2px solid var(--t1);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-top:6px}
 .garch-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;min-height:48px;cursor:pointer;font-family:var(--ff);font-size:15px;font-weight:600}
