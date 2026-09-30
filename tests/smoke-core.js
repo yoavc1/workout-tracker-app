@@ -5,7 +5,8 @@ const path = require('path'), fs = require('fs'), os = require('os'), assert = r
 const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
 
 // On top of the shared seed (sessions every 3 days, the last one 3 days ago): old per-session ticks (abs) on the
-// sessions 3 and 12 days ago, and per-day core records, two of them on days with no workout
+// sessions 3 and 12 days ago, per-day core records (two of them on days with no workout), and an evening Muay Thai
+// as a second workout on days 6 (core done) and 9 (no core)
 const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_data'));var t=new Date();t.setHours(12,0,0,0);
   var ago=function(n){var x=new Date(t);x.setDate(x.getDate()-n);return lday(x);};
   d.sessions.forEach(function(s){var n=Math.round((t-new Date(s.date))/864e5);if(n===3||n===12)s.abs=true;});
@@ -13,6 +14,7 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
   var R=function(n){return{name:n,mode:'reps',sets:[].slice.call(arguments,1).map(function(x){return{reps:x};})};};
   var C=function(n,items){var k='c'+ago(n);d.core=d.core||{};d.core[k]={id:k,mt:1000,date:ago(n),done:true,items:items};};
   C(1,[T(0,60,60,45),R('Leg Raise',15,15,12)]);C(6,[T(0,45),R('Leg Raise',12,12)]);C(10,[]);
+  [6,9].forEach(function(n){var x=new Date(t);x.setDate(x.getDate()-n);x.setHours(19);d.sessions.push({workout:'Muay Thai',date:x.toISOString(),exercises:{Pads:[{kg:0,reps:5}]},duration:3600,abs:false});});
   localStorage.setItem('ironlog_data',JSON.stringify(d));})();'ok'`;
 
 (async () => {
@@ -29,7 +31,7 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
   try {
     p = await chrome.page();
     await p.go(APP); await p.ev(SEED); await p.ev(CORE_SEED); await p.go(APP);
-    const day = await p.ev(`(function(){var t=new Date();t.setHours(12,0,0,0);var o={};[0,1,2,3,6,10].forEach(function(n){var x=new Date(t);x.setDate(x.getDate()-n);o[n]=lday(x);});return o;})()`);
+    const day = await p.ev(`(function(){var t=new Date();t.setHours(12,0,0,0);var o={};[0,1,2,3,6,9,10].forEach(function(n){var x=new Date(t);x.setDate(x.getDate()-n);o[n]=lday(x);});return o;})()`);
     const today = day[0];
 
     // The chip is on home every day, including a rest day (no workout today in the seed)
@@ -126,19 +128,23 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     await p.ev(`goHome();'ok'`);
     step('workout screen chip; hidden when editing a past session');
 
-    // History: a core line on workout days (old abs ticks included), a core-only card on days without a workout
+    // History: a core row on every workout card, both cards on a two-workout day (old abs ticks included), and a card of
+    // its own on a day with core but no workout. Each shows the tick, and what was logged or a prompt to add it.
     await p.ev(`switchTab('history');document.querySelectorAll('.hwg').forEach(function(g,i){if(i<2)g.classList.add('open');});'ok'`); await p.wait(300);
-    const hl = await p.ev(`(function(){var o={};document.querySelectorAll('.jhc').forEach(function(b){o[b.dataset.day]=b.textContent.replace(/\\s+/g,' ').trim();});return o;})()`);
-    assert.strictEqual(hl[day[3]], '✓ Core', 'old per-session tick shows as done');
-    assert.strictEqual(hl[day[6]], '✓ Core: Plank 45s, Leg Raise 2×12');
-    assert.ok(/^✓ ?Core.*Plank 60s\/60s\/45s, Leg Raise 15\/15\/12/.test(hl[day[1]]), 'core-only day card: ' + hl[day[1]]);
-    assert.ok(/Core.*Done/.test(hl[day[10]]), 'tick-only day card: ' + hl[day[10]]);
-    assert.ok(/Plank 62s, Leg Raise 2×15, Dead Bug 30s/.test(hl[today]), 'today, no workout: ' + hl[today]);
-    assert.strictEqual(await p.ev(`document.querySelector('.jhc[data-day="${day[1]}"]').classList.contains('hco')`), true);
+    const rows = () => p.ev(`(function(){var o={};document.querySelectorAll('.jhc').forEach(function(b){var t=b.querySelector('.jhct');
+      (o[b.dataset.day]=o[b.dataset.day]||[]).push((b.classList.contains('hco')?'card ':'')+((b.classList.contains('hco')||b.classList.contains('on'))&&t.classList.contains('on')?'on ':'off ')+b.querySelector('.hcx-s,.hco-s').textContent);});return o;})()`);
+    const hl = await rows();
+    assert.deepStrictEqual(hl[day[3]], ['on Done · tap to add exercises'], 'old per-session tick shows as done');
+    assert.deepStrictEqual(hl[day[6]], ['on Plank 45s, Leg Raise 2×12', 'on Plank 45s, Leg Raise 2×12'], 'both workouts of a core day');
+    assert.deepStrictEqual(hl[day[9]], ['off Not done · tap to add exercises', 'off Not done · tap to add exercises'], 'both workouts of a day without core');
+    assert.deepStrictEqual(hl[day[1]], ['card on Plank 60s/60s/45s, Leg Raise 15/15/12'], 'core-only day card');
+    assert.deepStrictEqual(hl[day[10]], ['card on Done · tap to add exercises'], 'tick-only day card');
+    assert.deepStrictEqual(hl[today], ['card on Plank 62s, Leg Raise 2×15, Dead Bug 30s'], 'today, no workout');
+    assert.strictEqual(await p.ev(`[].every.call(document.querySelectorAll('.hcard'),function(c){return c.querySelectorAll('.hcx .jhct').length===1;})`), true, 'every workout card has one core row with a tick');
+    assert.strictEqual(await p.ev(`document.querySelectorAll('.hcard .hcx').length`), await p.ev(`gs().length`), 'one core row per workout');
     assert.strictEqual(await p.ev(`document.querySelectorAll('.hcard-btn').length>0&&[].every.call(document.querySelectorAll('.hcard-btn'),function(b){return b.textContent!=='C';})`), true, 'no more C button');
-    const offs = await p.ev(`[].filter.call(document.querySelectorAll('.hcl'),function(b){return !b.classList.contains('on');}).map(function(b){return b.textContent;})`);
-    assert.ok(offs.length && offs.every(t => t === '+ Core'), 'days without core offer + Core');
-    assert.strictEqual(await p.ev(`document.querySelectorAll('.hcard .hcl').length`), await p.ev(`(function(){var o={};gs().forEach(function(s){o[lday(s.date)]=1;});return Object.keys(o).length;})()`), 'one core line per workout day');
+    const offs = [].concat.apply([], Object.values(hl)).filter(t => /^off/.test(t));
+    assert.ok(offs.length && offs.every(t => t === 'off Not done · tap to add exercises'), 'days without core offer the tick and exercises: ' + offs);
     await p.ev(`document.querySelector('#s-hist').scrollTop=0;'ok'`); await shot('c8-history.png');
     await p.ev(`document.querySelector('.jhc[data-day="${day[1]}"]').click();'ok'`); await p.wait(100);
     assert.strictEqual(await p.ev('COD'), day[1], 'tapping the card opens that day');
@@ -146,7 +152,30 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     const openBefore = await p.ev(`document.querySelectorAll('.hwg.open').length`);
     await p.ev(`document.querySelector('#mov-core .jcx').click();'ok'`); await p.wait(100);
     assert.strictEqual(await p.ev(`document.querySelectorAll('.hwg.open').length`), openBefore, 'open weeks stay open after editing');
-    step('History core lines, core-only cards and old ticks; tapping opens that day');
+    step('History: a core row on every workout card (two on a two-workout day), core-only cards, old ticks; tapping opens that day');
+
+    // The tick flips the day right from History without opening the sheet: every card of that day redraws together
+    // (with the pop), and the day's sessions keep the old abs flag in step
+    const tick9 = `document.querySelector('.hcx[data-day="${day[9]}"] .jhct')`;
+    await p.ev(`${tick9}.click();'ok'`); await p.wait(100);
+    assert.deepStrictEqual([await p.ev(`coreDone('${day[9]}')`), await p.ev('COD')], [true, null], 'ticked, sheet not opened');
+    assert.deepStrictEqual((await rows())[day[9]], ['on Done · tap to add exercises', 'on Done · tap to add exercises'], 'both cards redrawn');
+    assert.strictEqual(await p.ev(`document.querySelectorAll('.hcx[data-day="${day[9]}"] .jhct.pop').length`), 2);
+    assert.strictEqual(await p.ev('CPOP'), null, 'the pop plays once');
+    assert.ok(await p.ev(`gs().filter(function(s){return lday(s.date)==='${day[9]}';}).every(function(s){return s.abs===true;})`), 'abs kept in step on both sessions');
+    assert.strictEqual(await p.ev(`document.querySelectorAll('.hwg.open').length`), openBefore, 'open weeks stay open');
+    await p.ev(`${tick9}.click();'ok'`); await p.wait(100);
+    assert.strictEqual(await p.ev(`coreDone('${day[9]}')`), false, 'no sets: one tap unticks');
+    assert.deepStrictEqual((await rows())[day[9]], ['off Not done · tap to add exercises', 'off Not done · tap to add exercises']);
+    // With sets logged, unticking asks first, as on the home chip
+    await p.ev(`document.querySelector('.hcx[data-day="${day[6]}"] .jhct').click();'ok'`);
+    assert.deepStrictEqual([await p.ev(`coreDone('${day[6]}')`), await p.ev(`document.querySelector('.hcx[data-day="${day[6]}"] .jhct').textContent`)], [true, 'Confirm?']);
+    await p.ev(`rHist();'ok'`);
+    // Tapping the rest of a workout card's row opens that day, to add exercises
+    await p.ev(`document.querySelectorAll('.hcx[data-day="${day[9]}"] .hcx-m')[1].click();'ok'`); await p.wait(100);
+    assert.strictEqual(await p.ev('COD'), day[9], 'the row opens that day');
+    await p.ev(`document.querySelector('#mov-core .jcx').click();'ok'`); await p.wait(100);
+    step('the tick flips a day from History, on every card of that day; the row opens it');
 
     // Progress: best hold or reps per core exercise with a small trend, and the day counts
     await p.ev(`switchTab('progress');'ok'`); await p.wait(1200);
@@ -187,6 +216,16 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     await p.ev(`CCD='2000-01-01';document.querySelector('#abs-sec').innerHTML='';document.dispatchEvent(new Event('visibilitychange'));'ok'`); await p.wait(100);
     assert.ok(await p.ev(`!!document.querySelector('#abs-sec .cchip')&&CCD===lday(new Date())`));
     step('chip redraws when the app resumes on a new day');
+
+    // A rest day's own card: unticking asks for a second tap, because the card then goes away
+    await p.ev(`switchTab('history');'ok'`); await p.wait(200);
+    const tick10 = `document.querySelector('.hco[data-day="${day[10]}"] .jhct')`;
+    await p.ev(`${tick10}.click();'ok'`);
+    assert.deepStrictEqual([await p.ev(`coreDone('${day[10]}')`), await p.ev(`${tick10}.textContent`)], [true, 'Confirm?'], 'first tap only asks');
+    await p.ev(`${tick10}.click();'ok'`); await p.wait(100);
+    assert.strictEqual(await p.ev(`coreDone('${day[10]}')`), false);
+    assert.strictEqual(await p.ev(`document.querySelector('.jhc[data-day="${day[10]}"]')`), null, 'its card is gone');
+    step('unticking a core-only card takes two taps and removes it');
 
     assert.deepStrictEqual(p.errors, [], 'no JS errors');
     step('no JS errors');
