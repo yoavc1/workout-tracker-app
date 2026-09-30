@@ -73,7 +73,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     const today = await p.ev(`lday(new Date())`);
     await p.ev(`switchTab('home');document.querySelector('#abs-sec .jct').click();'ok'`);
     assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), true, 'home tick sets the day');
-    assert.ok(await p.ev(`gs().filter(function(s){return lday(s.date)===lday(new Date())}).every(function(s){return s.abs})`), 'abs kept in step');
+    assert.ok(await p.ev(`!gs().some(function(s){return lday(s.date)===lday(new Date())&&s.abs})`), "the day's workouts are left as they are");
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.strictEqual(s.core['c' + today].done, true, 'core day synced');
     await p.ev(`switchTab('history');document.querySelector('.hwg.open .jhc.on').click();'ok'`);

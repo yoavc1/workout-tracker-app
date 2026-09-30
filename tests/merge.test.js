@@ -127,13 +127,14 @@ const eq = (a, b, msg) => assert.deepStrictEqual(J(a), J(b), msg);
   dev = loadApp(APP, { ironlog_split: JSON.stringify({ Mon: '', Tue: '' }) });
   assert.strictEqual(dev.gd().schedule, undefined, 'an all-rest local plan is not adopted');
 
-  // ── Core helpers keep the old per-session flag in step ──
+  // ── Core helpers: ticking the day leaves its workouts alone, and core shows on the day's latest workout ──
   const t = new Date(); t.setHours(12, 0, 0, 0);
   dev = loadApp(APP, { ironlog_data: JSON.stringify({ sessions: [{ id: 'x', workout: 'Legs', date: t.toISOString(), exercises: {} }] }) });
   const today = dev.lday(t);
   assert.strictEqual(dev.coreDone(today), false);
   dev.setCoreDone(today, true);
-  assert.strictEqual(dev.coreDone(today), true); assert.strictEqual(dev.gs()[0].abs, true, 'sessions that day get abs for older app versions');
+  assert.strictEqual(dev.coreDone(today), true); assert.strictEqual(dev.gs()[0].abs, undefined, 'the session is left alone');
+  eq(dev.coreWith(today).map(s => s.id), ['x']);
   dev.setCoreDone('2026-01-05', true);
   assert.strictEqual(dev.coreDone('2026-01-05'), true, 'core can be ticked on a day with no workout');
   // Goal helpers
