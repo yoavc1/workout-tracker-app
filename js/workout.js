@@ -83,7 +83,9 @@ function finWK(){
 }
 function saveWK(ed,upd){
   var dt=(WDAY?new Date(WDAY+'T12:00'):new Date()).toISOString(),dur=!WDAY&&WST?Math.floor((Date.now()-WST)/1000):0;
-  addS({workout:CW,date:dt,exercises:ed,duration:dur,abs:coreDone(lday(dt))});clDr();toast(upd?'Saved · '+CW+' updated':'Saved!');
+  // A new workout takes the day's core unless another workout that day already has it
+  var day=lday(dt),has=gs().some(function(s){return s.abs&&lday(s.date)===day;});
+  addS({workout:CW,date:dt,exercises:ed,duration:dur,abs:coreDone(day)&&!has});clDr();toast(upd?'Saved · '+CW+' updated':'Saved!');
   goHome();
 }
 // How the session's list differs from its saved workout; null when it doesn't, or the workout no longer exists

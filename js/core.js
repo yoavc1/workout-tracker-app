@@ -2,7 +2,7 @@
 // History's core rows and the Progress core section
 // ═══════ CORE ═══════
 var CORE_DEF=['Plank','Side Plank','Leg Raise','Hanging Leg Raise','Crunch','Dead Bug','Russian Twist','Ab Wheel'];
-var COD=null,CSWI=null,CPOP=null,CCD=null,coreBound=false;
+var COD=null,COS=null,CSWI=null,CPOP=null,CCD=null,coreBound=false;
 // ─── Pure helpers ───
 function dayAdd(day,n){var p=day.split('-');return lday(new Date(+p[0],p[1]-1,+p[2]+n,12));}
 function fclk(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
@@ -41,8 +41,13 @@ function coreStats(d){d=d||gd();var by={},out=[];
 function coreOnlyDays(d){d=d||gd();var has={};d.sessions.forEach(function(s){has[lday(s.date)]=1;});
   return Object.keys(d.core).map(function(k){return d.core[k];}).filter(function(r){return r&&r.done&&r.date&&!has[r.date];}).map(function(r){return r.date;}).sort();}
 // Unticking a day also clears its exercises, so the day, History and the Sheet's Core tab never disagree
-function coreTick(day,v){var d=gd();coreSet(d,day,v);if(!v)d.core['c'+day].items=[];sd(d);}
-function coreEdit(day,fn){var its=JSON.parse(JSON.stringify(coreItems(day)));fn(its);setCoreItems(day,its);}
+function coreTick(day,v){var d=gd();coreSet(d,day,v);if(!v)d.core['c'+day].items=[];else coreFrom(d,day);sd(d);}
+function coreTickS(id,v){var d=gd();coreSetS(d,id,v);sd(d);}
+function coreEdit(day,fn){var its=JSON.parse(JSON.stringify(coreItems(day)));fn(its);setCoreItems(day,its);var d=gd();if(coreFrom(d,day))sd(d);}
+// Core started in the sheet a History card opened goes with that card's workout, unless another workout that day has it
+function coreFrom(d,day){if(!COS||COD!==day||!coreDone(day,d.core))return false;var s=null,any=false;
+  d.sessions.forEach(function(x){if(lday(x.date)!==day)return;if(x.abs)any=true;if(x.id===COS)s=x;});
+  if(any||!s)return false;s.abs=true;s.mt=Date.now();return true;}
 function citem(its,name){for(var i=0;i<its.length;i++)if(its[i].name===name)return its[i];return null;}
 // The stopwatch is a start time on this device, so it keeps counting while the phone is locked or the app is closed
 function gSW(){try{return JSON.parse(localStorage.getItem('ironlog_core_sw'));}catch(e){return null;}}
@@ -58,9 +63,10 @@ function rCoreChip(el,day){
   CPOP=null;bindTick(el.querySelector('.jct'),day,on,!!sum,coreRefresh);
   el.querySelector('.cchip').addEventListener('click',function(){openCore(day);});
 }
-// One tap ticks; unticking a day with logged sets asks for a second tap, because it clears them
-function bindTick(b,day,on,hasSets,after){
-  function flip(){coreTick(day,!on);if(!on)CPOP=day;toast(on?'Core unmarked':'Core done ✓',on?'var(--t2)':'');after();}
+// One tap ticks; unticking a day with logged sets asks for a second tap, because it clears them.
+// With a session id (History's workout cards) it ticks that workout only.
+function bindTick(b,day,on,hasSets,after,sid){
+  function flip(){if(sid)coreTickS(sid,!on);else coreTick(day,!on);if(!on)CPOP=sid||day;toast(on?'Core unmarked':'Core done ✓',on?'var(--t2)':'');after();}
   if(on&&hasSets)tap2(b,flip);else b.addEventListener('click',function(e){e.stopPropagation();flip();});
 }
 function rWkCore(){var el=document.getElementById('wk-core');if(!el)return;
@@ -73,9 +79,10 @@ function coreRefresh(){var a=document.querySelector('.screen.active');if(!a)retu
 if(document.addEventListener)document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&CCD&&CCD!==lday(new Date())&&COD===null)coreRefresh();});
 
 // ─── Sheet: one day's core ───
-function openCore(day){COD=day;if(!coreBound){coreBound=true;var ov=document.getElementById('mov-core');ov.addEventListener('click',function(e){if(e.target===ov)closeCore();});}
+// sid: the workout whose History card opened it, so core started here goes with that workout
+function openCore(day,sid){COD=day;COS=sid||null;if(!coreBound){coreBound=true;var ov=document.getElementById('mov-core');ov.addEventListener('click',function(e){if(e.target===ov)closeCore();});}
   rCoreSheet();var ov2=document.getElementById('mov-core');ov2.classList.add('active');ov2.querySelector('.modal').scrollTop=0;}
-function closeCore(){document.getElementById('mov-core').classList.remove('active');clearInterval(CSWI);CSWI=null;COD=null;coreRefresh();}
+function closeCore(){document.getElementById('mov-core').classList.remove('active');clearInterval(CSWI);CSWI=null;COD=null;COS=null;coreRefresh();}
 function rCoreSheet(){
   var day=COD,d=gd(),its=coreItems(day,d.core),on=coreDone(day,d.core),sw=gSW(),today=lday(new Date());
   var h='<div class="csh-h"><div><h3>'+(day===today?'Today\'s core':'Core')+'</h3><div class="csh-d">'+fdf(day+'T12:00')+' · '+coreCount(7,d)+' of last 7 days</div></div><button class="ctick jct'+(on?' on':'')+(on&&CPOP===day?' pop':'')+'" aria-label="Core done">✓</button></div>';
@@ -122,10 +129,12 @@ function coreAdd(name){name=String(name||'').trim();if(!name){toast('Enter a nam
 
 // ─── History: a core row on every workout card, and a card of its own on a rest day ───
 // The same tick as the chip, so marking core done looks and works the same everywhere
-function coreTickB(day,on){return'<button class="ctick jhct'+(on?' on':'')+(on&&CPOP===day?' pop':'')+'" data-day="'+day+'" aria-label="Core done" aria-pressed="'+on+'">✓</button>';}
-// Tapping the tick flips the day; tapping the rest opens the day's sheet to add or edit exercises
-function coreLine(day,cm){var on=coreDone(day,cm),sum=coreSum(coreItems(day,cm));
-  return'<div class="hcx jhc'+(on?' on':'')+'" data-day="'+day+'">'+coreTickB(day,on)+'<div class="hcx-m"><div class="hcx-t">Core</div><div class="hcx-s">'+(sum?eh(sum):(on?'Done':'Not done')+' · tap to add exercises')+'</div></div><span class="hcx-go">→</span></div>';}
+function coreTickB(day,on,sid){var sa=sid?' data-sid="'+ea(sid)+'"':'';
+  return'<button class="ctick jhct'+(on?' on':'')+(on&&(CPOP===day||(sid&&CPOP===sid))?' pop':'')+'" data-day="'+day+'"'+sa+' aria-label="Core done" aria-pressed="'+on+'">✓</button>';}
+// A workout's row: tapping the tick flips core for that workout only; tapping the rest opens the day's sheet to add or
+// edit exercises. The day's exercises show on the workout core went with.
+function coreLine(s,d){d=d||gd();var day=lday(s.date),on=coreWith(day,d).some(function(x){return x.id===s.id;}),sum=on?coreSum(coreItems(day,d.core)):'';
+  return'<div class="hcx jhc'+(on?' on':'')+'" data-day="'+day+'" data-sid="'+ea(s.id)+'">'+coreTickB(day,on,s.id)+'<div class="hcx-m"><div class="hcx-t">Core</div><div class="hcx-s">'+(sum?eh(sum):(on?'Done':'Not done')+' · tap to add exercises')+'</div></div><span class="hcx-go">→</span></div>';}
 
 // ─── Progress section ───
 function cspark(pts){var p=pts.slice(-12),n=p.length,W=64,H=24;if(n<2)return'<svg class="cp-spark" viewBox="0 0 '+W+' '+H+'"></svg>';

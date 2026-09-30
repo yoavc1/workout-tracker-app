@@ -45,13 +45,26 @@ function sSplit(s){var d=gd();d.schedule=d.schedule||{moves:{}};d.schedule.week=
 // One-off schedule changes ("do Monday's Legs on Tuesday"); synced records like sessions
 function addMove(from,to,workout){var d=gd();d.schedule=d.schedule||{week:{},wkm:0};d.schedule.moves=d.schedule.moves||{};var id=uid();d.schedule.moves[id]={id:id,mt:Date.now(),from:from,to:to,workout:workout};sd(d);return id;}
 function delMove(id){var d=gd();if(d.schedule&&d.schedule.moves&&d.schedule.moves[id]){delete d.schedule.moves[id];d.deleted=d.deleted||{};d.deleted[id]=Date.now();sd(d);}}
-// Core is one record per day. Sessions on that day keep the old abs flag in step, so older app versions still see it.
+// Core is one record per day: the chip, calendar, counts and alerts go by it. A session's abs flag says which of that
+// day's workouts core went with, so History shows it on that card and not on every workout of the day.
 function coreDone(day,cm){cm=cm||gd().core;var r=cm['c'+day];return!!(r&&r.done);}
+function coreRec(d,day,v){var k='c'+day,r=d.core[k]||{id:k,date:day,items:[]};r.done=!!v;r.mt=Date.now();d.core[k]=r;return r;}
+// Ticking a whole day (chip, sheet) leaves its workouts as they are; unticking it takes core off all of them.
 // A session's mt only moves when its flag really flips: logging core sets must not make a stale copy of that day's
 // workout beat an edit made on another device
-function coreSet(d,day,v){var k='c'+day,now=Date.now(),r=d.core[k]||{id:k,date:day,items:[]};r.done=!!v;r.mt=now;d.core[k]=r;
-  d.sessions.forEach(function(s){if(lday(s.date)===day&&!!s.abs!==!!v){s.abs=!!v;s.mt=now;}});}
+function coreSet(d,day,v){coreRec(d,day,v);if(!v)d.sessions.forEach(function(s){if(lday(s.date)===day&&s.abs){s.abs=false;s.mt=Date.now();}});}
 function setCoreDone(day,v){var d=gd();coreSet(d,day,v);sd(d);}
+// The workouts a day's core shows on: the ones flagged, or else the day's latest (core ticked for the day as a whole)
+function coreWith(day,d){d=d||gd();if(!coreDone(day,d.core))return[];
+  var ss=d.sessions.filter(function(s){return lday(s.date)===day;}),f=ss.filter(function(s){return s.abs;});
+  return f.length||!ss.length?f:[ss.reduce(function(a,b){return new Date(b.date)>new Date(a.date)?b:a;})];}
+// Core on or off one workout. The day stays done while any of its workouts has core; taking it off the last one
+// unticks the day and clears its exercises, like unticking the day itself
+function coreSetS(d,id,v){var s=d.sessions.filter(function(x){return x.id===id;})[0];if(!s)return;
+  var day=lday(s.date),now=Date.now(),was=coreDone(day,d.core);
+  var keep=coreWith(day,d).map(function(x){return x.id;}).filter(function(x){return x!==id;});if(v)keep.push(id);
+  d.sessions.forEach(function(x){var f=keep.indexOf(x.id)>=0;if(lday(x.date)===day&&!!x.abs!==f){x.abs=f;x.mt=now;}});
+  if(keep.length&&!was)coreRec(d,day,true);else if(!keep.length&&was)coreRec(d,day,false).items=[];}
 // A day's core exercises: [{name, mode:'time'|'reps', sets:[{secs}|{reps}]}]. Saving any set marks the day done;
 // removing sets leaves the tick as it is.
 function coreItems(day,cm){cm=cm||gd().core;var r=cm['c'+day];return(r&&r.items)||[];}
