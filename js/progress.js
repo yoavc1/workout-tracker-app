@@ -188,24 +188,28 @@ function pgChart(e,g,rg,now){
 function pgBind(){
   if(pgBound)return;pgBound=true;
   document.getElementById('pg-bk').addEventListener('click',pgBack);
-  ['mov-mus','mov-merge'].forEach(function(id){var m=document.getElementById(id);m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('active');});});
-  document.getElementById('mus-cancel').addEventListener('click',function(){document.getElementById('mov-mus').classList.remove('active');});
+  var m=document.getElementById('mov-merge');m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('active');});
   document.getElementById('mg-cancel').addEventListener('click',function(){document.getElementById('mov-merge').classList.remove('active');});
   var inp=document.getElementById('mg-inp');
   PGTA=typeahead(inp,pgMergeCands,function(x){PGMT=x;pgMergeConf();});
   inp.addEventListener('input',function(){if(inp.value!==PGMT){PGMT=null;pgMergeConf();}});
   document.getElementById('mg-go').addEventListener('click',pgDoMerge);
 }
-function pgMus(name){
-  var d=gd(),cur=muscleOf(name,d),gu=muscleOf(name,{}),own=!!(d.muscles||{})[name],h='';
+// The muscle group picker, for Progress and a goal's sheet (over which it stacks). The choice is per exercise, so both
+// see it. done() redraws whoever opened it (Progress by default). It binds itself: Goals may open it before Progress has.
+var pgMusBound=false;
+function pgMus(name,done){
+  var d=gd(),cur=muscleOf(name,d),gu=muscleOf(name,{}),own=!!(d.muscles||{})[name],h='',mv=document.getElementById('mov-mus');
+  if(!pgMusBound){pgMusBound=true;mv.addEventListener('click',function(e){if(e.target===mv)mv.classList.remove('active');});
+    document.getElementById('mus-cancel').addEventListener('click',function(){mv.classList.remove('active');});}
   document.getElementById('mus-for').innerHTML='For <b>'+eh(name)+'</b>. '+(own?'You set this; the guess from its name is ':'Guessed from its name: ')+eh(gu.main+(gu.sub?' · '+gu.sub:''))+'.';
   Object.keys(MUSCLES).forEach(function(g){h+='<div class="pg-mg">'+g+'</div><div class="pg-ms">'+MUSCLES[g].map(function(s){
     return'<button class="pg-mb'+(cur.main===g&&cur.sub===s?' on':'')+'" data-m="'+ea(g+'/'+s)+'">'+eh(s)+'</button>';}).join('')+'</div>';});
   var o=document.getElementById('mus-opts');o.innerHTML=h;
   o.querySelectorAll('.pg-mb').forEach(function(b){b.addEventListener('click',function(){
     var m=b.dataset.m,gs=gu.main+'/'+gu.sub;setMuscle(name,m===gs?null:m);
-    document.getElementById('mov-mus').classList.remove('active');rProg();toast('Now in '+m.replace('/',' · '));});});
-  document.getElementById('mov-mus').classList.add('active');
+    mv.classList.remove('active');(done||rProg)();toast('Now in '+m.replace('/',' · '));});});
+  mv.classList.add('active');
 }
 // Candidates: exercises in the same sub-group first, then the same main group, then the rest (each most recent first)
 function pgMergeCands(){

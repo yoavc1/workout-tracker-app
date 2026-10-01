@@ -6,8 +6,9 @@ var GT={
   RECENT:14,    // current kg = best top set of the last 14 days, else the latest top set
   LEAD:28       // the detail chart also shows the 4 weeks before the goal started, for context
 };
-// GF: the muscle group the list is filtered to ('' = all of them)
-var GCI=null,GJUST={},GARC=false,gBound=false,GF='';
+// GF: the muscle group the list is filtered to ('' = all of them). GSRT: the list's Sortable, GDRAG: a drag is in progress,
+// GDT: when the last one ended, GVIS: the ids of the goals that can be dragged, as drawn
+var GCI=null,GJUST={},GARC=false,gBound=false,GF='',GSRT=null,GDRAG=false,GDT=0,GVIS=[];
 // Goal dates are local days ('YYYY-MM-DD'), so parse them as local midnight rather than UTC
 function gDay(s){var p=String(s).split('-');return new Date(+p[0],p[1]-1,+p[2]);}
 function gDays(a,b){return Math.round((gDay(b)-gDay(a))/864e5);}
@@ -60,14 +61,44 @@ function goalGroups(all,act,d){
   var of=function(g){return goalGroup(g,d);},has={};all.forEach(function(g){has[of(g)]=1;});
   return mfGroups(has).map(function(k){return{group:k,n:act.filter(function(g){return of(g)===k;}).length};});
 }
+// ─── Your order ───
+// One order for all active goals, which a muscle group filter shows a part of. A goal's place is its key: the ord you
+// gave it by dragging, else its target date as a day number, so goals never dragged keep the old target-date order and
+// a drag slots in between them. ord is a plain field on the goal, so it syncs with it (newest mt wins).
+function goalKey(g){if(typeof g.ord==='number'&&isFinite(g.ord))return g.ord;var p=String(g.targetDate).split('-');return Date.UTC(+p[0],p[1]-1,+p[2])/864e5||0;}
+// Goals in your order; equal keys keep the list's order, as the target-date sort did
+function goalSort(l){return l.map(function(g,i){return{g:g,i:i,k:goalKey(g)};}).sort(function(a,b){return a.k-b.k||a.i-b.i;}).map(function(o){return o.g;});}
+// A new goal's ord: below every active goal
+function goalEnd(d){return Math.max.apply(null,[0].concat((d.goals||[]).filter(function(g){return!g.archived;}).map(goalKey)))+1;}
+// Dragging goal `id` to index `to` of the list on screen. vis: the ids on screen before the drag (every active goal, or one
+// group's); act: every active goal, in order. Moving up, it lands just before the goal it now sits above; moving down,
+// just after the one it now sits below, so goals hidden by the filter keep their places. Returns {id: ord} to save: the
+// moved goal's key, between its new neighbours'. With no room there (neighbours with equal keys, such as two goals with the
+// same target date), the goals around it are spaced out too, widening one each side until they fit.
+function goalMove(act,vis,id,to){
+  var from=vis.indexOf(id),x=act.filter(function(g){return g.id===id;})[0];vis=vis.filter(function(v){return v!==id;});
+  if(!x||from<0||to===from||to<0||to>vis.length)return{};
+  var l=act.filter(function(g){return g!==x;}),at=function(v){for(var i=0;i<l.length;i++)if(l[i].id===v)return i;return -1;};
+  var p=to<from?at(vis[to]):at(vis[to-1]);if(p<0)return{};if(to>from)p++;
+  l.splice(p,0,x);
+  for(var a=p,b=p+1,ks,n;;a=Math.max(0,a-1),b=Math.min(l.length,b+1)){
+    var lo=a>0?goalKey(l[a-1]):null,hi=b<l.length?goalKey(l[b]):null;n=b-a;ks=[];
+    for(var i=1;i<=n;i++)ks.push(lo==null?(hi==null?i:hi-n-1+i):hi==null?lo+i:lo+(hi-lo)*i/(n+1));
+    if(ks.every(function(k,j){return k>(j?ks[j-1]:lo==null?-Infinity:lo)&&(hi==null||k<hi);}))break;
+  }
+  var out={};for(i=0;i<n;i++)if(l[a+i]===x||goalKey(l[a+i])!==ks[i])out[l[a+i].id]=ks[i];
+  return out;
+}
 // ─── Screen ───
 function gLab(st){return{ahead:'Ahead',on:'On track',behind:'Behind',done:'🎉 Reached'}[st];}
 function gStatsH(s){
   var cl=s.src==='latest'?'Last · '+fds(s.curDate):s.src?'Now':'Start',wk=s.status==='done'?'✓':s.perWk==null?'—':'+'+gKg(s.perWk);
   return'<div class="gstats"><div><b>'+gKg(s.cur)+'</b><span>'+cl+'</span></div><div><b>'+gKg(s.exp)+'</b><span><i class="gmk"></i>Pace today</span></div><div><b>'+wk+'</b><span>'+(s.status==='done'?'Target hit':s.perWk==null?'Date passed':'Needed/wk')+'</span></div></div>';
 }
-function gCard(g,s,won){
-  return'<div class="gcard'+(won?' won':'')+'" data-id="'+ea(g.id)+'"><div class="gc-top"><div class="gc-name">'+eh(g.exercise)+'</div><span class="gchip '+s.status+'">'+gLab(s.status)+'</span></div>'+
+// dr: show the ⠿ handle that drags it into your order
+function gCard(g,s,won,dr){
+  return'<div class="gcard'+(won?' won':'')+'" data-id="'+ea(g.id)+'"><div class="gc-top"><div class="gc-name">'+eh(g.exercise)+'</div><span class="gchip '+s.status+'">'+gLab(s.status)+'</span>'+
+    (dr?'<span class="gdrag" aria-label="Drag to reorder">⠿</span>':'')+'</div>'+
     '<div class="gc-sub">'+gKg(g.startKg)+' → '+gKg(g.targetKg)+' by '+gFd(g.targetDate)+'</div>'+
     '<div class="gbar"><div class="gbar-f '+s.status+'" style="width:'+Math.round(s.pct*1000)/10+'%"></div><div class="gbar-m" style="left:'+Math.round(s.expPct*1000)/10+'%"></div></div>'+
     gStatsH(s)+'</div>';
@@ -75,7 +106,8 @@ function gCard(g,s,won){
 // open: the tab was just opened. Goals that hit their target are archived here, where you see it happen; they stay
 // in the active list, celebrated, until you next open the tab.
 function rGoals(open){
-  var c=document.getElementById('glist');if(!c)return;gBind();if(open)GJUST={};
+  // Not mid-drag (a sync or the app resuming can land then): the drop redraws the list. Opening the tab always draws.
+  var c=document.getElementById('glist');if(!c)return;if(open)GDRAG=false;else if(GDRAG)return;gBind();if(open)GJUST={};
   var d=gd(),now=Date.now(),fresh=(d.goals||[]).filter(function(g){return!g.archived&&goalHit(g,d,now);});
   if(fresh.length){fresh.forEach(function(g){GJUST[g.id]=1;archiveGoal(g.id);});d=gd();
     toast(fresh.length>1?'🎉 '+fresh.length+' goals reached!':'🎉 Goal reached!');}
@@ -84,21 +116,37 @@ function rGoals(open){
   var gg=goalGroups(all,act,d),nAct=act.length,inF=function(g){return!GF||goalGroup(g,d)===GF;};
   if(!all.length||!gg.some(function(x){return x.group===GF;})||!fresh.every(inF))GF='';
   act=act.filter(inF);arc=arc.filter(inF);
-  var by=function(a,b){return a.targetDate<b.targetDate?-1:a.targetDate>b.targetDate?1:0;};
-  act.sort(function(a,b){return(GJUST[b.id]?1:0)-(GJUST[a.id]?1:0)||by(a,b);});arc.sort(function(a,b){return by(b,a);});
+  // Active goals in your order, with the ones reached just now on top
+  var won=goalSort(act.filter(function(g){return GJUST[g.id];})),mv=goalSort(act.filter(function(g){return!GJUST[g.id];}));
+  var by=function(a,b){return a.targetDate<b.targetDate?-1:a.targetDate>b.targetDate?1:0;};arc.sort(function(a,b){return by(b,a);});
   var h=all.length?mfChips(gg,nAct,GF):'';
   if(!act.length)h+=GF?'<div class="empty gempty"><h3>No active goals for '+eh(GF)+'</h3><p>Tap All to see your other goals, or set a new one.</p><button class="mbtn pri" id="g-first">New goal</button></div>':
     '<div class="empty gempty"><h3>'+(arc.length?'No active goals':'No goals yet')+'</h3><p>Pick a lift, a target kg and a date. You\'ll see the pace you need and whether you\'re ahead or behind it.</p><button class="mbtn pri" id="g-first">New goal</button></div>';
-  act.forEach(function(g){h+=gCard(g,goalStatus(g,d,now),!!GJUST[g.id]);});
+  won.forEach(function(g){h+=gCard(g,goalStatus(g,d,now),true);});
+  // The rest drag into your order, once there are two of them on screen
+  var dr=mv.length>1;GVIS=mv.map(function(g){return g.id;});
+  if(mv.length)h+='<div class="gact" id="gact">'+mv.map(function(g){return gCard(g,goalStatus(g,d,now),false,dr);}).join('')+'</div>';
   if(arc.length){
     h+='<div class="garch'+(GARC?' open':'')+'"><div class="garch-h"><span>Archived<em>'+arc.length+'</em></span><span class="garch-chv">▾</span></div><div class="garch-b">';
     arc.forEach(function(g){var hit=goalHit(g,d,now);h+='<div class="garow" data-id="'+ea(g.id)+'"><div class="garow-n"><div class="gc-name">'+eh(g.exercise)+'</div><div class="gc-sub">'+gKg(g.startKg)+' → '+gKg(g.targetKg)+'</div></div><span class="garow-st">'+(hit?'🎉 Reached '+fds(hit):'Archived')+'</span></div>';});
     h+='</div></div>';
   }
+  if(GSRT){GSRT.destroy();GSRT=null;}
   c.innerHTML=h;
   // Tap a group to show only its goals; tap it again, or All, to show them all
   c.querySelectorAll('.gf-c').forEach(function(b){b.addEventListener('click',function(){GF=GF===b.dataset.g?'':b.dataset.g;rGoals();});});
-  c.querySelectorAll('.gcard,.garow').forEach(function(el){el.addEventListener('click',function(){openGoal(el.dataset.id);});});
+  // A card opens its goal, but not from a tap on ⠿ or from the click a mouse drag can end with
+  c.querySelectorAll('.gcard,.garow').forEach(function(el){el.addEventListener('click',function(){if(Date.now()-GDT>400)openGoal(el.dataset.id);});});
+  c.querySelectorAll('.gdrag').forEach(function(el){el.addEventListener('click',function(e){e.stopPropagation();});});
+  var ga=document.getElementById('gact');
+  // The list scrolls while you hold a goal over the header or the nav, which cover its top and bottom edges
+  if(dr&&window.Sortable)GSRT=Sortable.create(ga,{handle:'.gdrag',animation:150,forceFallback:true,fallbackTolerance:3,ghostClass:'sghost',scrollSensitivity:80,
+    onStart:function(){GDRAG=true;},
+    onEnd:function(e){GDRAG=false;GDT=Date.now();
+      var ch=goalMove(goalSort((gd().goals||[]).filter(function(g){return!g.archived;})),GVIS,e.item.dataset.id,[].indexOf.call(ga.children,e.item));
+      Object.keys(ch).forEach(function(k){updGoal(k,{ord:ch[k]});});
+      // Redrawn once Sortable is done with the list, which also brings in anything synced during the drag
+      setTimeout(function(){rGoals();},0);}});
   var ah=c.querySelector('.garch-h');if(ah)ah.addEventListener('click',function(){GARC=!GARC;ah.parentNode.classList.toggle('open',GARC);});
   var f=document.getElementById('g-first');if(f)f.addEventListener('click',openGoalNew);
   // Celebrate: the card pops and its bar fills from empty
@@ -142,7 +190,7 @@ function openGoalNew(){
   document.getElementById('gn-save').addEventListener('click',function(){
     var f={exercise:name(),startKg:parseFloat(si.value),targetKg:parseFloat(ti.value),targetDate:when()},e=goalErr(f,gd());
     if(e){toast(e,'var(--orange)');return;}
-    addGoal({exercise:f.exercise,startKg:f.startKg,startDate:today,targetKg:f.targetKg,targetDate:f.targetDate,archived:false});
+    addGoal({exercise:f.exercise,startKg:f.startKg,startDate:today,targetKg:f.targetKg,targetDate:f.targetDate,archived:false,ord:goalEnd(gd())});
     // A new goal outside the filter would vanish as it's saved, so show them all
     if(GF&&goalGroup(f,gd())!==GF)GF='';
     closeGoalM();rGoals();toast('Goal set 🎯');});
@@ -151,13 +199,14 @@ function openGoalNew(){
 // ─── Detail ───
 function openGoal(id){
   var d=gd(),g=(d.goals||[]).filter(function(x){return x.id===id;})[0];if(!g)return;
-  var s=goalStatus(g,d),m=document.getElementById('goal-m');m.dataset.id=g.id;var band='±'+gKg(s.tol).replace(' kg','')+' kg';
+  var s=goalStatus(g,d),m=document.getElementById('goal-m'),mu=muscleOf(g.exercise,d);m.dataset.id=g.id;var band='±'+gKg(s.tol).replace(' kg','')+' kg';
   var note=s.status==='done'?'Reached on '+fdf(s.hit)+'.':s.perWk==null?'The target date has passed.':
     s.status==='ahead'?gKg(s.diff)+' ahead of the pace line.':s.status==='behind'?gKg(-s.diff)+' behind the pace line. On track means within '+band+'.':'Within '+band+' of the pace line.';
   if(s.src==='latest')note+=' Not trained in the last 2 weeks, so this uses your latest top set.';
   var act=!g.archived?'<button class="mbtn sec" id="gd-arc">Archive</button>':s.status!=='done'?'<button class="mbtn sec" id="gd-arc">Restore</button>':'';
   m.innerHTML='<div class="gc-top gd-top"><h3>'+eh(g.exercise)+'</h3><span class="gchip '+s.status+'">'+gLab(s.status)+'</span></div>'+
     '<div class="gc-sub">'+gKg(g.startKg)+' on '+gFd(g.startDate)+' → '+gKg(g.targetKg)+' by '+gFd(g.targetDate)+'</div>'+
+    '<button class="pg-mus gd-mus" id="gd-mus">'+eh(mu.main)+(mu.sub?' · '+eh(mu.sub):'')+' <span class="pg-dim">✎</span></button>'+
     '<div class="gd-chart"><canvas id="gchart"></canvas></div>'+
     '<div class="gd-leg"><span><i class="lg-top"></i>Top set</span><span><i class="lg-pace"></i>Pace</span><span><i class="lg-zone"></i>On track '+band+'</span></div>'+
     gStatsH(s)+'<div class="gd-note">'+note+'</div>'+
@@ -165,6 +214,10 @@ function openGoal(id){
   document.getElementById('mov-goal').classList.add('active');
   gChart(g,d,s);
   document.getElementById('gd-close').addEventListener('click',closeGoalM);
+  // The exercise's muscle group, the same picker and setting as in Progress. If the goal leaves the group the list is
+  // filtered to, the list shows them all, as when a new goal is set outside it.
+  document.getElementById('gd-mus').addEventListener('click',function(){pgMus(g.exercise,function(){
+    if(GF&&goalGroup(g,gd())!==GF)GF='';rGoals();openGoal(g.id);});});
   tap2(document.getElementById('gd-del'),function(){delGoal(g.id);closeGoalM();rGoals();toast('Goal deleted','var(--red)');});
   var ab=document.getElementById('gd-arc');if(ab)ab.addEventListener('click',function(){updGoal(g.id,{archived:!g.archived});closeGoalM();rGoals();toast(g.archived?'Goal restored':'Goal archived');});
 }

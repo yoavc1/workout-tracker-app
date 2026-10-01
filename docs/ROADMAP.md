@@ -90,7 +90,7 @@ Every feature reads and writes through this model, so it is built first (step 0b
   core:     { "c2026-09-28": { id, mt, date: "2026-09-28", done: true,
               items: [{ name: "Plank", mode: "time", sets: [{ secs: 60 }] },
                       { name: "Leg Raise", mode: "reps", sets: [{ reps: 15 }] }] } },
-  goals:    [{ id, mt, exercise, startKg, startDate, targetKg, targetDate, archived }],
+  goals:    [{ id, mt, exercise, startKg, startDate, targetKg, targetDate, archived, ord }], // ord: your order (see E)
   muscles:  { "Incline Chest Press": "Chest/Upper" }, mm,        // main/sub; only your overrides, defaults are guessed
   deleted:  { "<id>": ts }, lastModified
 }
@@ -241,6 +241,8 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 - Detail: the exercise chart with the pace line overlaid.
 - Reaching a target celebrates and archives the goal; archived goals stay viewable.
 - A **muscle group filter** above the list (All · Chest · Back · Shoulders · Arms · Legs, plus Core and Other once a goal is in them) narrows active and archived goals to one group. It goes by the exercise's muscle group, including one you picked in Progress.
+- The goal sheet shows the exercise's **muscle group** as a button that opens the same picker as Progress. The choice is per exercise (`muscles`), so Goals and Progress always agree.
+- **Your order:** drag ⠿ to put active goals in your own order, also inside a filter (the goal moves among the goals you can see; hidden ones keep their places). It is one order, saved as `ord` on each goal, so it syncs like any other goal edit. Goals never dragged sort by target date; new goals go to the bottom; a goal reached just now still shows first.
 - *Done when:* the example 40 → 65 kg over 6 months shows the right expected kg for today, and flips to Behind once you fall below the tolerance.
 
 **G · Dark mode**
