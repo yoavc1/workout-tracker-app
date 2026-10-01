@@ -1,4 +1,4 @@
-// Workout Tracker — Core: the daily chip (home and workout screens), the day sheet (exercises, sets, stopwatch),
+// Workout Tracker — Core: the daily chip (workout screen), the day sheet (exercises, sets, stopwatch),
 // History's core rows and the Progress core section
 // ═══════ CORE ═══════
 var CORE_DEF=['Plank','Side Plank','Leg Raise','Hanging Leg Raise','Crunch','Dead Bug','Russian Twist','Ab Wheel'];
@@ -55,7 +55,7 @@ function sSW(v){if(v)localStorage.setItem('ironlog_core_sw',JSON.stringify(v));e
 function swStop(){var s=gSW();if(!s)return;sSW(null);var secs=Math.round((Date.now()-s.t0)/1000);
   if(secs>0&&citem(coreItems(s.day),s.name))coreEdit(s.day,function(its){citem(its,s.name).sets.push({secs:secs});});}
 
-// ─── Chip: home (#abs-sec) and workout screen (#wk-core) ───
+// ─── Chip: workout screen (#wk-core) ───
 function rCoreChip(el,day){
   var d=gd(),on=coreDone(day,d.core),sum=coreSum(coreItems(day,d.core)),sw=gSW(),n=coreCount(7,d);CCD=lday(new Date());
   var sub=sw&&sw.day===day?'⏱ '+eh(sw.name)+' stopwatch running':sum?eh(sum):on?'Done · tap to add exercises':'Tap to log exercises';
@@ -143,7 +143,7 @@ function cspark(pts){var p=pts.slice(-12),n=p.length,W=64,H=24;if(n<2)return'<sv
   var l=xy[n-1];return'<svg class="cp-spark" viewBox="0 0 '+W+' '+H+'"><polyline points="'+xy.map(function(a){return a.join(',');}).join(' ')+'"/><circle cx="'+l[0]+'" cy="'+l[1]+'" r="2.5"/></svg>';}
 function rCoreProg(el){if(!el)return;var d=gd(),st=coreStats(d);
   var h='<h3 class="cp-h">Core</h3><div class="cp-card"><div class="cp-sum"><div><b>'+coreCount(7,d)+'</b><span>days in the last 7</span></div><div><b>'+coreCount(30,d)+'</b><span>days in the last 30</span></div></div>';
-  if(!st.length)h+='<div class="cp-empty">Open <strong>Core</strong> on the Workouts tab to log exercises. Your best holds and reps show here.</div>';
+  if(!st.length)h+='<div class="cp-empty">Log core from the top of a workout, or tap a day on the Workouts calendar. Your best holds and reps show here.</div>';
   st.forEach(function(x){var tm=x.mode==='time';
     h+='<div class="cp-row"><div class="cp-l"><div class="cp-n">'+eh(x.name)+'</div><div class="cp-d">Best '+(tm?'hold ':'')+cfv(x.best,x.mode)+(tm?'':' reps')+' · '+fds(x.bestDate+'T12:00')+'</div></div>'+cspark(x.pts)+'<div class="cp-v">'+cfv(x.last.v,x.mode)+'<span>last</span></div></div>';});
   el.innerHTML=h+'</div>';}

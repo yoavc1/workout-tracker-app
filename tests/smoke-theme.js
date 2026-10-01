@@ -24,7 +24,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     const LIGHT = '#e8f0f8', DARK = '#11141c';
 
     await phone('light'); await p.go(APP); await p.ev(SEED);
-    // Put a workout on today so the home screen shows the core tick box as well
+    // Put a workout on today, so the Today card shows it done
     await p.ev(`addS({workout:'Upper Push',date:new Date().toISOString(),exercises:{Dips:[{kg:10,reps:9}]},duration:2400});'ok'`);
 
     // Migration from the old Dark Mode toggle: 'light' stays Light, anything else becomes Auto, exactly once
@@ -136,9 +136,11 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
         {id:'x4',pri:7,kind:'pos',icon:'🔥',title:'3 weeks in a row',text:'with 2+ training days each'}];};ALX=true;rAlerts();buildAlerts=b;ALX=false;})();'ok'`);
       await shot('02-home-insights', t);
       await sheet('03-start-workout', t, `document.getElementById('nav-plus').click();`);
-      await sheet('04-manage-workouts', t, `showManage();`);
-      // Schedule: Today and the week plan, a day's workout picker, then the month calendar on home and a day's pop-up
+      // Schedule: Today and the week plan, then My Workouts and its ⚙ Manage Workouts, a day's workout picker, then the
+      // month calendar on home and a day's pop-up
       await sheet('05-schedule', t, `openSched();`);
+      await sheet('05b-schedule-workouts', t, `openSched();var s=document.getElementById('sch');setTimeout(function(){s.scrollTop=1e5;},0);`);
+      await sheet('04-manage-workouts', t, `openSched();showManage();`);
       await sheet('06-split-day', t, `openSched();pickDay('Mon');`);
       await sheet('06b-home-calendar', t, `document.getElementById('cal-sec').scrollIntoView({block:'center'});`);
       await sheet('06c-calendar-day', t, `openDay(lday(gs()[gs().length-1].date));`);
@@ -159,8 +161,8 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
       // Finish with a changed list: "Also update Legs?"
       await sheet('11-also-update', t, `if(typeof askTpl!=='function')return false;addEx('Leg Press');var ch=tplDiff();if(!ch)return false;askTpl(ch,function(){});`);
       await p.ev(`clDr();goHome();document.getElementById('toast').classList.remove('show');'ok'`);
-      await sheet('12-edit-exercises', t, `if(typeof showExEd!=='function')return false;showManage();showExEd('Legs');`);
-      await sheet('13-rename-exercise', t, `if(typeof showExEd!=='function')return false;showManage();showExEd('Legs');var b=document.querySelector('#exed .exr .jer');if(!b)return false;b.click();`);
+      await sheet('12-edit-exercises', t, `if(typeof showExEd!=='function')return false;openSched();showManage();showExEd('Legs');`);
+      await sheet('13-rename-exercise', t, `if(typeof showExEd!=='function')return false;openSched();showManage();showExEd('Legs');var b=document.querySelector('#exed .exr .jer');if(!b)return false;b.click();`);
       await p.ev(`switchTab('progress');'ok'`); await p.wait(1600);
       await shot('14-progress', t);
       // An exercise's detail chart, then its muscle group picker and Merge into…

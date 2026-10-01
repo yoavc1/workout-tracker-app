@@ -154,7 +154,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 - Drag-to-reorder at any time, using the SortableJS library (loaded from cdnjs; supports touch). This replaces the ↑/↓ buttons.
 - **+ Add exercise** has type-ahead over every exercise you've ever logged. New names are allowed and are session-only.
 - Finish shows "Also update *Legs*?" with the changes listed (added / removed / new order), and buttons **Update workout** / **Just this session**.
-- Saved workouts are edited in **Manage Workouts → Edit exercises**: drag, add, remove, rename. Renaming offers "also rename in history" so progress stays continuous.
+- Saved workouts are edited in **Manage Workouts → Edit exercises**: drag, add, remove, rename. Renaming offers "also rename in history" so progress stays continuous. *(1 Oct: Manage Workouts opens from the ⚙ on My Workouts in the Schedule sheet.)*
 - Sets are keyed by exercise name, so the sync pause during workouts goes away.
 - *Done when:* reordering or adding mid-session never changes the saved workout unless you confirm at Finish; a half-finished workout reloads correctly after the app is killed; old drafts migrate.
 
@@ -163,13 +163,14 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
   1. **Today:** the planned workout with a **Start** button, or "Rest day".
   2. **Week plan:** Mon–Sun rows. Tap to choose a workout or Rest, drag to swap days. Synced across devices.
   3. **Month calendar:** done days (coloured by workout), upcoming planned days (outlined), missed planned days (red dot). Tap a day to see what you logged or to log it. *(30 Sep: moved to the home screen, under the Today card.)*
+  4. **My Workouts** *(1 Oct, moved from the home screen)*: your workouts in their colours. Tap one to start it; the ⚙ opens Manage Workouts (rename, add, delete, edit exercises).
 - **Move a missed day:** a missed planned day from the last 3 days gets **Do it today** or **Tomorrow**. This records a `move`, so the calendar and alerts both understand it.
-- The home screen gets the same **Today** card at the top. Tapping anywhere on it opens the sheet; its buttons (Start, the moves, Undo) keep their own actions.
+- The home screen gets the same **Today** card at the top. Tapping anywhere on it opens the sheet; its buttons (Start, the moves, Undo) keep their own actions. An unfinished workout that isn't on today's list shows on it under **Unfinished**, with **Continue**.
 - The progression calendar on the Progress page moves here (§8), so there's one calendar, not two.
 - *Done when:* the plan matches on phone and laptop; a missed Monday leg day moved to Tuesday shows as planned on Tuesday and is no longer reported as missed.
 
 **C · Core**
-- A **Core** chip on the home screen every day: ✓ when done, a one-tap toggle, plus "3 of last 7 days".
+- A **Core** chip on the home screen every day: ✓ when done, a one-tap toggle, plus "3 of last 7 days". *(1 Oct: removed from home, since each workout has the chip and History has a core row. Core on a rest day is logged from that day's pop-up on the calendar.)*
 - Tapping the chip opens **Today's core**:
   - Add exercises with type-ahead from past core exercises.
   - Choose reps or time per exercise; the app remembers the choice for next time.

@@ -1,5 +1,6 @@
 // End-to-end test of Core (Track C) in headless Chrome at iPhone size (393x852) against a mock sync server:
-// the home and workout chips, the day sheet with type-ahead, modes, sets and the stopwatch, History and Progress.
+// the workout chip, the calendar day pop-up's core button (home has no chip), the day sheet with type-ahead, modes,
+// sets and the stopwatch, History and Progress.
 // Usage: node tests/smoke-core.js   (set CHROME=/path/to/chrome if it isn't in /Applications; SHOTS=dir keeps screenshots)
 const path = require('path'), fs = require('fs'), os = require('os'), assert = require('assert');
 const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
@@ -34,24 +35,37 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     const day = await p.ev(`(function(){var t=new Date();t.setHours(12,0,0,0);var o={};[0,1,2,3,6,9,10].forEach(function(n){var x=new Date(t);x.setDate(x.getDate()-n);o[n]=lday(x);});return o;})()`);
     const today = day[0];
 
-    // The chip is on home every day, including a rest day (no workout today in the seed)
+    // Home has no core chip. On a rest day (no workout today in the seed) a day on the calendar logs core: its pop-up
+    // has a core button for any day up to today, which opens that day's sheet
     assert.strictEqual(await p.ev(`gs().some(function(s){return lday(s.date)===lday(new Date())})`), false, 'rest day');
-    assert.ok(await p.ev(`!!document.querySelector('#abs-sec .cchip')`), 'chip on a rest day');
-    assert.strictEqual(await txt('#abs-sec .cchip-n'), '3 of last 7 days', 'days 1, 3 (old abs tick) and 6');
-    assert.strictEqual(await p.ev(`document.querySelector('#abs-sec .jct').classList.contains('on')`), false);
-    await shot('c1-home-chip.png');
-    step('core chip shows on home on a rest day, counting old ticks');
+    assert.strictEqual(await p.ev(`document.querySelector('#s-home .cchip')`), null, 'no core chip on home');
+    const dpCore = () => p.ev(`(function(){var b=document.querySelector('#hp-det [data-act="core"]');return b?[b.dataset.day,b.textContent,b.classList.contains('on')]:null;})()`);
+    await p.ev(`document.querySelector('.cal-c.today').click();'ok'`); await p.wait(100);
+    assert.deepStrictEqual(await dpCore(), [today, 'Log coreAdd ›', false]);
+    await shot('c1-day-core.png');
+    await p.ev(`document.querySelector('#hp-det [data-act="core"]').click();'ok'`); await p.wait(100);
+    assert.deepStrictEqual(await p.ev(`[document.getElementById('hmpop-ov').classList.contains('active'),document.getElementById('mov-core').classList.contains('active'),COD,COS]`), [false, true, today, null], "the pop-up gives way to the day's sheet");
+    assert.ok(/ · 3 of last 7 days$/.test(await txt('#mov-core .csh-d')), 'days 1, 3 (old abs tick) and 6');
+    await p.ev(`document.querySelector('#mov-core .jcx').click();openDay('${day[1]}');'ok'`); await p.wait(100);
+    assert.deepStrictEqual(await dpCore(), [day[1], '✓ Core trainedEdit ›', true], 'a past core day');
+    await p.ev(`openDay(addD(lday(new Date()),1));'ok'`);
+    assert.strictEqual(await dpCore(), null, 'no core button on a future day');
+    await p.ev(`document.getElementById('hp-close').click();'ok'`);
+    step('no chip on home; a calendar day (rest days included) opens its core, counting old ticks');
 
-    // One tap ticks today, and the count follows
-    await p.ev(`document.querySelector('#abs-sec .jct').click();'ok'`); await p.wait(100);
+    // The workout screen's chip: one tap ticks today, and the count follows
+    await p.ev(`openWK('Legs');'ok'`); await p.wait(300);
+    assert.strictEqual(await txt('#wk-core .cchip-n'), '3 of last 7 days');
+    assert.strictEqual(await p.ev(`document.querySelector('#wk-core .jct').classList.contains('on')`), false);
+    await p.ev(`document.querySelector('#wk-core .jct').click();'ok'`); await p.wait(100);
     assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), true);
-    assert.strictEqual(await p.ev(`document.querySelector('#abs-sec .jct').classList.contains('on')`), true);
-    assert.strictEqual(await txt('#abs-sec .cchip-n'), '4 of last 7 days');
-    await p.wait(300); await shot('c2-home-chip-ticked.png');
+    assert.strictEqual(await p.ev(`document.querySelector('#wk-core .jct').classList.contains('on')`), true);
+    assert.strictEqual(await txt('#wk-core .cchip-n'), '4 of last 7 days');
+    await p.wait(300); await shot('c2-workout-chip-ticked.png');
     step('one-tap tick on the chip');
 
     // Tapping the chip (not the tick) opens Today's core; the type-ahead offers past core exercises first
-    await p.ev(`document.querySelector('#abs-sec .cchip-m').click();'ok'`); await p.wait(100);
+    await p.ev(`document.querySelector('#wk-core .cchip-m').click();'ok'`); await p.wait(100);
     assert.ok(await p.ev(`document.getElementById('mov-core').classList.contains('active')`));
     assert.strictEqual(await txt('#mov-core h3'), "Today's core");
     assert.strictEqual(await p.ev('COD'), today);
@@ -74,8 +88,8 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     await p.ev(`(function(){var s=gSW();s.t0-=62000;sSW(s);})();'ok'`); await p.wait(400);
     assert.strictEqual(await txt('#mov-core .jsw-t'), '1:02');
     await shot('c4-sheet-stopwatch.png');
-    await p.go(APP);
-    assert.ok(/stopwatch running/.test(await txt('#abs-sec .cchip-s')), 'the chip says a stopwatch is running');
+    await p.go(APP); await p.ev(`openWK('Legs');'ok'`); await p.wait(200);
+    assert.ok(/stopwatch running/.test(await txt('#wk-core .cchip-s')), 'the chip says a stopwatch is running');
     await p.ev(`openCore(lday(new Date()));'ok'`); await p.wait(400);
     assert.ok(/^1:0[2-4]$/.test(await txt('#mov-core .jsw-t')), 'still counting after a reload');
     await p.ev(`(function(){var s=gSW();s.t0=Date.now()-62400;sSW(s);})();document.querySelector('#mov-core .jsw').click();'ok'`); await p.wait(100);
@@ -109,8 +123,8 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     assert.strictEqual(await p.ev(`coreDone('${day[2]}')`), false, 'adding without sets did not tick the day');
     await p.ev(`document.querySelector('#mov-core .jcx').click();'ok'`); await p.wait(100);
     assert.strictEqual(await p.ev(`document.getElementById('mov-core').classList.contains('active')`), false);
-    assert.strictEqual(await txt('#abs-sec .cchip-s'), 'Plank 62s, Leg Raise 2×15, Dead Bug 30s');
-    await shot('c6-home-chip-logged.png');
+    assert.strictEqual(await txt('#wk-core .cchip-s'), 'Plank 62s, Leg Raise 2×15, Dead Bug 30s');
+    await shot('c6-workout-chip-logged.png');
     step('reps and time exercises, sets added and removed, mode remembered across days');
 
     // Workout screen: the same chip between the header and the exercises, hidden when editing a past session
@@ -176,7 +190,7 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     await p.ev(`${tk(9, 1)}.click();'ok'`); await p.wait(100);
     assert.strictEqual(await p.ev(`coreDone('${day[9]}')`), false, "no sets: one tap on the day's last workout with core unticks the day");
     assert.deepStrictEqual((await rows())[day[9]], ['off Not done · tap to add exercises', 'off Not done · tap to add exercises']);
-    // With sets logged, taking core off the day's last workout with it asks first, as on the home chip, because it
+    // With sets logged, taking core off the day's last workout with it asks first, as on the workout chip, because it
     // clears them; while another workout still has core it doesn't
     await p.ev(`${tk(6, 0)}.click();'ok'`);
     assert.deepStrictEqual([await p.ev(`coreDone('${day[6]}')`), await p.ev(`${tk(6, 0)}.textContent`)], [true, 'Confirm?']);
@@ -215,27 +229,29 @@ const CORE_SEED = `(function(){var d=JSON.parse(localStorage.getItem('ironlog_da
     assert.deepStrictEqual(s.core['c' + today].items, await p.ev(`coreItems(lday(new Date()))`));
     assert.strictEqual(s.core['c' + day[3]].done, true, 'old abs tick synced as a core day');
     assert.ok(s.core['c' + day[1]].items.length === 2);
-    // Another device adds a set later: after a sync the chip shows it
+    // Another device adds a set later: after a sync, History's card for today shows it
     s.core['c' + today] = Object.assign({}, s.core['c' + today], { mt: Date.now() });
     s.core['c' + today].items = s.core['c' + today].items.map(it => it.name === 'Plank' ? Object.assign({}, it, { sets: it.sets.concat([{ secs: 50 }]) }) : it);
     await fetch(SYNC + '__store', { method: 'PUT', body: JSON.stringify(s) });
-    await p.ev(`new Promise(function(r){csync(r);})`); await p.wait(100);
-    assert.ok(/^Plank 62s\/50s/.test(await txt('#abs-sec .cchip-s')), 'merged from the other device');
+    await p.ev(`switchTab('history');new Promise(function(r){csync(r);})`); await p.wait(100);
+    assert.ok(/^Plank 62s\/50s/.test(await txt(`.hco[data-day="${today}"] .hco-s`)), 'merged from the other device');
     step('core items sync as the day record');
 
     // Unticking a day with logged sets asks for a second tap, then clears them
-    await p.ev(`document.querySelector('#abs-sec .jct').click();'ok'`);
+    await p.ev(`openWK('Legs');'ok'`); await p.wait(200);
+    await p.ev(`document.querySelector('#wk-core .jct').click();'ok'`);
     assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), true, 'first tap only asks');
-    assert.strictEqual(await txt('#abs-sec .jct'), 'Confirm?');
-    await p.ev(`document.querySelector('#abs-sec .jct').click();'ok'`); await p.wait(100);
+    assert.strictEqual(await txt('#wk-core .jct'), 'Confirm?');
+    await p.ev(`document.querySelector('#wk-core .jct').click();'ok'`); await p.wait(100);
     assert.deepStrictEqual(await p.ev(`[coreDone(lday(new Date())),coreItems(lday(new Date()))]`), [false, []]);
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.deepStrictEqual([s.core['c' + today].done, s.core['c' + today].items], [false, []]);
     step('unticking a logged day takes two taps and clears it');
 
     // Coming back to the app on a new day redraws the chip (iOS resumes without reloading)
-    await p.ev(`CCD='2000-01-01';document.querySelector('#abs-sec').innerHTML='';document.dispatchEvent(new Event('visibilitychange'));'ok'`); await p.wait(100);
-    assert.ok(await p.ev(`!!document.querySelector('#abs-sec .cchip')&&CCD===lday(new Date())`));
+    await p.ev(`CCD='2000-01-01';document.querySelector('#wk-core').innerHTML='';document.dispatchEvent(new Event('visibilitychange'));'ok'`); await p.wait(100);
+    assert.ok(await p.ev(`!!document.querySelector('#wk-core .cchip')&&CCD===lday(new Date())`));
+    await p.ev(`goHome();'ok'`);
     step('chip redraws when the app resumes on a new day');
 
     // A rest day's own card: unticking asks for a second tap, because the card then goes away

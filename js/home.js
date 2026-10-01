@@ -1,26 +1,16 @@
-// Workout Tracker — Navigation, home screen, manage workouts
+// Workout Tracker — Navigation, home screen, manage workouts (opened from the Schedule sheet's My Workouts)
 // ═══════ NAV ═══════
 function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.ntab').forEach(function(n){n.classList.remove('active');});var b=document.querySelector('.ntab[data-tab="'+t+'"]');if(b)b.classList.add('active');document.getElementById('nav-wrap').style.display='flex';document.getElementById('bbar').style.display='none';if(t==='home'){document.getElementById('s-home').classList.add('active');SCM=0;rHome();}else if(t==='progress'){document.getElementById('s-prog').classList.add('active');setTimeout(rProg,100);}else if(t==='history'){document.getElementById('s-hist').classList.add('active');rHist();}else if(t==='goals'){document.getElementById('s-goals').classList.add('active');rGoals(true);}}
 function goHome(){CW=null;CL=[];CS={};OE={};ESI=null;WDAY=null;WST=null;clearInterval(RTI);clearInterval(metaInterval);switchTab('home');}
 // ═══════ HOME ═══════
 function uSub(){var n=gs().length,st=gSt();document.getElementById('hsub').textContent=(n===0?'Ready for your first workout?':n+' workout'+(n!==1?'s':'')+' logged')+(gSyncUrl()&&st&&st.ok===false?' · ⚠️ not synced':'');}
+// Home is the Today card, the calendar and the alerts. The workout list and Manage Workouts live in the Schedule sheet;
+// core is logged from a workout's own chip, History, or a day on the calendar.
 function rHome(){
   document.getElementById('bbar').style.display='none';
-  var wk=gw();
   uSub();rToday();
   // Alerts, rebuilt from the data (js/alerts.js)
   rAlerts();
-  // Core chip, every day (js/core.js)
-  rCoreChip(document.getElementById('abs-sec'),lday(new Date()));
-  // Workouts
-  var wS=document.getElementById('wk-sec');var di=gDri();
-  var h='<div class="hsec"><div class="hsec-t">My Workouts<button class="ibtn" id="btn-manage" style="width:28px;height:28px;font-size:12px">⚙</button></div><div class="wcards">';
-  Object.keys(wk).forEach(function(n){var ex=wk[n],last=gLast(n),hd=di&&di.workout===n;
-    h+='<div class="wcard" data-w="'+ea(n)+'"><div><h3>'+eh(n)+(hd?'<span class="draft">DRAFT</span>':'')+'</h3><span>'+ex.length+' exercises'+(last?' · Last: '+fds(last.date):'')+'</span></div><div style="color:var(--t3);font-size:18px">→</div></div>';
-  });
-  h+='</div></div>';wS.innerHTML=h;
-  wS.querySelectorAll('.wcard').forEach(function(c){c.addEventListener('click',function(){openWK(c.dataset.w);});});
-  document.getElementById('btn-manage').addEventListener('click',function(e){e.stopPropagation();showManage();});
 }
 
 function showManage(){
@@ -41,6 +31,8 @@ function showManage(){
   body.querySelectorAll('.jex').forEach(function(b){b.addEventListener('click',function(){showExEd(b.dataset.n);});});
   document.getElementById('mn-add').addEventListener('click',function(){var n=document.getElementById('mn-new').value.trim();if(!n)return;var w=gw();if(w[n]){toast('Name already used','var(--orange)');return;}w[n]=[];sw(w);rHome();toast(n+' created');showExEd(n);});
 }
+// Closing redraws, so exercise counts on the Today card and in the sheet catch up with edits made inside
+function closeManage(){document.getElementById('mov-manage').classList.remove('active');rHome();}
 // A saved workout's exercises: drag to reorder, rename, remove, add. Changes save straight away; sessions already
 // logged keep their exercises.
 function showExEd(n){

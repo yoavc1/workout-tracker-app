@@ -1,4 +1,4 @@
-// Workout Tracker — Schedule: the Today card, weekly plan, month calendar and moving a missed day
+// Workout Tracker — Schedule: the Today card, weekly plan, your workouts, month calendar and moving a missed day
 // ═══════ PLAN ═══════
 // Pure functions of the data, so the alerts (Track F) can reuse them. Days are local 'YYYY-MM-DD' strings. The weekly
 // plan repeats every week; a move shifts one planned workout to another day ("do Monday's Legs on Tuesday").
@@ -63,7 +63,7 @@ function closeSched(){document.getElementById('sch').classList.remove('active');
 // Redraws every Today view: the home card and calendar, and the sheet when it's open. keepWeek leaves the week list as
 // a drag left it.
 function rToday(keepWeek){var d=gd();TDAY=lday(new Date());document.getElementById('today-sec').innerHTML=todayHTML(d,true);rCal(d);if(schOpen()&&!SDRAG)rSched(d,keepWeek);}
-function rSched(d,keepWeek){document.getElementById('sch-td').innerHTML=todayHTML(d);if(!keepWeek)rWeek(d);}
+function rSched(d,keepWeek){document.getElementById('sch-td').innerHTML=todayHTML(d);if(!keepWeek)rWeek(d);rWkList();}
 
 function tdRow(n,sub,btn,w){return'<div class="td-r"><i class="td-bar" style="background:'+wColor(n,w)+'"></i><div class="td-m"><div class="td-n">'+eh(n)+'</div><div class="td-s">'+sub+'</div></div>'+btn+'</div>';}
 function undoB(m){return'<button class="td-u" data-act="undo" data-id="'+ea(m.id)+'">Undo</button>';}
@@ -72,7 +72,8 @@ function todayHTML(d,home){
   d.sessions.forEach(function(s){if(lday(s.date)===today&&done.indexOf(s.workout)<0)done.push(s.workout);});
   // On home the whole card opens the sheet; its buttons keep their own actions (schClick takes the nearest data-act)
   var h='<div class="hsec td"'+(home?' data-act="open"':'')+'><div class="hsec-t">Today · '+fdf(new Date())+(home?'<button class="td-lnk" data-act="open">Schedule ›</button>':'')+'</div>';
-  pl.concat(done.filter(function(x){return pl.indexOf(x)<0;})).forEach(function(n){
+  var rows=pl.concat(done.filter(function(x){return pl.indexOf(x)<0;}));
+  rows.forEach(function(n){
     var ok=done.indexOf(n)>=0,m=null;mv.forEach(function(x){if(x.to===today&&x.from<today&&x.workout===n)m=x;});
     var sub=ok?'Done':m?'Moved from '+dname(m.from,today)+' · '+undoB(m):w[n]?w[n].length+' exercise'+(w[n].length!==1?'s':''):'No longer one of your workouts';
     var btn=ok?'<span class="td-ok">✓</span>':w[n]?'<button class="td-go" data-act="go" data-w="'+ea(n)+'">'+(dr&&dr.workout===n?'Continue':'Start')+'</button>':'';
@@ -80,6 +81,8 @@ function todayHTML(d,home){
   });
   if(!pl.length&&!done.length){var hp=DAYS.some(function(k){return wk[k];});
     h+='<div class="td-rest">'+(hp?'Rest day':'No weekly plan yet')+'</div>'+(hp?'':home?'<button class="mbtn sec td-plan" data-act="open">Plan your week</button>':'<div class="td-s">Tap a day below to plan it.</div>');}
+  // An unfinished workout that isn't on today's list still shows here, now that home has no workout list to badge it
+  if(dr&&w[dr.workout]&&rows.indexOf(dr.workout)<0)h+='<div class="td-h">Unfinished</div>'+tdRow(dr.workout,'Not finished'+(dr.st?' · started '+dname(lday(new Date(dr.st)),today):''),'<button class="td-go" data-act="go" data-w="'+ea(dr.workout)+'">Continue</button>',w);
   var ms=missedDays(3,d,today);
   if(ms.length){h+='<div class="td-h">Missed</div>';ms.forEach(function(x){var a=' data-from="'+x.day+'" data-w="'+ea(x.workout)+'"';
     h+=tdRow(x.workout,'<span class="td-miss">Missed</span> · planned '+dname(x.day,today),'',w)+'<div class="td-mv"><button class="mbtn sec" data-act="mv" data-to="'+today+'"'+a+'>Do it today</button><button class="mbtn sec" data-act="mv" data-to="'+tm+'"'+a+'>Tomorrow</button></div>';});}
@@ -104,6 +107,15 @@ function rWeek(d){
     onEnd:function(){SDRAG=false;var sp={},old=gSplit(),ch=false;
       [].forEach.call(el.children,function(p,i){p.dataset.day=DAYS[i];sp[DAYS[i]]=p.dataset.w;if((old[DAYS[i]]||'')!==p.dataset.w)ch=true;});
       if(ch){sSplit(sp);rToday(true);toast('Days swapped');}}});
+}
+// My Workouts, under the week plan: tap one to start it (or carry on with its draft); ⚙ renames, adds and removes
+// workouts and edits their exercises (showManage in js/home.js)
+function rWkList(){
+  var w=gw(),dr=gDri(),h='<div class="hsec"><div class="hsec-t">My Workouts<button class="ibtn wl-set" data-act="manage" aria-label="Manage workouts">⚙</button></div><div class="wl">';
+  Object.keys(w).forEach(function(n){var c=w[n].length,last=gLast(n);
+    h+='<button class="wl-r" data-act="go" data-w="'+ea(n)+'"><i class="wp-dot" style="background:'+wColor(n,w)+'"></i><div class="wl-m"><div class="wl-n">'+eh(n)+(dr&&dr.workout===n?'<span class="draft">DRAFT</span>':'')+'</div><div class="wl-s">'+c+' exercise'+(c!==1?'s':'')+(last?' · Last: '+fds(last.date):'')+'</div></div><span class="wl-go">→</span></button>';});
+  if(!Object.keys(w).length)h+='<button class="mbtn sec td-plan" data-act="manage">Add a workout</button>';
+  document.getElementById('sch-wk').innerHTML=h+'</div></div>';
 }
 function pickDay(k){
   var w=gw(),sp=gSplit(),o=document.getElementById('sd-opts'),h='<div class="sd-l">';
@@ -144,7 +156,9 @@ function openDay(day){
   if(day>today){if(pl.length)h+='<div class="dp-s">Planned</div>';}
   else missedOn(day,d).forEach(function(x){h+='<div class="'+(day<today?'dp-miss':'dp-s')+'">'+eh(x)+(day<today?' was planned · missed':' is planned today')+'</div>';});
   mv.forEach(function(m){if(m.from===day&&m.to!==day)h+='<div class="dp-s">'+eh(m.workout)+' moved to '+dname(m.to,today)+'</div>';else if(m.to===day&&m.from!==day)h+='<div class="dp-s">'+eh(m.workout)+' moved here from '+dname(m.from,today)+'</div>';});
-  if(coreDone(day,d.core))h+='<div class="dp-core">✓ Core trained</div>';
+  // Core for any day up to today, rest days included (home has no core chip of its own)
+  var cd=coreDone(day,d.core);
+  if(day<=today)h+='<button class="dp-cb'+(cd?' on':'')+'" data-act="core" data-day="'+day+'">'+(cd?'✓ Core trained':'Log core')+'<span>'+(cd?'Edit':'Add')+' ›</span></button>';
   if(day<=today&&!lg.length){var ns=pl.filter(function(x){return w[x];});Object.keys(w).forEach(function(n){if(ns.indexOf(n)<0)ns.push(n);});
     h+='<div class="dp-acts"><div class="dp-s">'+(day===today?'Start a workout':'Log a workout for this day')+'</div>';
     ns.forEach(function(n){h+='<button class="mbtn '+(pl.indexOf(n)>=0?'pri':'sec')+'" data-act="log" data-day="'+day+'" data-w="'+ea(n)+'"><i class="wp-dot" style="background:'+wColor(n,w)+'"></i>'+eh(n)+'</button>';});
@@ -152,7 +166,8 @@ function openDay(day){
   document.getElementById('hp-det').innerHTML=h;
   document.getElementById('hmpop-ov').classList.add('active');
 }
-// One click handler for the home card and calendar, the sheet and the day pop-up (buttons carry data-act)
+// One click handler for the home card and calendar, the sheet (Today, week plan, My Workouts) and the day pop-up
+// (buttons carry data-act)
 function schClick(e){
   var b=e.target.closest('[data-act]');if(!b)return;var a=b.dataset.act,x=b.dataset,today=lday(new Date());
   if(a==='open')openSched();
@@ -162,5 +177,7 @@ function schClick(e){
   else if(a==='pick')pickDay(b.closest('.wp-p').dataset.day);
   else if(a==='mp'||a==='mn'){SCM+=a==='mp'?-1:1;rCal(gd());}
   else if(a==='cal')openDay(x.day);
+  else if(a==='manage')showManage();
+  else if(a==='core'){document.getElementById('hmpop-ov').classList.remove('active');openCore(x.day);}
   else if(a==='log'){document.getElementById('hmpop-ov').classList.remove('active');closeSched();if(x.day===today)openWK(x.w);else openWK(x.w,null,null,x.day);}
 }
