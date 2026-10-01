@@ -190,6 +190,12 @@ input[type=number]{-moz-appearance:textfield}
 .gbar-f.ahead,.gbar-f.done{background:var(--green)}.gbar-f.on{background:var(--blue)}.gbar-f.behind{background:var(--orange)}
 .gbar-m{position:absolute;top:-5px;bottom:-5px;width:3px;margin-left:-1.5px;background:var(--t1);border-radius:2px}
 .gmk{display:inline-block;width:3px;height:9px;background:var(--t1);border-radius:1px;margin-right:4px;vertical-align:-1px}
+.gact{display:flex;flex-direction:column;gap:10px}
+/* Drag ⠿ to put goals in your own order: a 40×44 target that reaches into the card's padding, and touch-action none so
+   the finger drags rather than scrolls. The lifted copy must follow the finger without the card's press transition. */
+.gdrag{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:40px;height:44px;margin:-12px -14px -12px -8px;color:var(--t3);font-size:18px;line-height:1;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.gcard.sortable-fallback{transition:none}
+.gcard .gc-name{flex:1} /* keeps the chip beside ⠿ on the right */
 .gstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
 .gstats b{display:block;font-family:var(--ff);font-size:15px;font-weight:700;color:var(--t1);white-space:nowrap}
 .gstats span{display:block;font-family:var(--ff);font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -227,6 +233,7 @@ input[type=number]{-moz-appearance:textfield}
 .gn-date{-webkit-appearance:none;appearance:none;min-height:46px;text-align:left}.gn-date::-webkit-date-and-time-value{text-align:left}
 .gn-sum{font-size:13px;color:var(--t1);background:var(--input);border-radius:var(--rs);padding:10px 12px;margin-bottom:16px}
 .gd-top h3{margin:0}
+.gd-mus{margin-top:12px}
 .gd-chart{position:relative;height:210px;margin:14px 0 8px}
 .gd-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--t2)}
 .gd-leg span{display:flex;align-items:center;gap:5px}
@@ -453,6 +460,7 @@ input[type=number]{-moz-appearance:textfield}
 .pg-act:active{background:var(--card2)}
 .pg-note{font-size:12.5px;color:var(--t2);line-height:1.5;margin:8px 2px 0}.pg-note b{color:var(--t1)}
 .pg-sheet{max-height:88dvh;overflow-y:auto}
+#mov-mus{z-index:210} /* the muscle group picker also opens from a goal's sheet, and stacks over it */
 .pg-mg{font-family:var(--ff);font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.6px;margin:14px 0 6px}
 .pg-ms{display:flex;flex-wrap:wrap;gap:6px}
 .pg-mb{min-height:36px;padding:6px 13px;background:var(--input);border:1px solid var(--brd);border-radius:18px;font-family:var(--fb);font-size:13px;color:var(--t1);cursor:pointer}
