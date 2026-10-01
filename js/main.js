@@ -48,8 +48,8 @@ document.getElementById('rename-cancel').addEventListener('click',function(){doc
 document.getElementById('mov-rename').addEventListener('click',function(e){if(e.target===document.getElementById('mov-rename'))document.getElementById('mov-rename').classList.remove('active');});
 document.getElementById('rename-inp').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('rename-save').click();});
 document.getElementById('hmpop-ov').addEventListener('click',function(e){if(e.target===document.getElementById('hmpop-ov'))document.getElementById('hmpop-ov').classList.remove('active');});
-document.getElementById('manage-close').addEventListener('click',function(){document.getElementById('mov-manage').classList.remove('active');});
-document.getElementById('mov-manage').addEventListener('click',function(e){if(e.target===document.getElementById('mov-manage'))document.getElementById('mov-manage').classList.remove('active');});
+document.getElementById('manage-close').addEventListener('click',closeManage);
+document.getElementById('mov-manage').addEventListener('click',function(e){if(e.target===document.getElementById('mov-manage'))closeManage();});
 document.getElementById('sd-cancel').addEventListener('click',function(){document.getElementById('mov-splitday').classList.remove('active');});
 document.getElementById('mov-splitday').addEventListener('click',function(e){if(e.target===document.getElementById('mov-splitday'))document.getElementById('mov-splitday').classList.remove('active');});
 document.getElementById('date-cancel').addEventListener('click',function(){document.getElementById('mov-date').classList.remove('active');});
