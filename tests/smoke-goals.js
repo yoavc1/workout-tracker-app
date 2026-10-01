@@ -28,6 +28,14 @@ const goals = [
 ];
 const DATA = { sessions, workouts: { 'Upper Push': [IN, 'Dips'], 'Upper Pull': [LAT, FP], Legs: [SQ, LE, CALF] }, goals, lastModified: noon.getTime() - 1000 };
 const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.stringify(JSON.stringify(DATA))});'ok'`;
+// Your order and the muscle group button: goals saved before either existed (no ord), three of them Back, one on Flat DB
+// Press, which its name guesses to Other, and one reached this week that floats to the top
+const FDB = 'Flat DB Press', ROW = 'Seated Cable Row', PU = 'Pull-Ups';
+const fdb = []; for (let n = 40; n >= 4; n -= 6) fdb.push({ id: 'fdb' + n, mt: 1, workout: 'Upper Push', date: ago(n) + '', duration: 3000, exercises: { [FDB]: [{ kg: 24 + Math.round((40 - n) / 6), reps: 8 }] } });
+const ORDER = { sessions: sessions.concat(fdb), workouts: DATA.workouts, lastModified: noon.getTime() - 1000, goals: [
+  G('o0', FP, 20, 50, 25, 3, false), G('o1', IN, 40, 60, 65, 4, false), G('o2', LAT, 45, 45, 60, 5, false), G('o3', SQ, 40, 30, 70, 6, false),
+  G('o4', FDB, 24, 40, 40, 7, false), G('o5', ROW, 50, 10, 70, 8, false), G('o6', PU, 5, 5, 20, 9, false)] };
+const seedOrder = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.stringify(JSON.stringify(ORDER))});'ok'`;
 
 (async () => {
   const root = path.join(__dirname, '..');
@@ -52,6 +60,7 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     step('nav has four tabs that fit at 393 wide');
 
     // The muscle group filter: each chip is [group, label, count, active]
+    const chipsOf = pg => pg.ev(`[].map.call(document.querySelectorAll('#glist .gf-c'),function(b){return [b.dataset.g,b.firstChild.textContent,+b.querySelector('em').textContent,b.classList.contains('active')];})`);
     const chips = () => p.ev(`[].map.call(document.querySelectorAll('#glist .gf-c'),function(b){return [b.dataset.g,b.firstChild.textContent,+b.querySelector('em').textContent,b.classList.contains('active')];})`);
     const view = () => p.ev(`({cards:[].map.call(document.querySelectorAll('#glist .gcard'),function(c){return c.dataset.id;}),arc:[].map.call(document.querySelectorAll('.garow'),function(r){return r.dataset.id;}),on:[].map.call(document.querySelectorAll('.gf-c.active'),function(b){return b.dataset.g;})})`);
     const pick = g => p.ev(`document.querySelector('.gf-c[data-g="${g}"]').click();'ok'`);
@@ -192,6 +201,136 @@ const seed = `localStorage.clear();localStorage.setItem('ironlog_data',${JSON.st
     assert.ok(await p.ev(`!!document.querySelector('.garow[data-id="other1"]')`), 'refreshView re-renders Goals');
     await p.ev(`sSyncUrl('');'ok'`);
     step('synced goals from another device show up');
+
+    // ── Your order: drag ⠿, also inside a muscle group filter ──
+    const o = await chrome.page(); pages.push(o);
+    await o.go(APP); await o.ev(seedOrder + `;sTheme('light');'ok'`); await o.go(APP);
+    const oshot = f => o.shot(path.join(shots, f));
+    const ov = () => o.ev(`({won:[].map.call(document.querySelectorAll('#glist > .gcard'),function(c){return c.dataset.id;}),cards:[].map.call(document.querySelectorAll('#gact .gcard'),function(c){return c.dataset.id;}),
+      handles:[].map.call(document.querySelectorAll('#glist .gdrag'),function(h){return h.closest('.gcard').dataset.id;}),on:[].map.call(document.querySelectorAll('#glist .gf-c.active'),function(b){return b.dataset.g;})})`);
+    const oc = sel => o.ev(`(function(){var r=document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,top:r.top};})()`);
+    const mouse = (type, x, y) => o.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+    // A real drag with the mouse: press on ⠿, move in small steps to just inside the top of the target card, release.
+    // during() runs mid-drag, with the lifted card under the pointer.
+    const odrag = async (id, toId, during) => {
+      await o.ev(`(function(){var s=document.getElementById('s-goals');s.scrollTop+=document.querySelector('.gcard[data-id="${toId}"]').getBoundingClientRect().top-140;})();'ok'`); await o.wait(100);
+      const a = await oc(`.gcard[data-id="${id}"] .gdrag`), b = await oc(`.gcard[data-id="${toId}"]`), ty = b.top + 14;
+      await mouse('mousePressed', a.x, a.y); await o.wait(50);
+      for (let i = 1; i <= 14; i++) { await mouse('mouseMoved', a.x, a.y + (ty - a.y) * i / 14); await o.wait(30); }
+      if (during) await during();
+      await mouse('mouseReleased', a.x, ty); await o.wait(400);
+    };
+    const ords = () => o.ev(`gGoals().filter(function(g){return 'ord' in g;}).map(function(g){return g.id;}).sort()`);
+    await o.ev(`switchTab('goals');'ok'`); await o.wait(900);
+    // Goals never dragged keep the target-date order; the one reached just now is on top, with nothing to drag it by
+    assert.deepStrictEqual(await ov(), { won: ['o0'], cards: ['o1', 'o2', 'o3', 'o4', 'o5', 'o6'], handles: ['o1', 'o2', 'o3', 'o4', 'o5', 'o6'], on: [''] });
+    const hb = await o.ev(`(function(){var h=document.querySelector('.gcard[data-id="o1"] .gdrag').getBoundingClientRect(),c=document.querySelector('.gcard[data-id="o1"]').getBoundingClientRect(),n=document.querySelector('.gcard[data-id="o1"] .gc-name').getBoundingClientRect();
+      return {w:h.width,h:h.height,inCard:h.right<=c.right&&h.top>=c.top,clear:n.right<=h.left,ta:getComputedStyle(document.querySelector('.gdrag')).touchAction};})()`);
+    assert.ok(hb.w >= 40 && hb.h >= 44 && hb.inCard && hb.clear && hb.ta === 'none', 'handle: a 40×44 target inside the card ' + JSON.stringify(hb));
+    // Tapping ⠿ doesn't open the goal; tapping the card still does
+    await o.ev(`document.querySelector('.gcard[data-id="o2"] .gdrag').click();'ok'`);
+    assert.strictEqual(await o.ev(`document.getElementById('mov-goal').classList.contains('active')`), false, 'handle tap opens nothing');
+    // With Back on: Lat Pulldown, Seated Cable Row and Pull-Ups, in the one order
+    await o.ev(`document.querySelector('#glist .gf-c[data-g="Back"]').click();'ok'`);
+    assert.deepStrictEqual((await ov()).cards, ['o2', 'o5', 'o6']);
+    await o.ev(`document.getElementById('toast').classList.remove('show');'ok'`); await o.wait(450); await oshot('11-back-before.png');
+    // Drag Pull-Ups to the top of Back. A sync landing mid-drag must not redraw the list under the finger.
+    await o.ev(`document.getElementById('gact').dataset.mark='1';'ok'`);
+    await odrag('o6', 'o2', async () => {
+      assert.strictEqual(await o.ev(`!!document.querySelector('.gcard.sortable-fallback')&&GDRAG`), true, 'dragging');
+      await o.ev(`refreshView();rGoals();'ok'`);
+      assert.strictEqual(await o.ev(`document.getElementById('gact').dataset.mark`), '1', 'not redrawn mid-drag');
+      await oshot('12-back-dragging.png');
+    });
+    assert.strictEqual(await o.ev(`document.getElementById('mov-goal').classList.contains('active')`), false, 'the drop opens nothing');
+    assert.strictEqual(await o.ev(`document.getElementById('gact').dataset.mark`), undefined, 'redrawn after the drop');
+    assert.deepStrictEqual((await ov()).cards, ['o6', 'o2', 'o5'], 'Pull-Ups on top of Back');
+    assert.deepStrictEqual(await ords(), ['o6'], 'only Pull-Ups saved');
+    await oshot('13-back-after.png');
+    // All: Pull-Ups sits just above Lat Pulldown, the goal it was dropped above; the rest keep their places
+    await o.ev(`document.querySelector('#glist .gf-c[data-g=""]').click();'ok'`);
+    assert.deepStrictEqual((await ov()).cards, ['o1', 'o6', 'o2', 'o3', 'o4', 'o5']);
+    // In All, Flat DB Press to the very top (under the reached goal, which stays first), then a tap opens a goal as usual
+    // In All, Flat DB Press from low in the list to the very top: holding it over the header scrolls the list up. It lands
+    // under the reached goal, which stays first.
+    await o.ev(`(function(){var s=document.getElementById('s-goals');s.scrollTop+=document.querySelector('.gcard[data-id="o4"]').getBoundingClientRect().top-560;})();'ok'`); await o.wait(100);
+    const h4 = await oc(`.gcard[data-id="o4"] .gdrag`), st0 = await o.ev(`document.getElementById('s-goals').scrollTop`);
+    assert.ok(st0 > 200, 'scrolled down ' + st0);
+    await mouse('mousePressed', h4.x, h4.y); await o.wait(50);
+    for (let i = 1; i <= 14; i++) { await mouse('mouseMoved', h4.x, h4.y + (50 - h4.y) * i / 14); await o.wait(30); }
+    for (let i = 0; i < 40 && await o.ev(`document.getElementById('s-goals').scrollTop`) > 0; i++) { await mouse('mouseMoved', h4.x + (i % 2), 50); await o.wait(100); }
+    assert.strictEqual(await o.ev(`document.getElementById('s-goals').scrollTop`), 0, 'autoscrolled to the top');
+    const t1 = (await oc(`.gcard[data-id="o1"]`)).top + 14;
+    for (let i = 1; i <= 6; i++) { await mouse('mouseMoved', h4.x, 50 + (t1 - 50) * i / 6); await o.wait(40); }
+    await mouse('mouseReleased', h4.x, t1); await o.wait(400);
+    assert.deepStrictEqual(await ov(), { won: ['o0'], cards: ['o4', 'o1', 'o6', 'o2', 'o3', 'o5'], handles: ['o4', 'o1', 'o6', 'o2', 'o3', 'o5'], on: [''] });
+    assert.deepStrictEqual(await ords(), ['o4', 'o6']);
+    await o.wait(400); await o.ev(`document.getElementById('s-goals').scrollTop=0;document.querySelector('.gcard[data-id="o3"]').click();'ok'`);
+    assert.strictEqual(await o.ev(`document.getElementById('goal-m').dataset.id`), 'o3', 'a tap still opens the goal'); await o.ev(`closeGoalM();'ok'`);
+    // One goal on screen: nothing to drag
+    await o.ev(`document.querySelector('#glist .gf-c[data-g="Legs"]').click();'ok'`);
+    assert.deepStrictEqual(await ov(), { won: [], cards: ['o3'], handles: [], on: ['Legs'] });
+    await o.ev(`document.querySelector('#glist .gf-c[data-g="Legs"]').click();'ok'`);
+    // The order syncs on the goals themselves, survives a reload, and a new goal goes to the bottom whatever its date
+    await fetch(SYNC + '__store', { method: 'PUT', body: 'null' });
+    await o.ev(`sSyncUrl('${SYNC}');new Promise(function(r){csync(r);})`);
+    s = await store();
+    assert.deepStrictEqual(s.goals.filter(g => 'ord' in g).map(g => g.id).sort(), ['o4', 'o6'], 'ord synced');
+    await o.ev(`sSyncUrl('');'ok'`); await o.go(APP); await o.ev(`switchTab('goals');'ok'`); await o.wait(300);
+    assert.deepStrictEqual((await ov()).cards, ['o4', 'o1', 'o6', 'o2', 'o3', 'o5'], 'after a reload');
+    await o.ev(`document.getElementById('btn-gnew').click();var i=document.getElementById('gn-ex');i.value='${CALF}';i.dispatchEvent(new Event('change'));var t=document.getElementById('gn-t');t.value=+document.getElementById('gn-s').value+10;t.dispatchEvent(new Event('input'));document.getElementById('gn-save').click();'ok'`); await o.wait(200);
+    const nid = await o.ev(`gGoals().filter(function(g){return g.exercise===${JSON.stringify(CALF)};})[0].id`);
+    assert.deepStrictEqual((await ov()).cards, ['o4', 'o1', 'o6', 'o2', 'o3', 'o5', nid], 'new goal at the bottom, though its date is the earliest but one');
+    step('your order: drag ⠿ in All and inside a filter, one goal saved, synced, new goals last, no redraw mid-drag');
+
+    // ── Muscle group button on a goal's sheet: the Progress picker, stacked over it ──
+    await o.ev(`document.querySelector('#glist .gf-c[data-g="Other"]').click();'ok'`);
+    assert.deepStrictEqual((await ov()).cards, ['o4'], 'Flat DB Press guesses to Other');
+    await o.ev(`document.querySelector('.gcard[data-id="o4"]').click();'ok'`); await o.wait(400);
+    const gm = await o.ev(`(function(){var b=document.getElementById('gd-mus'),r=b.getBoundingClientRect();return {t:b.textContent,h:r.height,cls:b.className};})()`);
+    assert.deepStrictEqual([gm.t, gm.cls], ['Other ✎', 'pg-mus gd-mus']); assert.ok(gm.h >= 36, 'tap target');
+    await o.ev(`document.getElementById('toast').classList.remove('show');'ok'`); await o.wait(450); await oshot('14-goal-muscle.png');
+    // Progress was never opened on this page: the picker still opens, cancels and closes on a tap outside, by itself
+    assert.strictEqual(await o.ev(`pgBound`), false);
+    await o.ev(`document.getElementById('gd-mus').click();'ok'`); await o.wait(200);
+    const st = await o.ev(`(function(){var m=document.querySelector('#mov-mus .modal').getBoundingClientRect();
+      return {mus:document.getElementById('mov-mus').classList.contains('active'),goal:document.getElementById('mov-goal').classList.contains('active'),
+        z:[getComputedStyle(document.getElementById('mov-mus')).zIndex,getComputedStyle(document.getElementById('mov-goal')).zIndex].map(Number),
+        hit:!!document.elementFromPoint(m.left+m.width/2,m.top+20).closest('#mov-mus .modal'),top:m.top,bottom:m.bottom,h:innerHeight,
+        for:document.getElementById('mus-for').textContent,on:document.querySelectorAll('#mus-opts .pg-mb.on').length};})()`);
+    assert.ok(st.mus && st.goal && st.z[0] > st.z[1] && st.hit, 'the picker stacks over the goal sheet ' + JSON.stringify(st));
+    assert.ok(st.top > 0 && st.bottom <= st.h, 'fits on screen ' + JSON.stringify(st));
+    assert.ok(/^For Flat DB Press\. Guessed from its name: Other\.$/.test(st.for), st.for); assert.strictEqual(st.on, 0);
+    await oshot('15-goal-muscle-picker.png');
+    await o.ev(`document.getElementById('mus-cancel').click();'ok'`);
+    assert.deepStrictEqual(await o.ev(`[document.getElementById('mov-mus').classList.contains('active'),document.getElementById('mov-goal').classList.contains('active')]`), [false, true], 'Cancel closes the picker only');
+    await o.ev(`document.getElementById('gd-mus').click();'ok'`); await mouse('mousePressed', 200, 20); await mouse('mouseReleased', 200, 20); await o.wait(100);
+    assert.deepStrictEqual(await o.ev(`[document.getElementById('mov-mus').classList.contains('active'),document.getElementById('mov-goal').classList.contains('active')]`), [false, true], 'a tap above it closes the picker only');
+    // Chest · Middle: saved per exercise, the sheet and the list follow, and Other (now empty) lets the filter go
+    await o.ev(`document.getElementById('gd-mus').click();document.querySelector('#mus-opts .pg-mb[data-m="Chest/Middle"]').click();'ok'`); await o.wait(250);
+    const af = await o.ev(`({m:gd().muscles[${JSON.stringify(FDB)}],sheet:document.getElementById('mov-goal').classList.contains('active'),id:document.getElementById('goal-m').dataset.id,btn:document.getElementById('gd-mus').textContent,
+      toast:document.getElementById('toast').textContent,chart:!!GCI,ord:gGoals().filter(function(g){return g.id==='o4';})[0].ord})`);
+    assert.deepStrictEqual(af, { m: 'Chest/Middle', sheet: true, id: 'o4', btn: 'Chest · Middle ✎', toast: 'Now in Chest · Middle', chart: true, ord: af.ord });
+    assert.deepStrictEqual(await chipsOf(o), [['', 'All', 7, true], ['Chest', 'Chest', 2, false], ['Back', 'Back', 3, false], ['Shoulders', 'Shoulders', 0, false], ['Arms', 'Arms', 0, false], ['Legs', 'Legs', 2, false]], 'Other gone, Chest +1');
+    await o.ev(`closeGoalM();document.querySelector('#glist .gf-c[data-g="Chest"]').click();'ok'`);
+    assert.deepStrictEqual((await ov()).cards, ['o4', 'o1'], 'in Chest, at its place in your order');
+    // Moving a goal out of a group that still has others shows them all, as a new goal outside the filter does
+    await o.ev(`document.querySelector('.gcard[data-id="o1"]').click();document.getElementById('gd-mus').click();document.querySelector('#mus-opts .pg-mb[data-m="Shoulders/Front"]').click();'ok'`); await o.wait(250);
+    assert.deepStrictEqual((await ov()).on, [''], 'filter lets go'); assert.strictEqual(await o.ev(`document.getElementById('goal-m').dataset.id`), 'o1');
+    // Picking the guess again drops the override, and Progress shows the same pick
+    await o.ev(`document.getElementById('gd-mus').click();document.querySelector('#mus-opts .pg-mb[data-m="Chest/Upper"]').click();closeGoalM();'ok'`);
+    assert.strictEqual(await o.ev(`${JSON.stringify(IN)} in gd().muscles`), false);
+    await o.ev(`switchTab('progress');'ok'`); await o.wait(500); await o.ev(`pgOpen(${JSON.stringify(FDB)});'ok'`); await o.wait(300);
+    assert.strictEqual(await o.ev(`document.getElementById('pg-mus').textContent`), 'Chest · Middle ✎', 'one setting, shared with Progress');
+    step('goal sheet: muscle group button opens the Progress picker over it; saved per exercise, list and chips follow');
+
+    // Dark: the sheet with the picker over it, and Back after the drag
+    await o.ev(`sTheme('dark');switchTab('goals');document.querySelector('#glist .gf-c[data-g="Back"]').click();document.getElementById('toast').classList.remove('show');'ok'`); await o.wait(450);
+    await oshot('16-back-after-dark.png');
+    await o.ev(`document.querySelector('.gcard[data-id="o6"]').click();'ok'`); await o.wait(400); await oshot('17-goal-muscle-dark.png');
+    await o.ev(`document.getElementById('gd-mus').click();'ok'`); await o.wait(200); await oshot('18-goal-muscle-picker-dark.png');
+    await o.ev(`document.getElementById('mus-cancel').click();closeGoalM();sTheme('auto');'ok'`);
+    step('dark mode');
 
     // Empty state
     const e = await chrome.page(); pages.push(e);
