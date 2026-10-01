@@ -1,6 +1,7 @@
 // End-to-end test of the Schedule (Track B) in headless Chrome at iPhone size (393x852), against a mock sync server:
-// the Today card and the month calendar under it on home, the sheet's week plan (tap to pick, drag to swap), moving a
-// missed day, and the calendar's day pop-up.
+// the Today card and the month calendar under it on home, the sheet's week plan (tap to pick, drag to swap) and My
+// Workouts (start, ⚙ Manage Workouts), an unfinished workout on the Today card, moving a missed day, and the calendar's
+// day pop-up.
 // Usage: node tests/smoke-schedule.js   (SHOTS=<dir> keeps the screenshots there)
 const path = require('path'), fs = require('fs'), os = require('os'), assert = require('assert');
 const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
@@ -90,6 +91,54 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     assert.ok(await p.ev(`(function(){var s=document.getElementById('sch'),h=document.getElementById('s-home');return s.scrollWidth<=s.clientWidth&&h.scrollWidth<=h.clientWidth&&document.querySelector('#cal-sec .cal-g').getBoundingClientRect().right<=320;})()`), 'fits 320px');
     await p.send('Emulation.setDeviceMetricsOverride', { width: 393, height: 852, deviceScaleFactor: 1, mobile: true }); await p.wait(200);
     step('Schedule sheet opens full screen: Today and Week plan');
+
+    // My Workouts has moved from home into the sheet, under the week plan, in the workouts' colours
+    assert.deepStrictEqual(await p.ev(`[!!document.getElementById('wk-sec'),!!document.getElementById('abs-sec'),document.querySelectorAll('#s-home .wcard,#s-home .wl-r,#s-home .cchip').length]`), [false, false, 0], 'home has no workout list or core chip');
+    const wl = await p.ev(`(function(){var s=document.getElementById('sch-wk');return {after:document.getElementById('sch-wp').nextElementSibling===s,
+      rows:[].map.call(s.querySelectorAll('.wl-r'),function(b){return [b.dataset.w,b.querySelector('.wl-s').textContent,getComputedStyle(b.querySelector('.wp-dot')).backgroundColor===T.col(wColor(b.dataset.w)),b.getBoundingClientRect().height>=44];}),
+      gear:(function(r){return r.width>=36&&r.height>=36;})(s.querySelector('[data-act="manage"]').getBoundingClientRect())};})()`);
+    assert.strictEqual(wl.after, true, 'under the week plan');
+    assert.deepStrictEqual(wl.rows.map(r => r[0]), ['Legs', 'Upper Pull', 'Upper Push', 'Muay Thai']);
+    assert.ok(wl.rows.every(r => r[2] && r[3]), 'dots in the workout colours, rows at least 44px tall');
+    assert.ok(/^2 exercises · Last: /.test(wl.rows[0][1]) && /^1 exercise · Last: /.test(wl.rows[1][1]), 'counts: ' + wl.rows.map(r => r[1]));
+    assert.ok(wl.gear, 'the ⚙ is at least 36px');
+    await p.ev(`document.getElementById('sch').scrollTop=1e5;'ok'`); await p.wait(100);
+    await shot('03b-schedule-workouts.png');
+    // ⚙ opens Manage Workouts over the sheet. A new workout and its exercises show in the list on closing.
+    await click('#sch-wk [data-act="manage"]'); await p.wait(150);
+    assert.deepStrictEqual(await p.ev(`[document.getElementById('mov-manage').classList.contains('active'),schOpen(),document.elementFromPoint(196,426).closest('#mov-manage')!==null]`), [true, true, true], 'Manage Workouts stacks over the sheet');
+    await shot('03c-schedule-manage.png');
+    await p.ev(`document.getElementById('mn-new').value='Cardio';document.getElementById('mn-add').click();'ok'`); await p.wait(150);
+    await p.ev(`var i=document.getElementById('exed-new');i.value='Bike';document.getElementById('exed-add').click();'ok'`); await p.wait(150);
+    assert.deepStrictEqual(await p.ev(`gw().Cardio`), ['Bike']);
+    await click('#manage-close'); await p.wait(100);
+    assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('#sch-wk .wl-r'),function(b){return b.dataset.w+': '+b.querySelector('.wl-s').textContent;}).slice(-1)`), ['Cardio: 1 exercise']);
+    // Tapping a row starts that workout and closes the sheet
+    await click('#sch-wk .wl-r[data-w="Cardio"]'); await p.wait(200);
+    assert.deepStrictEqual([await p.ev('schOpen()'), await text('#wk-t'), await p.ev('__wk.pop()')], [false, 'Cardio', ['Cardio']]);
+    await click('#btn-bk'); await p.wait(200);
+    // Delete takes two taps; the sheet stays open and its list redraws
+    await click('#btn-split'); await p.wait(400); await click('#sch-wk [data-act="manage"]'); await p.wait(150);
+    await p.ev(`var b=document.querySelector('.jdw[data-n="Cardio"]');b.click();b.click();'ok'`); await p.wait(150);
+    assert.deepStrictEqual([await p.ev(`'Cardio' in gw()`), await p.ev(`!!document.querySelector('#sch-wk .wl-r[data-w="Cardio"]')`), await p.ev('schOpen()')], [false, false, true]);
+    step('My Workouts in the sheet: workout colours, tap to start, ⚙ adds, edits and deletes, and the list redraws');
+
+    // An unfinished workout that isn't on today's list: Continue on the Today card under Unfinished, DRAFT in My Workouts
+    await p.ev(`closeSched();openWK('Muay Thai');document.querySelector('.ecard .jtog').click();document.querySelector('.ecard .jadd').click();var k=document.querySelector('.jkg');k.value='5';k.dispatchEvent(new Event('input'));'ok'`);
+    await click('#btn-bk'); await p.wait(200);
+    const un = await p.ev(`(function(){var c=document.getElementById('today-sec');return {h:[].map.call(c.querySelectorAll('.td-h'),function(e){return e.textContent;}),
+      go:[].map.call(c.querySelectorAll('.td-go'),function(e){return e.dataset.w+':'+e.textContent;}),sub:c.querySelectorAll('.td-s')[1].textContent};})()`);
+    assert.deepStrictEqual(un, { h: ['Unfinished', 'Missed'], go: ['Upper Pull:Start', 'Muay Thai:Continue'], sub: 'Not finished · started today' });
+    await shot('03d-home-unfinished.png');
+    await p.ev(`openSched();'ok'`); await p.wait(400);
+    assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('#sch-wk .draft'),function(e){return e.closest('.wl-r').dataset.w;})`), ['Muay Thai']);
+    await p.ev(`closeSched();'ok'`);
+    await click('#today-sec .td-go[data-w="Muay Thai"]'); await p.wait(200);
+    assert.deepStrictEqual([await text('#wk-t'), await p.ev(`CS.Pads[0].kg`)], ['Muay Thai', '5'], 'Continue picks the draft up');
+    await p.ev(`clDr();goHome();'ok'`);
+    assert.strictEqual(await p.ev(`document.querySelectorAll('#today-sec .td-h').length`), 1, 'gone once the draft is');
+    await click('#btn-split'); await p.wait(400); await p.ev(`document.getElementById('sch').scrollTop=0;'ok'`);
+    step('an unfinished workout shows on the Today card and as DRAFT in My Workouts');
 
     // Move yesterday's missed Legs to today, then undo, then move it to tomorrow
     const [t, y, tm] = [await p.ev('T.t'), await p.ev('T.day(-1)'), await p.ev('T.day(1)')];

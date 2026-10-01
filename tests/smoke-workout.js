@@ -66,8 +66,11 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await logSet('Seated Machine Leg Extension', 50, 12); await logSet('Hip Thrust', 80, 10); await logSet('Hip Thrust', 85, 8);
     const before = await p.ev(`({list:CL.slice(),st:WST})`);
     await p.go(APP);
-    assert.ok(await p.ev(`!!document.querySelector('.wcard[data-w="Legs"] .draft')`), 'DRAFT badge on home');
-    await p.ev(`openWK('Legs');'ok'`); await p.wait(200);
+    // Home has no workout list: the Today card offers to continue it, and the Schedule sheet's My Workouts badges it
+    assert.strictEqual(await p.ev(`(function(){var b=document.querySelector('#today-sec .td-go[data-w="Legs"]');return b&&b.textContent;})()`), 'Continue', 'Continue on the Today card');
+    await p.ev(`openSched();'ok'`); await p.wait(400);
+    assert.ok(await p.ev(`!!document.querySelector('#sch .wl-r[data-w="Legs"] .draft')`), 'DRAFT badge in My Workouts');
+    await p.ev(`closeSched();document.querySelector('#today-sec .td-go[data-w="Legs"]').click();'ok'`); await p.wait(200);
     assert.deepStrictEqual(await names(), before.list, 'list and order restored');
     assert.strictEqual(await p.ev(`WST`), before.st, 'elapsed time keeps counting from the real start');
     assert.deepStrictEqual(await p.ev(`CS['Hip Thrust']`), [{ kg: '80', reps: '10' }, { kg: '85', reps: '8' }]);
@@ -143,7 +146,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     step('editing a logged session updates that session and keeps its extra exercises');
 
     // ── Manage Workouts → edit a saved workout's exercises ──
-    await p.ev(`showManage();'ok'`); await p.wait(150);
+    await p.ev(`openSched();document.querySelector('#sch [data-act="manage"]').click();'ok'`); await p.wait(150);
     await shot('4-manage.png');
     await p.ev(`document.querySelector('.jex[data-n="Legs"]').click();'ok'`); await p.wait(150);
     const exr = () => p.ev(`[].map.call(document.querySelectorAll('#exed .exr'),function(r){return r.dataset.x;})`);

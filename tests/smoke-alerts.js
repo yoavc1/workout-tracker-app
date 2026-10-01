@@ -54,8 +54,8 @@ const DATA = { sessions, workouts: { 'Upper Push': [IN], 'Upper Pull': [LAT, FP]
     assert.strictEqual(await p.ev(`document.querySelector('.al[data-id="neg:Shoulders/Rear"] .al-s').textContent`), 'No sets in 23 days (usually every 9). ' + FP);
     assert.strictEqual(b.acts[0], 'Start Upper Pull');
     assert.deepStrictEqual(await p.ev(`[].slice.call(document.querySelectorAll('.al-b,.al-x,.al-more')).filter(function(e){var r=e.getBoundingClientRect();return r.height<36||(e.classList.contains('al-x')&&r.width<36);}).map(function(e){return e.className;})`), [], 'tap targets at least 36px');
-    // Sits between the calendar (under the Today card) and the core chip; the old insights (range buttons, one random tip) are gone
-    assert.ok(await p.ev(`(function(){var t=document.getElementById('today-sec'),k=document.getElementById('cal-sec'),i=document.getElementById('ins-sec'),c=document.getElementById('abs-sec');return t.nextElementSibling===k&&k.nextElementSibling===i&&i.nextElementSibling===c&&!!t.innerHTML&&!!c.innerHTML;})()`));
+    // Sits under the calendar (under the Today card), last on home; the old insights (range buttons, one random tip) are gone
+    assert.ok(await p.ev(`(function(){var t=document.getElementById('today-sec'),k=document.getElementById('cal-sec'),i=document.getElementById('ins-sec');return t.nextElementSibling===k&&k.nextElementSibling===i&&i.nextElementSibling===null&&!!t.innerHTML;})()`));
     assert.deepStrictEqual(await p.ev(`[document.querySelectorAll('.ins-range,.ins-x').length,sessionStorage.getItem('ins_idx'),typeof genIns]`), [0, null, 'undefined']);
     await p.ev(`document.getElementById('s-home').scrollTop=0;'ok'`); await shot('01-banner.png');
     step('up to 3 alerts in priority order, then "+N more"');

@@ -23,8 +23,8 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     // Layout: the nav sits fully on screen and scrolled content ends above it
     const nav = await p.ev(`(function(){var r=document.getElementById('nav').getBoundingClientRect();return {top:r.top,bottom:r.bottom,h:innerHeight};})()`);
     assert.ok(nav.top > 0 && nav.bottom <= nav.h, 'nav on screen ' + JSON.stringify(nav));
-    const lastCard = await p.ev(`(function(){var s=document.getElementById('s-home');s.scrollTop=1e5;return [].slice.call(document.querySelectorAll('.wcard')).pop().getBoundingClientRect().bottom;})()`);
-    assert.ok(lastCard < nav.top, 'last card clears the nav');
+    const lastCard = await p.ev(`(function(){var s=document.getElementById('s-home');s.scrollTop=1e5;return [].filter.call(s.children,function(e){return e.offsetHeight>0;}).pop().getBoundingClientRect().bottom;})()`);
+    assert.ok(lastCard < nav.top, 'last section clears the nav');
     await p.ev(`document.getElementById('s-home').scrollTop=0;document.documentElement.style.setProperty('--sab','34px');'ok'`); await p.wait(100);
     const inset = await p.ev(`innerHeight-document.getElementById('nav').getBoundingClientRect().bottom`);
     assert.strictEqual(Math.round(inset), 26, 'with a 34px home-indicator inset the nav sits 26px up');
@@ -69,10 +69,10 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.strictEqual(s.sessions.filter(x => x.abs).length, 2, 'local edit reached the cloud');
     step('merge keeps both devices\' changes');
 
-    // Core is one record per day: the home chip's tick and History's core line both go through it, and it syncs as core
+    // Core is one record per day: the workout chip's tick and History's core line both go through it, and it syncs as core
     const today = await p.ev(`lday(new Date())`);
-    await p.ev(`switchTab('home');document.querySelector('#abs-sec .jct').click();'ok'`);
-    assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), true, 'home tick sets the day');
+    await p.ev(`openWK('Upper Pull');document.querySelector('#wk-core .jct').click();goHome();'ok'`);
+    assert.strictEqual(await p.ev(`coreDone(lday(new Date()))`), true, 'the workout chip ticks the day');
     assert.ok(await p.ev(`!gs().some(function(s){return lday(s.date)===lday(new Date())&&s.abs})`), "the day's workouts are left as they are");
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.strictEqual(s.core['c' + today].done, true, 'core day synced');
@@ -84,7 +84,7 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.strictEqual(s.core['c' + today].done, false); assert.ok(s.muscleMap && s.muscleMap.Dips === 'Chest/Lower', 'muscle map sent to the Sheet');
     assert.strictEqual(await p.ev(`'muscleMap' in JSON.parse(localStorage.getItem('ironlog_data'))`), false);
-    step('home core chip and History core line share one synced day record');
+    step('workout core chip and History core line share one synced day record');
 
     // History: newest week first, labelled Monday to Sunday
     const wk = await p.ev(`(function(){var s=gss();var k=gwk(s[s.length-1].date);var q=k.split('-');return {label:document.querySelector('.hwt').textContent,expect:fwr(k),dow:new Date(q[0],q[1]-1,q[2]).getDay()};})()`);
@@ -100,10 +100,12 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     assert.strictEqual(await p.ev('gs().length'), before - 1);
     step('two-tap delete');
 
-    // Rename carries history, the split day and list position
-    await p.ev(`sSplit({Mon:'Legs'});switchTab('home');showManage();var i=document.querySelector('.jrn[data-n="Legs"]');i.value='Leg Day';i.parentNode.querySelector('.jrs').click();'ok'`);
-    const rn = await p.ev(`({order:Object.keys(gw()),old:gs().filter(function(s){return s.workout==='Legs'}).length,renamed:gs().filter(function(s){return s.workout==='Leg Day'}).length,split:gSplit().Mon})`);
+    // Rename (Schedule sheet → My Workouts ⚙) carries history, the split day and list position
+    await p.ev(`sSplit({Mon:'Legs'});switchTab('home');openSched();document.querySelector('#sch [data-act="manage"]').click();var i=document.querySelector('.jrn[data-n="Legs"]');i.value='Leg Day';i.parentNode.querySelector('.jrs').click();'ok'`);
+    const rn = await p.ev(`({order:Object.keys(gw()),old:gs().filter(function(s){return s.workout==='Legs'}).length,renamed:gs().filter(function(s){return s.workout==='Leg Day'}).length,split:gSplit().Mon,
+      list:[].map.call(document.querySelectorAll('#sch .wl-r'),function(b){return b.dataset.w;})})`);
     assert.deepStrictEqual(rn.order, ['Leg Day', 'Upper Pull', 'Upper Push', 'Muay Thai']);
+    assert.deepStrictEqual(rn.list, rn.order, "the sheet's list redraws");
     assert.strictEqual(rn.old, 0); assert.ok(rn.renamed > 0); assert.strictEqual(rn.split, 'Leg Day');
     step('rename carries history and split');
 
