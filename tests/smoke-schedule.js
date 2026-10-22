@@ -1,7 +1,7 @@
 // End-to-end test of the Schedule (Track B) in headless Chrome at iPhone size (393x852), against a mock sync server:
 // the Today card and the month calendar under it on home, the sheet's week plan (tap to pick, drag to swap) and My
-// Workouts (start, ⚙ Manage Workouts), an unfinished workout on the Today card, moving a missed day, and the calendar's
-// day pop-up.
+// Workouts (start, ⚙ Manage Workouts), an unfinished workout on the Today card, moving a missed day (in the sheet only),
+// and the calendar's day pop-up.
 // Usage: node tests/smoke-schedule.js   (SHOTS=<dir> keeps the screenshots there)
 const path = require('path'), fs = require('fs'), os = require('os'), assert = require('assert');
 const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
@@ -48,30 +48,28 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
       cal:function(n){var day=T.day(n),t=new Date(),q=pday(day);SCM=(q.getFullYear()-t.getFullYear())*12+q.getMonth()-t.getMonth();rCal(gd());return document.querySelector('.cal-c[data-day="'+day+'"]');}};
       window.__wk=[];var _o=openWK;openWK=function(){__wk.push([].slice.call(arguments));return _o.apply(this,arguments);};'ok'`);
 
-    // Home: today's planned workout with Start, and yesterday's missed Legs with the two move buttons
+    // Home: just today's planned workout with Start. Yesterday's missed Legs and its move buttons are only in the sheet,
+    // and home has no alerts banner.
     const home = await p.ev(`(function(){var c=document.getElementById('today-sec');return {names:[].map.call(c.querySelectorAll('.td-n'),function(e){return e.textContent;}),
-      go:[].map.call(c.querySelectorAll('.td-go'),function(e){return e.dataset.w+':'+e.textContent;}),mv:[].map.call(c.querySelectorAll('[data-act="mv"]'),function(e){return e.textContent+'>'+e.dataset.to;}),
-      miss:missedDays(3),y:T.day(-1),tm:T.day(1)};})()`);
-    assert.deepStrictEqual(home.names, ['Upper Pull', 'Legs']); assert.deepStrictEqual(home.go, ['Upper Pull:Start']);
-    assert.deepStrictEqual(home.mv, ['Do it today>' + await p.ev('T.t'), 'Tomorrow>' + home.tm]);
+      go:[].map.call(c.querySelectorAll('.td-go'),function(e){return e.dataset.w+':'+e.textContent;}),mv:c.querySelectorAll('[data-act="mv"],.td-h').length,
+      al:!!document.getElementById('ins-sec')||!!document.querySelector('.al-wrap'),miss:missedDays(3),y:T.day(-1)};})()`);
+    assert.deepStrictEqual(home.names, ['Upper Pull']); assert.deepStrictEqual(home.go, ['Upper Pull:Start']);
+    assert.deepStrictEqual([home.mv, home.al], [0, false], 'no missed day, move buttons or alerts on home');
     assert.deepStrictEqual(home.miss, [{ day: home.y, workout: 'Legs' }], 'day -4 is outside the 3 days, day -3 was done');
     await shot('02-home-today.png');
     await click('#today-sec .td-go'); await p.wait(200);
     assert.strictEqual(await text('#wk-t'), 'Upper Pull'); assert.deepStrictEqual(await p.ev('__wk.pop()'), ['Upper Pull']);
     assert.strictEqual(await p.ev(`schOpen()`), false, 'Start opens the workout, not the sheet');
     await click('#btn-bk'); await p.wait(200);
-    step('home Today card: planned workout starts, missed day offers a move');
+    step('home Today card: planned workout starts, nothing else');
 
-    // Tapping anywhere else on the Today card opens the sheet; its own buttons (move, Undo) don't
+    // Tapping anywhere else on the Today card opens the sheet, where the missed day can be moved
     for (const sel of ['#today-sec .td-n', '#today-sec .hsec-t', '#today-sec .td-bar', '#today-sec .td-lnk']) {
       await click(sel); assert.strictEqual(await p.ev(`schOpen()`), true, sel + ' opens the sheet');
+      assert.strictEqual(await p.ev(`document.querySelectorAll('#sch-td [data-act="mv"]').length`), 2, 'the sheet offers the move');
       await click('#sch-x');
     }
-    await click(`#today-sec [data-act="mv"][data-to="${home.tm}"]`); await p.wait(100);
-    assert.deepStrictEqual([await p.ev(`schOpen()`), await p.ev(`plannedOn(T.day(1))`)], [false, ['Upper Push', 'Legs']], 'a move from the card stays on home');
-    await click('#today-sec [data-act="undo"]'); await p.wait(100);
-    assert.deepStrictEqual([await p.ev(`schOpen()`), await p.ev(`missedDays(3)`)], [false, home.miss], 'Undo stays on home');
-    step('the whole Today card opens the sheet, its buttons keep their own actions');
+    step('the whole Today card opens the sheet');
 
     // The month calendar sits under the Today card on home, and has left the sheet
     assert.deepStrictEqual(await p.ev(`(function(){var c=document.getElementById('cal-sec');return [document.getElementById('today-sec').nextElementSibling===c,!!c.querySelector('.cal-g'),!!document.querySelector('#sch .cal-g'),c.getBoundingClientRect().right<=innerWidth];})()`), [true, true, false, true]);
@@ -128,7 +126,7 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await click('#btn-bk'); await p.wait(200);
     const un = await p.ev(`(function(){var c=document.getElementById('today-sec');return {h:[].map.call(c.querySelectorAll('.td-h'),function(e){return e.textContent;}),
       go:[].map.call(c.querySelectorAll('.td-go'),function(e){return e.dataset.w+':'+e.textContent;}),sub:c.querySelectorAll('.td-s')[1].textContent};})()`);
-    assert.deepStrictEqual(un, { h: ['Unfinished', 'Missed'], go: ['Upper Pull:Start', 'Muay Thai:Continue'], sub: 'Not finished · started today' });
+    assert.deepStrictEqual(un, { h: ['Unfinished'], go: ['Upper Pull:Start', 'Muay Thai:Continue'], sub: 'Not finished · started today' });
     await shot('03d-home-unfinished.png');
     await p.ev(`openSched();'ok'`); await p.wait(400);
     assert.deepStrictEqual(await p.ev(`[].map.call(document.querySelectorAll('#sch-wk .draft'),function(e){return e.closest('.wl-r').dataset.w;})`), ['Muay Thai']);
@@ -136,7 +134,7 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await click('#today-sec .td-go[data-w="Muay Thai"]'); await p.wait(200);
     assert.deepStrictEqual([await text('#wk-t'), await p.ev(`CS.Pads[0].kg`)], ['Muay Thai', '5'], 'Continue picks the draft up');
     await p.ev(`clDr();goHome();'ok'`);
-    assert.strictEqual(await p.ev(`document.querySelectorAll('#today-sec .td-h').length`), 1, 'gone once the draft is');
+    assert.strictEqual(await p.ev(`document.querySelectorAll('#today-sec .td-h').length`), 0, 'gone once the draft is');
     await click('#btn-split'); await p.wait(400); await p.ev(`document.getElementById('sch').scrollTop=0;'ok'`);
     step('an unfinished workout shows on the Today card and as DRAFT in My Workouts');
 
@@ -144,11 +142,9 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     const [t, y, tm] = [await p.ev('T.t'), await p.ev('T.day(-1)'), await p.ev('T.day(1)')];
     await p.ev(`sSyncUrl('${SYNC}');new Promise(function(r){csync(r);})`); let s;
     await click(`#sch-td [data-act="mv"][data-to="${t}"]`); await p.wait(100);
-    const mv = await p.ev(`({plan:plannedOn(T.t),miss:missedDays(3),sub:[].map.call(document.querySelectorAll('#today-sec .td-s'),function(e){return e.textContent;}),
-      dot:!!T.cal(-1).querySelector('.cal-m')})`);
+    const mv = await p.ev(`({plan:plannedOn(T.t),miss:missedDays(3),sub:[].map.call(document.querySelectorAll('#today-sec .td-s'),function(e){return e.textContent;})})`);
     assert.deepStrictEqual(mv.plan, ['Upper Pull', 'Legs']); assert.deepStrictEqual(mv.miss, [], 'no longer missed');
     assert.ok(mv.sub.includes('Moved from yesterday · Undo'), 'home card shows the move with Undo: ' + mv.sub);
-    assert.strictEqual(mv.dot, false, 'no red dot on the day it moved from');
     await p.ev(`document.getElementById('sch').scrollTop=0;'ok'`); await shot('06-moved-today.png');
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     const moves = Object.values(s.schedule.moves);
@@ -163,30 +159,30 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await p.ev(`document.getElementById('sch').scrollTop=0;'ok'`); await shot('07-moved-tomorrow.png');
     step('move a missed day: Do it today / Tomorrow / Undo, synced as schedule.moves');
 
-    // Calendar: done days in the workout's colour, two workouts split, upcoming planned outlined, missed red dot, core C.
-    // Red dots only count from when the plan was set (7 days ago): day -8 had Legs planned and nothing logged.
-    const cal = await p.ev(`(function(){var r={};
+    // Calendar: only what was logged. Done days in the workout's colour, two workouts split, core C; planned and missed
+    // days look like any other day.
+    const cal = await p.ev(`(function(){var r={},plain=function(c){return!c.classList.contains('done')&&!c.classList.contains('plan')&&!c.querySelector('.cal-m')&&getComputedStyle(c).borderTopColor==='rgba(0, 0, 0, 0)';};
       var c=T.cal(-6);r.done=[c.classList.contains('done'),getComputedStyle(c).backgroundColor===T.col(wColor('Upper Push'))];
       c=T.cal(-3);r.two=/linear-gradient/.test(getComputedStyle(c).backgroundImage)&&!!c.querySelector('.cal-k');
-      c=T.cal(-4);r.miss=!!c.querySelector('.cal-m')&&!c.classList.contains('done');
-      r.miss7=!!T.cal(-7).querySelector('.cal-m');
-      c=T.cal(-2);r.core=!!c.querySelector('.cal-k')&&!c.querySelector('.cal-m');
-      c=T.cal(1);r.plan=c.classList.contains('plan')&&getComputedStyle(c).borderTopColor===T.col(wColor('Upper Push'));
-      c=T.cal(0);r.today=c.classList.contains('today')&&c.classList.contains('plan');
-      c=T.cal(-1);r.moved=!c.querySelector('.cal-m');
-      c=T.cal(-8);r.before=!c.querySelector('.cal-m')&&missedOn(T.day(-8)).length===0&&plannedOn(T.day(-8))[0]==='Legs';
+      r.missed=plain(T.cal(-4))&&missedOn(T.day(-4)).length===1;
+      c=T.cal(-2);r.core=!!c.querySelector('.cal-k')&&plain(c);
+      r.planned=plain(T.cal(1))&&plannedOn(T.day(1)).length>0;
+      c=T.cal(0);r.today=c.classList.contains('today')&&plain(c);
+      r.leg=[].map.call(document.querySelectorAll('.cal-leg span'),function(e){return e.textContent;}).filter(function(x){return/Planned|Missed/.test(x);}).length;
+      r.n=document.querySelector('#cal-sec .hsec-n').textContent;
       return r;})()`);
-    assert.deepStrictEqual(cal, { done: [true, true], two: true, miss: true, core: true, plan: true, today: true, moved: true, before: true, miss7: true });
+    assert.deepStrictEqual(cal, { done: [true, true], two: true, missed: true, core: true, planned: true, today: true, leg: 0, n: cal.n });
+    assert.ok(!/missed/.test(cal.n), 'no missed count: ' + cal.n);
     await p.ev(`closeSched();SCM=0;rCal(gd());document.getElementById('cal-sec').scrollIntoView({block:'center'});'ok'`); await p.wait(100);
     await shot('08-calendar.png');
     const m0 = await text('.cal-t');
     await click('.cal-nb[data-act="mp"]'); const mPrev = await text('.cal-t');
     await click('.cal-nb[data-act="mn"]'); await click('.cal-nb[data-act="mn"]');
-    const next = await p.ev(`({t:document.querySelector('.cal-t').textContent,plan:document.querySelectorAll('.cal-c.plan').length,done:document.querySelectorAll('.cal-c.done').length})`);
+    const next = await p.ev(`({t:document.querySelector('.cal-t').textContent,plan:document.querySelectorAll('.cal-c.plan,.cal-c[style]').length,done:document.querySelectorAll('.cal-c.done').length})`);
     assert.notStrictEqual(mPrev, m0); assert.notStrictEqual(next.t, m0);
-    assert.ok(next.plan >= 8 && next.done === 0, 'next month shows its planned days outlined: ' + JSON.stringify(next));
+    assert.ok(next.plan === 0 && next.done === 0, 'next month is blank: nothing logged yet, plan not shown: ' + JSON.stringify(next));
     await click('.cal-nb[data-act="mp"]'); assert.strictEqual(await text('.cal-t'), m0);
-    step('calendar: colours, outlines, red dots, core, month navigation');
+    step('calendar: only logged days (colours, core), month navigation');
 
     // Tap a day: what was logged (as the old heatmap pop-up showed); on a missed day, log it for that date
     await p.ev(`T.cal(-6).click();'ok'`); await p.wait(100);
@@ -200,18 +196,18 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await p.ev(`T.cal(-4).click();'ok'`); await p.wait(100);
     const pop = await p.ev(`({wk:document.getElementById('hp-wk').textContent,det:document.getElementById('hp-det').textContent,
       btn:[].map.call(document.querySelectorAll('#hp-det [data-act="log"]'),function(b){return b.dataset.w+(b.classList.contains('pri')?'*':'');})})`);
-    assert.strictEqual(pop.wk, 'Nothing logged'); assert.ok(/Legs was planned · missed/.test(pop.det));
+    assert.strictEqual(pop.wk, 'Nothing logged'); assert.ok(!/planned|missed/.test(pop.det), pop.det);
     assert.deepStrictEqual(pop.btn, ['Legs*', 'Upper Pull', 'Upper Push', 'Muay Thai'], 'planned workout first');
     await shot('10-day-log-it.png');
     await click('#hp-det [data-act="log"][data-w="Legs"]'); await p.wait(200);
     assert.deepStrictEqual(await p.ev('__wk.pop()'), ['Legs', null, null, await p.ev('T.day(-4)')], 'opens the workout for that date');
     assert.deepStrictEqual(await p.ev(`[schOpen(),document.getElementById('hmpop-ov').classList.contains('active'),document.getElementById('s-wk').classList.contains('active')]`), [false, false, true]);
-    // Logging it saves the session on that day, which fills the calendar cell and clears its red dot
+    // Logging it saves the session on that day, which fills the calendar cell
     assert.strictEqual(await text('#wmeta'), await p.ev(`fds(T.day(-4)+'T12:00')`), 'the workout screen shows the date being logged');
     await p.ev(`document.querySelector('.ecard .jtog').click();document.querySelector('.ecard .jadd').click();var k=document.querySelector('.jkg'),r=document.querySelector('.jrp');k.value='52.5';k.dispatchEvent(new Event('input'));r.value='8';r.dispatchEvent(new Event('input'));document.getElementById('btn-fin').click();'ok'`); await p.wait(300);
     const logged = await p.ev(`(function(){var s=gs().filter(function(x){return x.workout==='Legs'&&x.exercises['Squat - Dumbbell']&&x.exercises['Squat - Dumbbell'][0].kg===52.5;}),c=T.cal(-4);
-      return {n:s.length,day:s.length&&lday(s[0].date),miss:missedOn(T.day(-4)),done:c.classList.contains('done'),dot:!!c.querySelector('.cal-m'),home:document.getElementById('s-home').classList.contains('active')};})()`);
-    assert.deepStrictEqual(logged, { n: 1, day: await p.ev('T.day(-4)'), miss: [], done: true, dot: false, home: true }, 'session saved on the chosen past day');
+      return {n:s.length,day:s.length&&lday(s[0].date),miss:missedOn(T.day(-4)),done:c.classList.contains('done'),home:document.getElementById('s-home').classList.contains('active')};})()`);
+    assert.deepStrictEqual(logged, { n: 1, day: await p.ev('T.day(-4)'), miss: [], done: true, home: true }, 'session saved on the chosen past day');
     step('day pop-up: details of a logged day, and logging a missed past day on that date');
 
     // Week plan: tap a rest day and pick a workout

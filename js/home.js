@@ -4,13 +4,11 @@ function switchTab(t){document.querySelectorAll('.screen').forEach(function(s){s
 function goHome(){CW=null;CL=[];CS={};OE={};ESI=null;WDAY=null;WST=null;clearInterval(RTI);clearInterval(metaInterval);switchTab('home');}
 // ═══════ HOME ═══════
 function uSub(){var n=gs().length,st=gSt();document.getElementById('hsub').textContent=(n===0?'Ready for your first workout?':n+' workout'+(n!==1?'s':'')+' logged')+(gSyncUrl()&&st&&st.ok===false?' · ⚠️ not synced':'');}
-// Home is the Today card, the calendar and the alerts. The workout list and Manage Workouts live in the Schedule sheet;
-// core is logged from a workout's own chip, History, or a day on the calendar.
+// Home is just the Today card and the calendar. The workout list, Manage Workouts and moving a missed day live in the
+// Schedule sheet; core is logged from a workout's own chip, History, or a day on the calendar.
 function rHome(){
   document.getElementById('bbar').style.display='none';
   uSub();rToday();
-  // Alerts, rebuilt from the data (js/alerts.js)
-  rAlerts();
 }
 
 function showManage(){

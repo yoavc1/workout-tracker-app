@@ -83,6 +83,8 @@ function todayHTML(d,home){
     h+='<div class="td-rest">'+(hp?'Rest day':'No weekly plan yet')+'</div>'+(hp?'':home?'<button class="mbtn sec td-plan" data-act="open">Plan your week</button>':'<div class="td-s">Tap a day below to plan it.</div>');}
   // An unfinished workout that isn't on today's list still shows here, now that home has no workout list to badge it
   if(dr&&w[dr.workout]&&rows.indexOf(dr.workout)<0)h+='<div class="td-h">Unfinished</div>'+tdRow(dr.workout,'Not finished'+(dr.st?' · started '+dname(lday(new Date(dr.st)),today):''),'<button class="td-go" data-act="go" data-w="'+ea(dr.workout)+'">Continue</button>',w);
+  // Missed days and their moves live in the sheet only; home keeps to today
+  if(home)return h+'</div>';
   var ms=missedDays(3,d,today);
   if(ms.length){h+='<div class="td-h">Missed</div>';ms.forEach(function(x){var a=' data-from="'+x.day+'" data-w="'+ea(x.workout)+'"';
     h+=tdRow(x.workout,'<span class="td-miss">Missed</span> · planned '+dname(x.day,today),'',w)+'<div class="td-mv"><button class="mbtn sec" data-act="mv" data-to="'+today+'"'+a+'>Do it today</button><button class="mbtn sec" data-act="mv" data-to="'+tm+'"'+a+'>Tomorrow</button></div>';});}
@@ -125,37 +127,33 @@ function pickDay(k){
   o.querySelectorAll('.jsd').forEach(function(b){b.addEventListener('click',function(){sp[k]=b.dataset.v;sSplit(sp);document.getElementById('mov-splitday').classList.remove('active');rToday();});});
 }
 
-// Month calendar, on home under the Today card: done days filled with the workout's colour, upcoming planned days
-// outlined, missed planned days with a red dot, core days marked C
+// Month calendar, on home under the Today card: only what was logged. Done days filled with the workout's colour,
+// core days marked C; the plan stays in the sheet.
 function rCal(d){
   var t=new Date(),today=lday(t),vd=new Date(t.getFullYear(),t.getMonth()+SCM,1),yr=vd.getFullYear(),mo=vd.getMonth(),w=gw();
-  var dim=new Date(yr,mo+1,0).getDate(),by={},nd=0,nm=0,c='';
+  var dim=new Date(yr,mo+1,0).getDate(),by={},nd=0,c='';
   d.sessions.forEach(function(s){var k=lday(s.date);by[k]=by[k]||[];if(by[k].indexOf(s.workout)<0)by[k].push(s.workout);});
   for(var i=(vd.getDay()+6)%7;i>0;i--)c+='<div></div>';
   for(var dd=1;dd<=dim;dd++){
-    var day=lday(new Date(yr,mo,dd)),dn=by[day]||[],pl=day>=today?plannedOn(day,d).filter(function(x){return dn.indexOf(x)<0;}):[],ms=day<today&&missedOn(day,d).length,st='';
+    var day=lday(new Date(yr,mo,dd)),dn=by[day]||[],st='';
     // Two workouts on one day split the cell diagonally
     if(dn.length){nd++;st='background:'+(dn.length>1?'linear-gradient(135deg,'+dn.map(function(x,j){return wColor(x,w)+' '+Math.round(j*100/dn.length)+'% '+Math.round((j+1)*100/dn.length)+'%';}).join(',')+')':wColor(dn[0],w));}
-    else if(pl.length)st='border-color:'+wColor(pl[0],w);
-    if(ms)nm++;
-    c+='<button class="cal-c'+(dn.length?' done':pl.length?' plan':'')+(day===today?' today':'')+(day>today?' fut':'')+'" data-act="cal" data-day="'+day+'"'+(st?' style="'+st+'"':'')+'>'+dd+(ms?'<i class="cal-m"></i>':'')+(coreDone(day,d.core)?'<i class="cal-k">C</i>':'')+'</button>';
+    c+='<button class="cal-c'+(dn.length?' done':'')+(day===today?' today':'')+(day>today?' fut':'')+'" data-act="cal" data-day="'+day+'"'+(st?' style="'+st+'"':'')+'>'+dd+(coreDone(day,d.core)?'<i class="cal-k">C</i>':'')+'</button>';
   }
   var lg='';Object.keys(w).forEach(function(n){lg+='<span><i style="background:'+wColor(n,w)+'"></i>'+eh(n)+'</span>';});
-  lg+='<span><i class="o"></i>Planned</span><span><i class="m"></i>Missed</span><span><b>C</b>Core</span>';
-  document.getElementById('cal-sec').innerHTML='<div class="hsec"><div class="hsec-t">Calendar<span class="hsec-n">'+nd+' workout day'+(nd!==1?'s':'')+(nm?' · '+nm+' missed':'')+'</span></div>'+
+  lg+='<span><b>C</b>Core</span>';
+  document.getElementById('cal-sec').innerHTML='<div class="hsec"><div class="hsec-t">Calendar<span class="hsec-n">'+nd+' workout day'+(nd!==1?'s':'')+'</span></div>'+
     '<div class="cal-nav"><button class="cal-nb" data-act="mp" aria-label="Previous month">‹</button><div class="cal-t">'+vd.toLocaleString('en',{month:'long',year:'numeric'})+'</div><button class="cal-nb" data-act="mn" aria-label="Next month">›</button></div>'+
     '<div class="cal-dh"><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div></div><div class="cal-g">'+c+'</div><div class="cal-leg">'+lg+'</div></div>';
 }
-// A day's details in the pop-up; on a past day with nothing logged, buttons to log it
+// A day's details in the pop-up: what was logged, like the calendar; on a day up to today with nothing logged, buttons
+// to log it
 function openDay(day){
-  var d=gd(),today=lday(new Date()),w=gw(),lg=dayLog(day,d),pl=plannedOn(day,d),mv=vals((d.schedule||{}).moves),ws=[],h='';
+  var d=gd(),today=lday(new Date()),w=gw(),lg=dayLog(day,d),pl=plannedOn(day,d),ws=[],h='';
   lg.forEach(function(r){if(ws.indexOf(r.workout)<0)ws.push(r.workout);});
   document.getElementById('hp-date').textContent=pday(day).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+(day.slice(0,4)!==today.slice(0,4)?' '+day.slice(0,4):'');
-  document.getElementById('hp-wk').textContent=ws.length?ws.join(', '):day>today?(pl.length?pl.join(', '):'Rest day'):'Nothing logged';
+  document.getElementById('hp-wk').textContent=ws.length?ws.join(', '):'Nothing logged';
   lg.forEach(function(r){h+='<div>'+(lg.length>1?eh(r.workout)+': ':'')+(r.first?'First session logged':'↑ '+r.up+' improved · ↓ '+r.down+' declined'+(r.same?' · = '+r.same+' same':''))+'</div>';});
-  if(day>today){if(pl.length)h+='<div class="dp-s">Planned</div>';}
-  else missedOn(day,d).forEach(function(x){h+='<div class="'+(day<today?'dp-miss':'dp-s')+'">'+eh(x)+(day<today?' was planned · missed':' is planned today')+'</div>';});
-  mv.forEach(function(m){if(m.from===day&&m.to!==day)h+='<div class="dp-s">'+eh(m.workout)+' moved to '+dname(m.to,today)+'</div>';else if(m.to===day&&m.from!==day)h+='<div class="dp-s">'+eh(m.workout)+' moved here from '+dname(m.from,today)+'</div>';});
   // Core for any day up to today, rest days included (home has no core chip of its own)
   var cd=coreDone(day,d.core);
   if(day<=today)h+='<button class="dp-cb'+(cd?' on':'')+'" data-act="core" data-day="'+day+'">'+(cd?'✓ Core trained':'Log core')+'<span>'+(cd?'Edit':'Add')+' ›</span></button>';
