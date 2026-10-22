@@ -1,6 +1,5 @@
-// Workout Tracker — Smart banner: alerts at the top of home, rebuilt from the data on every render
+// Workout Tracker — Alert engine (its home banner was removed to keep home simple) and the midnight refresh
 // ═══════ ALERTS ═══════
-// Missed planned workouts aren't repeated here: the Today card right above already offers Do it today / Tomorrow.
 var AL={
   NEG_X:2,           // a muscle sub-group is neglected at twice its usual gap between sessions...
   NEG_MIN:7,         // ...and never before 7 days
@@ -12,10 +11,9 @@ var AL={
   STALL:4,           // stalled: no new best in the last 4 sessions
   CORE_DAYS:4,       // core not done for 4+ days
   STREAK_WEEKS:3,    // a streak: 3+ weeks in a row...
-  STREAK_DAYS:2,     // ...each with 2+ training days (activities like Muay Thai count)
-  SHOW:3             // alerts shown before "+N more"
+  STREAK_DAYS:2      // ...each with 2+ training days (activities like Muay Thai count)
 };
-var ALX=false,ALT=null;
+var ALT=null;
 function alDays(a,b){return Math.round((pday(b)-pday(a))/864e5);}
 function alMedian(l){var s=l.slice().sort(function(a,b){return a-b;}),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;}
 function alPct(v){return(v>0?'+':v<0?'−':'')+Math.abs(Math.round(v*10)/10)+'%';}
@@ -90,32 +88,6 @@ function buildAlerts(d,now){
   return out.sort(function(a,b){return a.pri-b.pri;});
 }
 
-// ─── Snooze: hides an alert until tomorrow, on this device only ───
-function gSnz(){try{return JSON.parse(localStorage.getItem('ironlog_snooze'))||{};}catch(e){return{};}}
-function snooze(id){var t=lday(new Date()),s=gSnz(),o={};Object.keys(s).forEach(function(k){if(s[k]===t)o[k]=t;});o[id]=t;
-  try{localStorage.setItem('ironlog_snooze',JSON.stringify(o));}catch(e){}}
-
-// ─── Banner in #ins-sec ───
-function rAlerts(){
-  var el=document.getElementById('ins-sec'),t=lday(new Date()),sz=gSnz();
-  var all=buildAlerts(gd()).filter(function(a){return sz[a.id]!==t;}),show=ALX?all:all.slice(0,AL.SHOW);
-  if(!all.length){el.innerHTML='';return;}
-  var h='<div class="al-wrap">';
-  show.forEach(function(a,i){h+='<div class="ins al '+a.kind+'" data-id="'+ea(a.id)+'"><div class="ins-icon">'+a.icon+'</div><div class="al-m"><div class="al-t">'+eh(a.title)+'</div><div class="al-s">'+a.text+'</div>'+
-    (a.act?'<button class="al-b" data-i="'+i+'">'+eh(a.act.label)+'</button>':'')+'</div><button class="al-x" data-i="'+i+'" aria-label="Hide until tomorrow">×</button></div>';});
-  if(all.length>AL.SHOW)h+='<button class="al-more">'+(ALX?'Show less':'+'+(all.length-AL.SHOW)+' more')+'</button>';
-  el.innerHTML=h+'</div>';
-  el.querySelectorAll('.al-b').forEach(function(b){b.addEventListener('click',function(){alGo(show[+b.dataset.i].act);});});
-  el.querySelectorAll('.al-x').forEach(function(b){b.addEventListener('click',function(){snooze(show[+b.dataset.i].id);rAlerts();toast('Hidden until tomorrow');});});
-  var mb=el.querySelector('.al-more');if(mb)mb.addEventListener('click',function(){ALX=!ALX;rAlerts();});
-}
-function alGo(a){
-  if(a.go==='start')openWK(a.arg);
-  else if(a.go==='goal'){switchTab('goals');openGoal(a.arg);}
-  // An alert can be about any muscle group, so Progress opens unfiltered
-  else if(a.go==='prog'){PGX=a.arg||null;PGALL=false;PGSC=0;PGF='';switchTab('progress');}
-  else if(a.go==='core')openCore(lday(new Date()));
-}
-// Rebuild just after midnight, so day counts and "this week" roll over even if the app stays open
+// Redraw just after midnight, so the Today card and day counts roll over even if the app stays open
 function alMidnight(){clearTimeout(ALT);var n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,5);
   ALT=setTimeout(function(){refreshView();alMidnight();},m-n);}

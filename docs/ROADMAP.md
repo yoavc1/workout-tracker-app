@@ -162,9 +162,9 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 - A full-screen sheet with, from top to bottom:
   1. **Today:** the planned workout with a **Start** button, or "Rest day".
   2. **Week plan:** Mon–Sun rows. Tap to choose a workout or Rest, drag to swap days. Synced across devices.
-  3. **Month calendar:** done days (coloured by workout), upcoming planned days (outlined), missed planned days (red dot). Tap a day to see what you logged or to log it. *(30 Sep: moved to the home screen, under the Today card.)*
+  3. **Month calendar:** done days (coloured by workout), upcoming planned days (outlined), missed planned days (red dot). Tap a day to see what you logged or to log it. *(30 Sep: moved to the home screen, under the Today card. 22 Oct: it now shows only what was logged and core; planned and missed days are left to the sheet.)*
   4. **My Workouts** *(1 Oct, moved from the home screen)*: your workouts in their colours. Tap one to start it; the ⚙ opens Manage Workouts (rename, add, delete, edit exercises).
-- **Move a missed day:** a missed planned day from the last 3 days gets **Do it today** or **Tomorrow**. This records a `move`, so the calendar and alerts both understand it.
+- **Move a missed day:** a missed planned day from the last 3 days gets **Do it today** or **Tomorrow**. This records a `move`, so the calendar and alerts both understand it. *(22 Oct: only in the Schedule sheet; the home Today card shows just today.)*
 - The home screen gets the same **Today** card at the top. Tapping anywhere on it opens the sheet; its buttons (Start, the moves, Undo) keep their own actions. An unfinished workout that isn't on today's list shows on it under **Unfinished**, with **Continue**.
 - The progression calendar on the Progress page moves here (§8), so there's one calendar, not two.
 - *Done when:* the plan matches on phone and laptop; a missed Monday leg day moved to Tuesday shows as planned on Tuesday and is no longer reported as missed.
@@ -255,7 +255,7 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 
 ### Phase 2: Smart banner (needs A–E)
 
-**F · Alerts at the top of the app**
+**F · Alerts at the top of the app** *(22 Oct: the banner was taken off home to keep it simple; the engine in js/alerts.js stays.)*
 - Up to 3 alerts, ordered by priority, with "+N more" to expand. Each has an action button and a snooze (hidden until tomorrow). An alert clears itself once the data resolves it.
 - **Types**, in priority order:
   1. **Missed planned workout**: "Legs was planned Monday". Actions: *Do it today* / *Move*.

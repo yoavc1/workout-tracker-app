@@ -15,22 +15,6 @@ body{background:var(--bg);position:fixed;inset:0;overflow:hidden}
 .hsec{margin:0 16px 14px;background:var(--card);border:2px solid var(--t1);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
 .hsec-t{font-family:var(--ff);font-size:12px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
 .hsub{padding:18px 20px 8px;font-size:13px;color:var(--t2)}
-.ins{padding:16px 18px;display:flex;align-items:flex-start;gap:12px;border-radius:var(--rs);border:2px solid var(--t1)}
-.ins.pos{background:var(--pos-bg);border-color:var(--pos-brd)}
-.ins.warn{background:var(--warn-bg);border-color:var(--warn-brd)}
-.ins.info{background:var(--info-bg);border-color:var(--info-brd)}
-.ins-icon{font-size:22px;flex-shrink:0;line-height:1}
-/* Smart banner (js/alerts.js): up to 3 alerts, each with an action and a snooze, then "+N more" */
-.al-wrap{margin:0 16px 14px;display:flex;flex-direction:column;gap:8px}
-.al{padding:10px 4px 10px 12px;gap:10px}
-.al .ins-icon{font-size:20px;margin-top:1px}
-.al-m{flex:1;min-width:0}
-.al-t{font-family:var(--ff);font-size:14px;font-weight:800;color:var(--t1);overflow-wrap:anywhere}
-.al-s{font-size:13px;line-height:1.35;color:var(--t2);margin-top:2px;overflow-wrap:anywhere}
-.al-b{margin-top:8px;min-height:36px;padding:0 14px;border:2px solid var(--t1);border-radius:var(--rs);background:var(--card);color:var(--t1);font-family:var(--ff);font-size:13px;font-weight:700;cursor:pointer}
-.al-x{flex-shrink:0;width:36px;height:36px;margin:-8px 0;border:none;background:none;color:var(--t2);font-size:20px;line-height:1;cursor:pointer}
-.al-more{align-self:center;min-height:36px;padding:0 14px;border:none;background:none;font-family:var(--ff);font-size:13px;font-weight:700;color:var(--t2);cursor:pointer}
-.al-b:active,.al-x:active,.al-more:active{transform:scale(0.95)}
 .draft{display:inline-block;background:var(--orange);color:var(--on-color);font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
 .nav-wrap{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:0 14px var(--navpb) 14px}
 .nav{background:var(--card);border:2px solid var(--t1);display:flex;border-radius:28px;padding:4px;gap:2px;flex:1;max-width:340px;box-shadow:var(--sh-nav)}
@@ -381,22 +365,16 @@ input[type=number]{-moz-appearance:textfield}
 .cal-dh div{font-family:var(--ff);font-size:10px;font-weight:700;color:var(--t3);text-align:center}
 .cal-c{position:relative;height:40px;padding:0;border-radius:9px;border:2px solid transparent;background:var(--input);font-family:var(--ff);font-size:13px;font-weight:700;color:var(--t2);cursor:pointer;transition:transform 0.15s}
 .cal-c.fut{color:var(--t3)}
-.cal-c.plan{background:var(--card);color:var(--t1)}
 .cal-c.done{color:var(--on-color)}
 .cal-c.today{box-shadow:inset 0 0 0 2px var(--t1)}
-.cal-c.plan.today{box-shadow:inset 0 0 0 1.5px var(--card),inset 0 0 0 3.5px var(--t1)}
-.cal-m{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 1.5px var(--card)}
 .cal-k{position:absolute;bottom:1px;right:4px;font-style:normal;font-size:9px;font-weight:800;line-height:1.2}
 .cal-leg{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:12px;font-size:11px;color:var(--t2)}
 .cal-leg span{display:flex;align-items:center;gap:5px}
 .cal-leg i{width:10px;height:10px;border-radius:3px}
-.cal-leg i.o{border:2px solid var(--t2)}
-.cal-leg i.m{width:8px;height:8px;border-radius:50%;background:var(--red)}
 .cal-leg b{font-family:var(--ff);font-size:10px;font-weight:800}
 /* Day pop-up (reuses #hmpop-ov) */
 #hmpop-ov .hmpop{max-height:85vh;overflow-y:auto}
 .dp-s{color:var(--t2)}
-.dp-miss{color:var(--red)}
 .dp-cb{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:40px;margin-top:10px;padding:8px 12px;background:var(--input);border:1px solid var(--brd);border-radius:var(--rs);font-family:var(--ff);font-size:13px;font-weight:700;color:var(--t1);cursor:pointer}
 .dp-cb.on{color:var(--green)}
 .dp-cb span{color:var(--t2)}

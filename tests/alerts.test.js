@@ -1,10 +1,10 @@
-// Unit tests for the smart banner's alert engine in js/alerts.js: each alert type, its thresholds on both sides,
-// priority order, the old insights bugs it fixes, and snoozes. Usage: node tests/alerts.test.js
+// Unit tests for the alert engine in js/alerts.js: each alert type, its thresholds on both sides, priority order and
+// the old insights bugs it fixes. Usage: node tests/alerts.test.js
 const assert = require('assert');
 const { loadApp } = require('./lib');
 const app = loadApp(['data.js', 'sync.js', 'stats.js', 'ui.js', 'schedule.js', 'goals.js', 'core.js', 'alerts.js']);
 app.eh = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); // no DOM here
-const { buildAlerts, muscleOf, addD, snooze, gSnz, AL } = app;
+const { buildAlerts, muscleOf, addD, AL } = app;
 const J = x => JSON.parse(JSON.stringify(x));
 
 // "Now" is Wednesday 30 Sep 2026 at 18:00; this week started on Monday 28 Sep. Sessions sit at local noon n days back.
@@ -110,15 +110,5 @@ assert.ok(!find(D(days([6, 8, 13, 20, 22])), 'streak'), 'a week with one day bre
 // ── Order: warnings first (by type), then info, then positives ──
 const mix = D([...every5(12), ...ham([40, 45, 44, 44, 43, 44]), S(10, 'Upper Push', { [CH]: W(40) }), S(2, 'Upper Push', { [CH]: W(42.5) })], { core: core(addD(TODAY, -6)), goals: [{ ...goal, exercise: 'Dips' }] });
 assert.deepStrictEqual(ids(mix), ['neg:Shoulders/Rear', 'goal:g1', 'stall', 'core', 'pr:' + CH + ':2026-09-28', 'streak'], 'a Dips goal with no Dips logged is behind; these days also make a 3-week streak');
-
-// ── Snooze: until tomorrow, on this device; only today's snoozes are kept ──
-app.__store.ironlog_snooze = JSON.stringify({ core: '2020-01-01', stall: '2020-01-01' });
-snooze('neg:Shoulders/Rear');
-const today = app.lday(new Date());
-assert.deepStrictEqual(J(gSnz()), { 'neg:Shoulders/Rear': today }, 'old snoozes are dropped');
-snooze('core');
-assert.deepStrictEqual(J(gSnz()), { 'neg:Shoulders/Rear': today, core: today });
-app.__store.ironlog_snooze = '{not json';
-assert.deepStrictEqual(J(gSnz()), {}, 'bad storage reads as no snoozes');
 
 console.log('alerts tests pass');

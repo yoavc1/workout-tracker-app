@@ -128,13 +128,6 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     for (const t of ['light', 'dark']) {
       await p.ev(`sTheme('${t}');goHome();document.getElementById('s-home').scrollTop=0;document.getElementById('toast').classList.remove('show');'ok'`);
       await shot('01-home', t);
-      // The smart banner expanded, with one alert of each colour, drawn by rAlerts() itself
-      await p.ev(`(function(){var b=buildAlerts;buildAlerts=function(){return[
-        {id:'x1',pri:2,kind:'warn',icon:'⚠️',title:'Shoulders · Rear',text:'No sets in 12 days (usually every 5). Cable Face Pulls',act:{label:'Start Upper Pull',go:'start',arg:'Upper Pull'}},
-        {id:'x2',pri:5,kind:'info',icon:'⏸️',title:'Squat - Dumbbell',text:'No new best in 5 sessions',act:{label:'See progress',go:'prog',arg:'Squat - Dumbbell'}},
-        {id:'x3',pri:7,kind:'pos',icon:'🏆',title:'New best: Dips',text:'62 kg × 8 (e1RM 78.5 kg)',act:{label:'See progress',go:'prog',arg:'Dips'}},
-        {id:'x4',pri:7,kind:'pos',icon:'🔥',title:'3 weeks in a row',text:'with 2+ training days each'}];};ALX=true;rAlerts();buildAlerts=b;ALX=false;})();'ok'`);
-      await shot('02-home-insights', t);
       await sheet('03-start-workout', t, `document.getElementById('nav-plus').click();`);
       // Schedule: Today and the week plan, then My Workouts and its ⚙ Manage Workouts, a day's workout picker, then the
       // month calendar on home and a day's pop-up
