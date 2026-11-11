@@ -7,7 +7,9 @@ var ST={
   IDLE_DAYS:21,      // "not trained lately" = no sets for 3 weeks
   CHANGE_DAYS:28,    // an exercise's change % compares its latest session with where it stood 4 weeks ago
   TREND_DAYS:42,     // a muscle group's trend is the average change of its exercises over 6 weeks
-  SETS_DAYS:28       // sets per week are averaged over the last 4 weeks
+  SETS_DAYS:28,      // sets per week are averaged over the last 4 weeks
+  REST_MIN:10,       // average rest leaves out gaps under 10 s (sets typed in one go) ...
+  REST_MAX:900       // ... and over 15 min (a long pause, or a set logged later), so it reflects real rests
 };
 // Estimated 1-rep max (Epley). null when there is no weight to estimate from.
 function e1rm(kg,reps){kg=+kg;reps=+reps;if(!(kg>0)||!(reps>0))return null;return Math.round(kg*(1+Math.min(reps,ST.REP_CAP)/30)*10)/10;}
@@ -117,6 +119,45 @@ function groupStats(ex,d,now){
     var cd=g==='Core'&&lastCoreDay(d);
     if(cd&&cd>o.last){o.last=cd;if(o.status==='idle'&&now-cd<=ST.IDLE_DAYS*864e5)o.status=groupStatus(list.map(function(e){return{status:e.status};}));}
     out.push(o);
+  });
+  return out;
+}
+// ─── One session: rest, the comparison with last time, new bests (the workout screen and the finish summary) ───
+// Sets logged live carry at: the time (ms) they were logged. Every logged time in a session's exercises, oldest first.
+function setTimes(ex){var a=[];Object.keys(ex||{}).forEach(function(x){(ex[x]||[]).forEach(function(t){if(+t.at>0)a.push(+t.at);});});return a.sort(function(x,y){return x-y;});}
+// The rest before a set logged at `at`: the gap since the session's previous logged set, whichever exercise it was
+// (ms); null for the first set, or a set with no time
+function restBefore(ex,at){if(!(+at>0))return null;var p=null;setTimes(ex).forEach(function(t){if(t<at)p=t;});return p==null?null:at-p;}
+// Average rest between sets in seconds, from gaps between REST_MIN and REST_MAX; null with fewer than one such gap
+function avgRest(ex){
+  var a=setTimes(ex),g=[];for(var i=1;i<a.length;i++){var s=(a[i]-a[i-1])/1000;if(s>=ST.REST_MIN&&s<=ST.REST_MAX)g.push(s);}
+  return g.length?Math.round(g.reduce(function(x,y){return x+y;},0)/g.length):null;
+}
+function setVol(l){return(l||[]).reduce(function(a,x){return a+(+x.kg||0)*(+x.reps||0);},0);}
+function setTop(l){return Math.max.apply(null,(l||[]).map(function(x){return +x.kg||0;}).concat(0));}
+// One exercise against its previous session: 1 up (more top kg or volume), -1 down, 0 the same; the calendar's day
+// pop-up uses it too. With no weight on either side (dips, pull-ups) volume is always 0, so total reps decide.
+function exCmp(a,b){var ta=setTop(a),tb=setTop(b),va=setVol(a),vb=setVol(b);
+  if(!ta&&!tb){va=(a||[]).reduce(function(x,t){return x+(+t.reps||0);},0);vb=(b||[]).reduce(function(x,t){return x+(+t.reps||0);},0);}
+  return ta>tb||va>vb?1:ta<tb||va<vb?-1:0;}
+// Session s against the previous session of the same workout: {first, up, down, same}
+function vsPrev(s,d){
+  d=d||gd();var t=new Date(s.date).getTime(),pv=null;
+  d.sessions.forEach(function(x){var u=new Date(x.date).getTime();if(x.id!==s.id&&x.workout===s.workout&&u<t&&(!pv||u>new Date(pv.date).getTime()))pv=x;});
+  var r={first:!pv,up:0,down:0,same:0};
+  if(pv)Object.keys(s.exercises||{}).forEach(function(x){var b=pv.exercises[x];if(!b)return;var c=exCmp(s.exercises[x],b);if(c>0)r.up++;else if(c<0)r.down++;else r.same++;});
+  return r;
+}
+// The exercises where session s beat every earlier session of the same kind (e1RM for weights, reps for bodyweight,
+// secs for holds): [{name, kind, v, prev, top}]. An exercise's first ever session is not a best: there was nothing to beat.
+function sessionBests(s,d){
+  d=d||gd();var t=new Date(s.date).getTime(),out=[];
+  if(isActivity(s))return out;
+  Object.keys(s.exercises||{}).forEach(function(x){
+    if(!(s.exercises[x]||[]).length)return;var c=sPt(s,x);if(!(c.v>0))return;
+    var prior=exerciseSeries(x,d).filter(function(p){return p.id!==s.id&&p.t<t&&p.kind===c.kind;});if(!prior.length)return;
+    var best=Math.max.apply(null,prior.map(function(p){return p.v;}));
+    if(c.v>best)out.push({name:x,kind:c.kind,v:c.v,prev:best,top:c.top});
   });
   return out;
 }

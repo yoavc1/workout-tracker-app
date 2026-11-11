@@ -269,6 +269,31 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 - Activities (Muay Thai, Swimming) count toward "trained recently", but never trigger overload or neglect alerts for a muscle group.
 - Fixes every insights bug in §3.
 
+### Phase 3: Fewer taps (11 Nov)
+
+**R · Rest between sets**
+- A set logged during a live workout keeps the time it was logged, as `at` (ms) on the set. A set counts as logged once kg and reps are both filled. Editing it later keeps its time, so fixing a typo doesn't restart the rest.
+- Editing a logged workout or logging a past day records no times, because they wouldn't be when the set was done.
+- The bottom bar shows **Resting 1:23 · last set 14:32**, counting up from the latest set. It sits above the countdown presets, which are unchanged.
+- The set table gets a **Rest** column: the gap to the previous logged set, whichever exercise it was. It also shows when editing a workout that was logged with times.
+- History and the finish summary show the **average rest**. It leaves out gaps under 10 s (sets typed in one go) and over 15 min (a long pause), as `ST.REST_MIN` / `REST_MAX`.
+- `at` syncs with the session. The Sheet's Log tab reads only kg, reps and secs, so the backend needs no redeploy.
+
+**Q · Quicker sets**
+- **+ Add Set fills itself in.** The first set copies last time's first set; later sets repeat this session's last set. A filled-in set is logged straight away and flashes, and the keyboard stays down. A new exercise, with nothing to copy, gets an empty set with kg focused, as before.
+- Tapping a number selects it, so typing replaces it.
+- A new session opens on its first exercise; a resumed one on the exercise of its latest set.
+
+**S · Finish summary**
+- After a new workout is saved, a summary pops up showing time, sets, volume, average rest, and how many exercises went up, down or stayed the same against the last session of that workout. It also lists **new bests**: e1RM for weights, reps for bodyweight, hold time for timed holds. An exercise's first session is never a best. A tap anywhere closes it.
+- With no weight on either side (dips, pull-ups), "up/down" now goes by total reps instead of volume, which is always 0. The calendar's day pop-up uses the same rule (`exCmp`).
+
+**W · Week / Month calendar on home**
+- A **Week | Month** switch on the calendar. Week is the default; the choice stays on this device (`ironlog_calview`), like the theme, and the app opens in the view used last.
+- **Week** shows a Mon–Sun strip and, under it, that week's workouts (and core-only days), each opening its day. **Month** is the calendar as before.
+- **Swipe** sideways to turn the week or month. ‹ › still work, and a **Today** button appears once you've moved away.
+- Switching keeps your place: a week opens the month most of its days are in, and a month opens its first week.
+
 ## 6. Order of work and how subagents are used
 
 ```

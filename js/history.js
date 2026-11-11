@@ -22,7 +22,7 @@ function rHist(){
       if(item.core){body+='<div class="hco jhc" data-day="'+item.core+'">'+coreTickB(item.core,true)+'<div class="hco-m"><div><span class="hco-t">Core</span><span class="hcard-date">'+fdf(item.core+'T12:00')+'</span></div><div class="hco-s">'+(eh(coreSum(coreItems(item.core,coreM)))||'Done · tap to add exercises')+'</div></div><span class="hco-go">→</span></div>';return;}
       var s=item.s;var idx=item.idx;var ee=Object.entries(s.exercises);var ts=ee.reduce(function(a,e){return a+e[1].length;},0);
       var bd=ee.map(function(e){return'<div><strong>'+eh(e[0])+':</strong> '+e[1].map(function(x){return x.kg+'kg×'+x.reps;}).join(', ')+'</div>';}).join('');
-      var dur=s.duration?' · '+fdur(s.duration):'';var day=fdf(s.date);
+      var dur=s.duration?' · '+fdur(s.duration):'',ar=avgRest(s.exercises);if(ar!=null)dur+=' · avg rest '+fmss(ar);var day=fdf(s.date);
       // Every workout card has a core row, ticked on the workout core went with, so on a two-workout day each card
       // has its own tick
       var cl=coreLine(s,d);
