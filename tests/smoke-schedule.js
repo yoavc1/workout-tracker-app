@@ -45,7 +45,7 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     await p.ev(PLAN); await p.go(APP);
     await p.ev(`var T={t:lday(new Date()),k:function(n){return DAYS[dow(addD(T.t,n))];},day:function(n){return addD(T.t,n);},
       col:function(v){var e=document.createElement('i');e.style.background=v;document.body.appendChild(e);var c=getComputedStyle(e).backgroundColor;e.remove();return c;},
-      cal:function(n){var day=T.day(n),t=new Date(),q=pday(day);SCM=(q.getFullYear()-t.getFullYear())*12+q.getMonth()-t.getMonth();rCal(gd());return document.querySelector('.cal-c[data-day="'+day+'"]');}};
+      cal:function(n){var day=T.day(n),t=new Date(),q=pday(day);localStorage.setItem('ironlog_calview','month');SCM=(q.getFullYear()-t.getFullYear())*12+q.getMonth()-t.getMonth();rCal(gd());return document.querySelector('.cal-c[data-day="'+day+'"]');}};
       window.__wk=[];var _o=openWK;openWK=function(){__wk.push([].slice.call(arguments));return _o.apply(this,arguments);};'ok'`);
 
     // Home: just today's planned workout with Start. Yesterday's missed Legs and its move buttons are only in the sheet,
@@ -208,6 +208,9 @@ const PLAN = `(function(){var t=lday(new Date()),k=function(n){return DAYS[dow(a
     const logged = await p.ev(`(function(){var s=gs().filter(function(x){return x.workout==='Legs'&&x.exercises['Squat - Dumbbell']&&x.exercises['Squat - Dumbbell'][0].kg===52.5;}),c=T.cal(-4);
       return {n:s.length,day:s.length&&lday(s[0].date),miss:missedOn(T.day(-4)),done:c.classList.contains('done'),home:document.getElementById('s-home').classList.contains('active')};})()`);
     assert.deepStrictEqual(logged, { n: 1, day: await p.ev('T.day(-4)'), miss: [], done: true, home: true }, 'session saved on the chosen past day');
+    // Saving shows the finish summary; a tap closes it
+    assert.strictEqual(await p.ev(`document.getElementById('mov-sum').classList.contains('active')`), true, 'finish summary');
+    await click('#mov-sum'); assert.strictEqual(await p.ev(`document.getElementById('mov-sum').classList.contains('active')`), false);
     step('day pop-up: details of a logged day, and logging a missed past day on that date');
 
     // Week plan: tap a rest day and pick a workout
