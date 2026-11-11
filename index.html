@@ -28,7 +28,7 @@ thApply();
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>Workout Tracker</title>
 <!-- Bump ?v= on every release so phones never mix new HTML with cached old CSS/JS -->
-<link rel="stylesheet" href="css/app.css?v=20261022-simplehome">
+<link rel="stylesheet" href="css/app.css?v=20261111-restweek">
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -46,6 +46,8 @@ thApply();
 <div id="mov-mus" class="mov"><div class="modal pg-sheet"><h3>Muscle group</h3><div class="pg-note" id="mus-for" style="margin:-6px 0 4px"></div><div id="mus-opts"></div><div class="macts" style="margin-top:18px"><button class="mbtn sec" id="mus-cancel">Cancel</button></div></div></div>
 <div id="mov-merge" class="mov"><div class="modal pg-sheet"><h3>Merge into…</h3><div class="pg-note" style="margin:-6px 0 14px">Moves every session of <b id="mg-from"></b> into the exercise you pick, so a renamed exercise keeps one history.</div><input type="text" class="minp" id="mg-inp" placeholder="Search your exercises" autocomplete="off"><div class="pg-note" id="mg-conf" style="margin:0 0 14px"></div><div class="macts"><button class="mbtn sec" id="mg-cancel">Cancel</button><button class="mbtn pri" id="mg-go" disabled>Merge</button></div></div></div>
 
+<div id="mov-sum" class="hmpop-ov"><div class="hmpop sum" id="sum-body" role="dialog" aria-label="Workout summary"></div></div>
+
 <div id="mov-upd" class="mov"><div class="modal"><h3 id="upd-t">Also update this workout?</h3><p class="msub">You changed the exercises in this session.</p><div id="upd-body" class="upd-body"></div><div class="macts"><button class="mbtn sec" id="upd-no">Just this session</button><button class="mbtn pri" id="upd-yes">Update workout</button></div></div></div>
 
 <div id="s-home" class="screen active" style="padding-bottom:calc(94px + var(--navpb))">
@@ -61,6 +63,7 @@ thApply();
   <div id="elist" class="elist"></div>
 </div>
 <div class="bbar" id="bbar" style="display:none">
+  <div class="rest" id="rest" aria-live="off"><span class="rest-l">Resting</span><b class="rest-t" id="rest-t">0:00</b><span class="rest-s" id="rest-s"></span></div>
   <div id="tdone" class="tdone">Time's up!</div>
   <div id="tdisp" class="tdisp"><div class="ttime" id="ttime">0:00</div><div style="display:flex;gap:6px"><button class="tact" id="tadd15">+15s</button><button class="tact stop" id="tstop">Stop</button></div></div>
   <div class="trow" id="trow"><button class="tpre" data-secs="60">60s</button><button class="tpre" data-secs="90">90s</button><button class="tpre" data-secs="120">2m</button><button class="tpre cust" id="btn-ct">Set</button></div>
@@ -103,18 +106,18 @@ thApply();
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.7/Sortable.min.js"></script>
-<script src="js/data.js?v=20261022-simplehome"></script>
-<script src="js/sync.js?v=20261022-simplehome"></script>
-<script src="js/stats.js?v=20261022-simplehome"></script>
-<script src="js/ui.js?v=20261022-simplehome"></script>
-<script src="js/home.js?v=20261022-simplehome"></script>
-<script src="js/workout.js?v=20261022-simplehome"></script>
-<script src="js/progress.js?v=20261022-simplehome"></script>
-<script src="js/schedule.js?v=20261022-simplehome"></script>
-<script src="js/history.js?v=20261022-simplehome"></script>
-<script src="js/core.js?v=20261022-simplehome"></script>
-<script src="js/settings.js?v=20261022-simplehome"></script>
-<script src="js/goals.js?v=20261022-simplehome"></script>
-<script src="js/alerts.js?v=20261022-simplehome"></script>
-<script src="js/main.js?v=20261022-simplehome"></script>
+<script src="js/data.js?v=20261111-restweek"></script>
+<script src="js/sync.js?v=20261111-restweek"></script>
+<script src="js/stats.js?v=20261111-restweek"></script>
+<script src="js/ui.js?v=20261111-restweek"></script>
+<script src="js/home.js?v=20261111-restweek"></script>
+<script src="js/workout.js?v=20261111-restweek"></script>
+<script src="js/progress.js?v=20261111-restweek"></script>
+<script src="js/schedule.js?v=20261111-restweek"></script>
+<script src="js/history.js?v=20261111-restweek"></script>
+<script src="js/core.js?v=20261111-restweek"></script>
+<script src="js/settings.js?v=20261111-restweek"></script>
+<script src="js/goals.js?v=20261111-restweek"></script>
+<script src="js/alerts.js?v=20261111-restweek"></script>
+<script src="js/main.js?v=20261111-restweek"></script>
 </body></html>

@@ -54,7 +54,10 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await p.wait(2800); s = await store();
     const last = s.sessions[s.sessions.length - 1];
     assert.strictEqual(s.sessions.length, n0 + 1); assert.strictEqual(last.workout, 'Upper Push');
-    assert.deepStrictEqual(last.exercises, { Dips: [{ kg: 55, reps: 9 }] }); assert.ok(last.id && last.mt);
+    // The set keeps the time it was logged (at), for rest between sets; it syncs with the session
+    assert.ok(last.exercises.Dips[0].at > Date.now() - 60000, 'logged time ' + last.exercises.Dips[0].at);
+    assert.deepStrictEqual(last.exercises, { Dips: [{ kg: 55, reps: 9, at: last.exercises.Dips[0].at }] }); assert.ok(last.id && last.mt);
+    await p.ev(`closeSum();'ok'`);
     step('logging a workout syncs it');
 
     // Another device adds one session and deletes another, while this device edits offline

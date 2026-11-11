@@ -164,11 +164,9 @@ const { progressSeed } = require('./progress-seed');
     await shot('04c-filter-empty.png');
     await pick('Other');
     assert.deepStrictEqual(await view(), { glance: false, cards: [], groups: ['Other'], n: 1, core: false, on: ['Other'] });
-    // The filter lets go when its group has gone, and when an alert opens Progress
+    // The filter lets go when its group has gone (the alerts banner that also reset it left home on 22 Oct)
     await p.ev(`setMuscle('Hammer Curl - Dumbbell',null);setMuscle('Triceps Pulldown - Rope',null);rProg();'ok'`);
     assert.deepStrictEqual(await view(), ALL, 'Other gone, so all');
-    await pick('Legs'); await p.ev(`switchTab('home');alGo({go:'prog',arg:null});'ok'`); await p.wait(300);
-    assert.deepStrictEqual(await view(), ALL, 'an alert opens Progress unfiltered');
     await p.ev(`document.getElementById('s-prog').scrollTop=0;'ok'`);
     step('filter by muscle group: counts, one group, Core card, stays through detail and tabs, empty group, Other, lets go');
 

@@ -105,5 +105,7 @@ function ea(v){return v==null?'':String(v).replace(/&/g,'&amp;').replace(/"/g,'&
 function fds(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
 function fdf(d){return new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}
 function fdur(s){if(!s)return'';return Math.floor(s/60)+'m';}
+// Seconds as m:ss (rest times); h:mm:ss from an hour
+function fmss(s){s=Math.max(0,Math.floor(+s||0));var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=String(s%60).padStart(2,'0');return h?h+':'+String(m).padStart(2,'0')+':'+x:m+':'+x;}
 var toastTimer=null;
 function toast(m,c){var t=document.getElementById('toast');clearTimeout(toastTimer);t.classList.remove('show');t.textContent=m;t.style.background=c||'var(--green)';requestAnimationFrame(function(){requestAnimationFrame(function(){t.classList.add('show');toastTimer=setTimeout(function(){t.classList.remove('show');},2500);});});}

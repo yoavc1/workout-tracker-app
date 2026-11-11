@@ -37,14 +37,12 @@ function missedDays(n,d,today){
   return out;
 }
 // What the old Progress heatmap showed for a day: per session, how many exercises went up or down against the previous
-// session of the same workout (top kg or volume)
+// session of the same workout (top kg or volume, reps for bodyweight: exCmp in js/stats.js)
 function dayLog(day,d){
   d=d||gd();var ss=d.sessions.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);}),out=[];
-  var vol=function(l){return l.reduce(function(a,x){return a+(+x.kg||0)*(+x.reps||0);},0);},top=function(l){return Math.max.apply(null,l.map(function(x){return +x.kg||0;}));};
   ss.forEach(function(s,i){if(lday(s.date)!==day)return;var pv=null;for(var j=i-1;j>=0;j--)if(ss[j].workout===s.workout){pv=ss[j];break;}
     var r={workout:s.workout,first:!pv,up:0,down:0,same:0};
-    if(pv)Object.keys(s.exercises||{}).forEach(function(x){var a=s.exercises[x],b=pv.exercises[x];if(!b)return;
-      if(top(a)>top(b)||vol(a)>vol(b))r.up++;else if(top(a)<top(b)||vol(a)<vol(b))r.down++;else r.same++;});
+    if(pv)Object.keys(s.exercises||{}).forEach(function(x){var b=pv.exercises[x];if(!b)return;var c=exCmp(s.exercises[x],b);if(c>0)r.up++;else if(c<0)r.down++;else r.same++;});
     out.push(r);});
   return out;
 }
@@ -127,24 +125,65 @@ function pickDay(k){
   o.querySelectorAll('.jsd').forEach(function(b){b.addEventListener('click',function(){sp[k]=b.dataset.v;sSplit(sp);document.getElementById('mov-splitday').classList.remove('active');rToday();});});
 }
 
-// Month calendar, on home under the Today card: only what was logged. Done days filled with the workout's colour,
-// core days marked C; the plan stays in the sheet.
-function rCal(d){
-  var t=new Date(),today=lday(t),vd=new Date(t.getFullYear(),t.getMonth()+SCM,1),yr=vd.getFullYear(),mo=vd.getMonth(),w=gw();
-  var dim=new Date(yr,mo+1,0).getDate(),by={},nd=0,c='';
+// Home calendar, under the Today card: only what was logged. Done days filled with the workout's colour, core days
+// marked C; the plan stays in the sheet. It shows a week (the default) or a month; the choice stays on this device
+// (ironlog_calview), like the theme. SCM counts weeks or months from today's, whichever is showing.
+function calView(){try{return localStorage.getItem('ironlog_calview')==='month'?'month':'week';}catch(e){return'week';}}
+function wkMon(day){return addD(day,-dow(day));}
+// Switching keeps your place: a week opens the month most of its days are in, a month opens its first week
+// (or this week, for this month)
+function setCalView(v){
+  if(v!=='week'&&v!=='month'||v===calView())return;var today=lday(new Date()),t=pday(today);
+  if(v==='month'){var th=pday(addD(wkMon(today),7*SCM+3));SCM=(th.getFullYear()-t.getFullYear())*12+th.getMonth()-t.getMonth();}
+  else if(SCM)SCM=Math.round((pday(wkMon(lday(new Date(t.getFullYear(),t.getMonth()+SCM,1))))-pday(wkMon(today)))/(7*864e5));
+  try{localStorage.setItem('ironlog_calview',v);}catch(e){}
+  rCal(gd());
+}
+// dir: 'n' or 'p' slides the new week or month in from that side
+function rCal(d,dir){
+  var t=new Date(),today=lday(t),w=gw(),wk=calView()==='week',by={},nd=0,c='',days=[],title,cnt,lbl=wk?'week':'month';
   d.sessions.forEach(function(s){var k=lday(s.date);by[k]=by[k]||[];if(by[k].indexOf(s.workout)<0)by[k].push(s.workout);});
-  for(var i=(vd.getDay()+6)%7;i>0;i--)c+='<div></div>';
-  for(var dd=1;dd<=dim;dd++){
-    var day=lday(new Date(yr,mo,dd)),dn=by[day]||[],st='';
+  if(wk){var mon=addD(wkMon(today),7*SCM);for(var i=0;i<7;i++)days.push(addD(mon,i));
+    var a=pday(days[0]),b=pday(days[6]);
+    title=(a.getMonth()===b.getMonth()?a.getDate():fds(a))+' – '+fds(b)+(b.getFullYear()!==t.getFullYear()?' '+b.getFullYear():'');}
+  else{var vd=new Date(t.getFullYear(),t.getMonth()+SCM,1),dim=new Date(vd.getFullYear(),vd.getMonth()+1,0).getDate();
+    for(var k=(vd.getDay()+6)%7;k>0;k--)c+='<div></div>';
+    for(var dd=1;dd<=dim;dd++)days.push(lday(new Date(vd.getFullYear(),vd.getMonth(),dd)));
+    title=vd.toLocaleString('en',{month:'long',year:'numeric'});}
+  days.forEach(function(day){
+    var dn=by[day]||[],st='';
     // Two workouts on one day split the cell diagonally
     if(dn.length){nd++;st='background:'+(dn.length>1?'linear-gradient(135deg,'+dn.map(function(x,j){return wColor(x,w)+' '+Math.round(j*100/dn.length)+'% '+Math.round((j+1)*100/dn.length)+'%';}).join(',')+')':wColor(dn[0],w));}
-    c+='<button class="cal-c'+(dn.length?' done':'')+(day===today?' today':'')+(day>today?' fut':'')+'" data-act="cal" data-day="'+day+'"'+(st?' style="'+st+'"':'')+'>'+dd+(coreDone(day,d.core)?'<i class="cal-k">C</i>':'')+'</button>';
-  }
-  var lg='';Object.keys(w).forEach(function(n){lg+='<span><i style="background:'+wColor(n,w)+'"></i>'+eh(n)+'</span>';});
-  lg+='<span><b>C</b>Core</span>';
-  document.getElementById('cal-sec').innerHTML='<div class="hsec"><div class="hsec-t">Calendar<span class="hsec-n">'+nd+' workout day'+(nd!==1?'s':'')+'</span></div>'+
-    '<div class="cal-nav"><button class="cal-nb" data-act="mp" aria-label="Previous month">‹</button><div class="cal-t">'+vd.toLocaleString('en',{month:'long',year:'numeric'})+'</div><button class="cal-nb" data-act="mn" aria-label="Next month">›</button></div>'+
-    '<div class="cal-dh"><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div></div><div class="cal-g">'+c+'</div><div class="cal-leg">'+lg+'</div></div>';
+    c+='<button class="cal-c'+(dn.length?' done':'')+(day===today?' today':'')+(day>today?' fut':'')+'" data-act="cal" data-day="'+day+'"'+(st?' style="'+st+'"':'')+'>'+(+day.slice(8))+(coreDone(day,d.core)?'<i class="cal-k">C</i>':'')+'</button>';
+  });
+  var vb=function(v,l){return'<button class="cal-vb'+((wk?'week':'month')===v?' on':'')+'" data-act="cv" data-v="'+v+'" aria-pressed="'+((wk?'week':'month')===v)+'">'+l+'</button>';};
+  var h='<div class="hsec cal"><div class="hsec-t">Calendar<div class="cal-hr">'+(SCM?'<button class="cal-0" data-act="c0">Today</button>':'')+
+    '<div class="cal-vs" role="group" aria-label="Calendar view">'+vb('week','Week')+vb('month','Month')+'</div></div></div>';
+  if(wk){
+    // The week's workouts (and core-only days) under the strip, oldest first; each opens its day like the cell does
+    var ls=d.sessions.filter(function(s){return days.indexOf(lday(s.date))>=0;}).sort(function(x,y){return new Date(x.date)-new Date(y.date);});
+    var co=typeof coreOnlyDays==='function'?coreOnlyDays(d).filter(function(x){return days.indexOf(x)>=0;}):[],nc=days.filter(function(x){return coreDone(x,d.core);}).length;
+    var rows=ls.map(function(s){return{day:lday(s.date),t:new Date(s.date).getTime(),s:s};}).concat(co.map(function(x){return{day:x,t:pday(x).getTime()+43200000};})).sort(function(x,y){return x.t-y.t;});
+    cnt=(ls.length?ls.length+' workout'+(ls.length!==1?'s':''):'No workouts')+(nc?' · '+nc+' core':'');
+    var l='';rows.forEach(function(r){var s=r.s,dl=fdf(r.day+'T12:00');
+      if(!s){l+='<button class="cal-wr" data-act="cal" data-day="'+r.day+'"><i class="td-bar cal-wc"></i><div class="td-m"><div class="cal-wn">Core</div><div class="td-s">'+dl+'</div></div><span class="cal-wg">›</span></button>';return;}
+      var ne=Object.keys(s.exercises||{}).length,cw=coreWith(r.day,d).some(function(x){return x.id===s.id;});
+      l+='<button class="cal-wr" data-act="cal" data-day="'+r.day+'"><i class="td-bar" style="background:'+wColor(s.workout,w)+'"></i><div class="td-m"><div class="cal-wn">'+eh(s.workout)+(cw?'<span class="cal-wco">+ Core</span>':'')+'</div><div class="td-s">'+dl+' · '+ne+' exercise'+(ne!==1?'s':'')+(s.duration>=60?' · '+fdur(s.duration):'')+'</div></div><span class="cal-wg">›</span></button>';});
+    // An empty week already says "No workouts" under its dates; this week also says how to log one
+    if(!rows.length)l=SCM===0?'<div class="cal-we">Tap a day to log a workout or core</div>':'';
+  }else cnt=nd+' workout day'+(nd!==1?'s':'');
+  h+='<div class="cal-nav"><button class="cal-nb" data-act="mp" aria-label="Previous '+lbl+'">‹</button><div class="cal-tw"><div class="cal-t">'+title+'</div><div class="hsec-n">'+cnt+'</div></div><button class="cal-nb" data-act="mn" aria-label="Next '+lbl+'">›</button></div>'+
+    '<div class="cal-sw'+(dir?' sl-'+dir:'')+'"><div class="cal-dh"><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div></div><div class="cal-g'+(wk?' cal-wkg':'')+'">'+c+'</div>'+(wk?'<div class="cal-wl">'+l+'</div>':'')+'</div>';
+  // The week's list names its workouts; the month needs the colour legend
+  if(!wk){h+='<div class="cal-leg">';Object.keys(w).forEach(function(n){h+='<span><i style="background:'+wColor(n,w)+'"></i>'+eh(n)+'</span>';});h+='<span><b>C</b>Core</span></div>';}
+  document.getElementById('cal-sec').innerHTML=h+'</div>';
+}
+// Swiping the calendar sideways turns the week or month: left for the next, right for the previous. Only a clearly
+// sideways swipe counts, so scrolling the page never turns it.
+function calSwipe(el){var x0=null,y0=0;
+  el.addEventListener('touchstart',function(e){var t=e.touches[0];x0=e.touches.length===1&&!e.target.closest('.cal-vs,.cal-0')?t.clientX:null;y0=t.clientY;},{passive:true});
+  el.addEventListener('touchend',function(e){if(x0==null)return;var t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Math.abs(dx)>=50&&Math.abs(dx)>2*Math.abs(dy)){SCM+=dx<0?1:-1;rCal(gd(),dx<0?'n':'p');}},{passive:true});
 }
 // A day's details in the pop-up: what was logged, like the calendar; on a day up to today with nothing logged, buttons
 // to log it
@@ -173,7 +212,9 @@ function schClick(e){
   else if(a==='mv'){addMove(x.from,x.to,x.w);rToday();toast(x.w+' moved to '+dname(x.to,today));}
   else if(a==='undo'){delMove(x.id);rToday();toast('Move undone');}
   else if(a==='pick')pickDay(b.closest('.wp-p').dataset.day);
-  else if(a==='mp'||a==='mn'){SCM+=a==='mp'?-1:1;rCal(gd());}
+  else if(a==='mp'||a==='mn'){SCM+=a==='mp'?-1:1;rCal(gd(),a==='mp'?'p':'n');}
+  else if(a==='c0'){var bk=SCM>0?'p':'n';SCM=0;rCal(gd(),bk);}
+  else if(a==='cv')setCalView(x.v);
   else if(a==='cal')openDay(x.day);
   else if(a==='manage')showManage();
   else if(a==='core'){document.getElementById('hmpop-ov').classList.remove('active');openCore(x.day);}

@@ -73,7 +73,8 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await p.ev(`closeSched();document.querySelector('#today-sec .td-go[data-w="Legs"]').click();'ok'`); await p.wait(200);
     assert.deepStrictEqual(await names(), before.list, 'list and order restored');
     assert.strictEqual(await p.ev(`WST`), before.st, 'elapsed time keeps counting from the real start');
-    assert.deepStrictEqual(await p.ev(`CS['Hip Thrust']`), [{ kg: '80', reps: '10' }, { kg: '85', reps: '8' }]);
+    assert.deepStrictEqual(await p.ev(`CS['Hip Thrust'].map(function(t){return{kg:t.kg,reps:t.reps};})`), [{ kg: '80', reps: '10' }, { kg: '85', reps: '8' }]);
+    assert.ok(await p.ev(`CS['Hip Thrust'][0].at>0&&CS['Hip Thrust'][1].at>=CS['Hip Thrust'][0].at`), 'logged times survive the reload');
     step('draft restores list, order, sets and start time after a reload');
 
     // ── Sync no longer pauses during a workout; another device's template edit doesn't disturb the session ──
@@ -129,6 +130,10 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await logSet('Lat Pull Down - Front', 60, 8); await tapFin();
     last = await p.ev(`(function(){var s=gs();return s[s.length-1];})()`);
     assert.deepStrictEqual([await p.ev(`lday(${JSON.stringify(last.date)})`), last.duration], [day, 0]);
+    assert.strictEqual(last.exercises['Lat Pull Down - Front'][0].at, undefined, 'no logged time on a past day: it would not be when the set was done');
+    // Each finish showed the summary; close it before the drags below, which use the real mouse
+    assert.strictEqual(await p.ev(`document.getElementById('mov-sum').classList.contains('active')`), true);
+    await p.ev(`closeSum();'ok'`);
     step('a past day is logged on that date');
 
     // ── Editing a logged session keeps exercises that aren't in the saved workout, and finds it by id ──
