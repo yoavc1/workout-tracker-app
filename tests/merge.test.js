@@ -173,5 +173,36 @@ const eq = (a, b, msg) => assert.deepStrictEqual(J(a), J(b), msg);
   await new Promise(r => dev.csync(r));
   assert.strictEqual(posts, 1, 'then quiet');
 
+  // ── The coach summary rides along too: for the Sheet's Coach tab only, refreshed once a day, never blocking a save ──
+  const FULL = ['data.js', 'sync.js', 'stats.js', 'ui.js', 'schedule.js', 'goals.js', 'core.js', 'alerts.js', 'coach.js'];
+  dev = loadApp(FULL, { ironlog_sync_url: 'https://sync.test/', ironlog_data: JSON.stringify({ sessions: [{ id: 'y', mt: 5, workout: 'Upper Push', date: t.toISOString(), exercises: { Dips: [{ kg: 0, reps: 12 }] } }] }) });
+  dev.eh = s => String(s); // no DOM here
+  cloudBody = null; posts = 0;
+  dev.fetch = (u, o) => {
+    if (o && o.method === 'POST') { posts++; cloudBody = o.body; return Promise.resolve({ json: () => ({ success: true }) }); }
+    return Promise.resolve({ json: () => (cloudBody ? JSON.parse(cloudBody) : {}) });
+  };
+  const todayL = dev.lday(new Date());
+  await new Promise(r => dev.csync(r));
+  let sent = JSON.parse(cloudBody);
+  assert.strictEqual(posts, 1);
+  assert.deepStrictEqual([sent.coach.today, sent.coach.blocks[0].title, !!sent.muscleMap], [todayL, 'About', true], 'coach summary sent with the save');
+  assert.ok(!('coach' in JSON.parse(dev.__store.ironlog_data)), 'never stored on the device');
+  assert.strictEqual(dev.__store.ironlog_coach_day, todayL);
+  await new Promise(r => dev.csync(r));
+  assert.strictEqual(posts, 1, 'nothing changed today: no save');
+  // A new day refreshes the Coach tab once ("this week", "not trained lately" move on), even with nothing new
+  dev.__store.ironlog_coach_day = '2000-01-01';
+  await new Promise(r => dev.csync(r));
+  assert.deepStrictEqual([posts, dev.__store.ironlog_coach_day], [2, todayL], 'refreshed once on a new day');
+  await new Promise(r => dev.csync(r));
+  assert.strictEqual(posts, 2, 'then quiet again');
+  // A summary that fails is left out; the save still goes through
+  dev.coachSummary = () => { throw new Error('boom'); }; dev.console = { warn() {}, error() {}, log() {} };
+  dev.addS({ workout: 'Legs', date: t.toISOString(), exercises: { Squat: [{ kg: 60, reps: 8 }] } });
+  ok = await new Promise(r => dev.csync(r));
+  sent = JSON.parse(cloudBody);
+  assert.deepStrictEqual([ok, posts, 'coach' in sent, !!sent.muscleMap, sent.sessions.length], [true, 3, false, true, 2]);
+
   console.log('merge tests pass');
 })().catch(e => { console.error(e); process.exit(1); });

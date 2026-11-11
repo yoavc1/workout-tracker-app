@@ -8,7 +8,7 @@ class Sheet{constructor(n){this.name=n;this.cells=new Map();this.fmt=new Map();t
   getRange(r,c,nr,nc){if(typeof r==='string'){const m=r.match(/^([A-Z])(\d+)$/);return new Range(this,+m[2],m[1].charCodeAt(0)-64,1,1);}return new Range(this,r,c,nr||1,nc||1);}
   insertRowBefore(row){const cells=new Map(),fmt=new Map();for(const [k,v] of this.cells){let [r,c]=k.split(',').map(Number);cells.set(this.k(r>=row?r+1:r,c),v);}for(const [k,v] of this.fmt){let [r,c]=k.split(',').map(Number);fmt.set(this.k(r>=row?r+1:r,c),v);}this.cells=cells;this.fmt=fmt;}
   deleteRows(start,count){const cells=new Map();for(const [k,v] of this.cells){let [r,c]=k.split(',').map(Number);if(r>=start&&r<start+count)continue;cells.set(this.k(r>=start+count?r-count:r,c),v);}this.cells=cells;}
-  clearContents(){this.cells=new Map();}hideSheet(){this.hidden=true;}isSheetHidden(){return this.hidden;}setFrozenRows(){}}
+  clearContents(){this.cells=new Map();}clear(){this.cells=new Map();this.fmt=new Map();this.bold=new Set();}hideSheet(){this.hidden=true;}isSheetHidden(){return this.hidden;}setFrozenRows(){}}
 class Range{constructor(sh,r,c,nr,nc){Object.assign(this,{sh,r,c,nr,nc});}
   each(f){for(let i=0;i<this.nr;i++)for(let j=0;j<this.nc;j++)f(this.r+i,this.c+j,i,j);}
   getValues(){const o=[];for(let i=0;i<this.nr;i++){o.push([]);for(let j=0;j<this.nc;j++){const v=this.sh.cells.get(this.sh.k(this.r+i,this.c+j));o[i].push(v==null?'':v);}}return o;}
@@ -20,7 +20,8 @@ class Range{constructor(sh,r,c,nr,nc){Object.assign(this,{sh,r,c,nr,nc});}
       if(this.sh.fmt.get(this.sh.k(r,c))!=='@'){if(/^[=+\-@]/.test(v))v='#FORMULA';else if(/^\d+(\.\d+)?$/.test(v))v=Number(v);}}
     this.sh.cells.set(this.sh.k(r,c),v);}
   clearContent(){this.each((r,c)=>this.sh.cells.delete(this.sh.k(r,c)));return this;}
-  setNumberFormat(f){this.each((r,c)=>this.sh.fmt.set(this.sh.k(r,c),f));return this;}setFontWeight(){return this;}}
+  setNumberFormat(f){this.each((r,c)=>this.sh.fmt.set(this.sh.k(r,c),f));return this;}
+  setFontWeight(w){this.sh.bold=this.sh.bold||new Set();if(w==='bold')for(let i=0;i<this.nr;i++)this.sh.bold.add(this.r+i);return this;}}
 function makeEnv(){const sheets={};let now=new Date('2026-09-29T10:00:00Z');
   const ss={getSheetByName:n=>sheets[n]||null,insertSheet:n=>(sheets[n]=new Sheet(n))};
   const ctx={SpreadsheetApp:{getActiveSpreadsheet:()=>ss},
@@ -76,4 +77,34 @@ env=makeEnv();const nasty=JSON.stringify({sessions:Array.from({length:400},(_, i
 env.post(nasty);assert.strictEqual(env.get(),nasty,'hostile content round-trips');
 // 10. Empty sheet
 env=makeEnv();assert.strictEqual(env.get(),'{"sessions":[]}');
+// 11. Log: sets logged live get the time they were logged and the rest before them (any exercise; none for the first,
+// or a set with no time)
+const t0=Date.UTC(2026,8,28,17,0,0);
+const live={sessions:[{id:'r1',mt:1,workout:'Legs',date:new Date(t0+600e3).toISOString(),exercises:{Squat:[{kg:60,reps:8,at:t0},{kg:60,reps:8,at:t0+95000}],'Leg Curl':[{kg:40,reps:10,at:t0+260000},{kg:40,reps:10}]}}]};
+env.post(JSON.stringify(live));
+const LH=env.sheets.Log.getRange(1,1,1,11).getValues()[0];assert.deepStrictEqual(LH.slice(9),['Logged at','Rest before (s)']);
+assert.ok(env.sheets.Log.bold.has(1),'header bold');
+const lr=env.sheets.Log.getRange(2,1,4,11).getValues().map(r=>[r[2],r[9]&&r[9].getTime?r[9].getTime():r[9],r[10]]);
+assert.deepStrictEqual(lr,[['Squat',t0,''],['Squat',t0+95000,95],['Leg Curl',t0+260000,165],['Leg Curl','','']]);
+assert.strictEqual(env.sheets.Log.fmt.get('2,10'),'hh:mm:ss');
+// 12. Coach tab: written exactly as the app sent it (plain text, so nothing turns into a formula, number or date),
+// blocks stacked with a blank row; the summary itself is kept out of the stored data
+const coach={v:1,asOf:'2026-09-28 18:10',today:'2026-09-28',blocks:[
+  {title:'Flags',note:'Gaps first',header:['Type','About','Detail'],rows:[['Neglected','Shoulders · Rear','No sets in 12 days'],['=SUM(1)','+3.1','2026-09-28']]},
+  {title:'Weekly volume',header:['Week of','2026-09-21','2026-09-28'],rows:[['Workouts',3,1.5]]}]};
+assert.deepStrictEqual(env.post(JSON.stringify(Object.assign({},live,{coach}))),{success:true});
+assert.deepStrictEqual(JSON.parse(env.get()),live,'stored without the summary');
+const C=env.sheets.Coach;
+assert.deepStrictEqual(C.getRange(1,1,C.getLastRow(),3).getValues(),[
+  ['Workout Tracker · coach summary','',''],['Updated 2026-09-28 18:10 · written by the app at each sync; edits here are overwritten','',''],['','',''],
+  ['Flags','',''],['Gaps first','',''],['Type','About','Detail'],['Neglected','Shoulders · Rear','No sets in 12 days'],['=SUM(1)','+3.1','2026-09-28'],['','',''],
+  ['Weekly volume','',''],['Week of','2026-09-21','2026-09-28'],['Workouts','3','1.5']]);
+assert.deepStrictEqual([...C.bold].sort((a,b)=>a-b),[1,4,6,10,11],'title, block titles and headers bold');
+// A shorter summary replaces the old one completely; a save without one leaves the tab as it was
+env.post(JSON.stringify(Object.assign({},live,{coach:{asOf:'2026-09-29 08:00',blocks:[{title:'About',header:['Item','Value'],rows:[['Today','2026-09-29']]}]}})));
+assert.deepStrictEqual([C.getLastRow(),C.getRange(4,1).getValue(),[...C.bold].sort((a,b)=>a-b)],[6,'About',[1,4,5]]);
+env.post(JSON.stringify(live));assert.strictEqual(C.getRange(6,2).getValue(),'2026-09-29');
+// A malformed summary never fails the save
+for(const bad of [{blocks:'oops'},{blocks:[null,{title:'X',header:'no',rows:[null,[1]]}]}])assert.deepStrictEqual(env.post(JSON.stringify(Object.assign({},live,{coach:bad}))),{success:true});
+assert.deepStrictEqual(C.getRange(4,1,4,1).getValues().map(r=>r[0]),['X','','','1'],'title, empty header, empty row, the one good row');
 console.log('APPS SCRIPT TESTS PASS');

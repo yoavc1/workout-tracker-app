@@ -87,6 +87,10 @@ const { staticServer, mockSync, launchChrome, urlOf, SEED } = require('./lib');
     await p.ev(`new Promise(function(r){csync(r);})`); s = await store();
     assert.strictEqual(s.core['c' + today].done, false); assert.ok(s.muscleMap && s.muscleMap.Dips === 'Chest/Lower', 'muscle map sent to the Sheet');
     assert.strictEqual(await p.ev(`'muscleMap' in JSON.parse(localStorage.getItem('ironlog_data'))`), false);
+    // The Coach tab's summary rides along the same way, built in the real page (alerts, goals, plan all loaded)
+    assert.deepStrictEqual(s.coach && s.coach.blocks.map(b => b.title), ['About', 'Flags', 'Muscle groups', 'Exercises', 'Weekly volume', 'Goals', 'This week', 'Recent workouts'], 'coach summary sent to the Sheet');
+    assert.strictEqual(s.coach.today, today);
+    assert.strictEqual(await p.ev(`'coach' in JSON.parse(localStorage.getItem('ironlog_data'))`), false);
     step('workout core chip and History core line share one synced day record');
 
     // History: newest week first, labelled Monday to Sunday
