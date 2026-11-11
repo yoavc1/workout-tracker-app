@@ -294,6 +294,14 @@ This is a new version of your Apps Script. It keeps the same Sheet, and because 
 - **Swipe** sideways to turn the week or month. ‹ › still work, and a **Today** button appears once you've moved away.
 - Switching keeps your place: a week opens the month most of its days are in, and a month opens its first week.
 
+**C · Coach tab: ask Claude about your training** (setup in [COACH.md](COACH.md))
+- At each save the app builds a summary from its own logic (`js/coach.js`): statuses, trends, the alert engine's flags, goal pace, this week against the plan, and recent workouts. It rides along to the Sheet like the muscle map and is never stored.
+- The Apps Script writes it into a **Coach** tab exactly as sent. The app decides what's in it, so adding to it later needs no redeploy.
+- The summary refreshes at every save, and once a day the app is opened.
+- The Log tab gains **Logged at** and **Rest before (s)**.
+- A Claude Project with Google Drive connected reads the Sheet, so questions like "what am I neglecting?" get the same answers the app would give.
+- Needs one Apps Script redeploy.
+
 ## 6. Order of work and how subagents are used
 
 ```

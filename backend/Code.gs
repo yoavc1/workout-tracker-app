@@ -10,6 +10,9 @@
  *   data      the app's data, split across A1, A2, ... because one cell holds at most 50,000 characters.
  *             B1 holds the time of the last save. Older versions kept everything in A1; that is read as-is.
  *   Log       readable copy, one row per set (newest first). Rewritten on every save; safe to sort and filter.
+ *             Sets logged live also have the time they were logged and the rest before them.
+ *   Coach     the app's own summary (statuses, trends, flags, goals, this week, recent workouts), written as the app
+ *             sends it, so a Claude chat reading this Sheet sees what the app shows. See docs/COACH.md.
  *   Core      days core was trained (and the exercises, once the app logs them). Appears when there is core data.
  *   Goals     appears once the app has goals.
  *   _backups  hidden; the first save each day copies the previous data here. Keeps the last 14 days.
@@ -41,10 +44,14 @@ function doPost(e) {
     var body = e.postData.contents;
     var data = JSON.parse(body);
     if (!data || !Array.isArray(data.sessions)) return json_({ error: 'invalid data' });
+    // The coach summary is only for the Coach tab: keep it out of the stored data
+    var coach = data.coach;
+    if (coach) { delete data.coach; body = JSON.stringify(data); }
     backup_();
     writeData_(body);
     // The readable tabs are a convenience; a problem there must never fail a save
     try { writeReadable_(data); } catch (err) { console.error(err); }
+    try { if (coach) writeCoach_(coach); } catch (err) { console.error(err); }
     return json_({ success: true });
   } catch (err) {
     return json_({ error: err.message });
@@ -118,7 +125,8 @@ function e1rm_(kg, reps) {
   return Math.round(kg * (1 + Math.min(reps, 12) / 30) * 10) / 10;
 }
 
-function writeTable_(name, header, rows, dateCols) {
+// fmts: {column: number format} for columns other than dates, e.g. times
+function writeTable_(name, header, rows, dateCols, fmts) {
   var sh = sheet_(name);
   var created = sh.getLastRow() === 0;
   sh.clearContents();
@@ -127,10 +135,12 @@ function writeTable_(name, header, rows, dateCols) {
   (dateCols || []).forEach(function (c) {
     if (rows.length) sh.getRange(2, c, rows.length, 1).setNumberFormat('d mmm yyyy');
   });
-  if (created) {
-    sh.setFrozenRows(1);
-    sh.getRange(1, 1, 1, header.length).setFontWeight('bold');
-  }
+  Object.keys(fmts || {}).forEach(function (c) {
+    if (rows.length) sh.getRange(2, +c, rows.length, 1).setNumberFormat(fmts[c]);
+  });
+  // Bold every time, so columns added later (the Log's rest columns) match the rest of the header
+  sh.getRange(1, 1, 1, header.length).setFontWeight('bold');
+  if (created) sh.setFrozenRows(1);
 }
 
 function writeReadable_(data) {
@@ -140,14 +150,23 @@ function writeReadable_(data) {
   var log = [];
   sessions.forEach(function (s) {
     var day = new Date(s.date);
+    // Sets logged live carry at (ms). Rest before a set: the gap since the session's previous logged set, any exercise.
+    var times = [];
+    Object.keys(s.exercises || {}).forEach(function (ex) {
+      (s.exercises[ex] || []).forEach(function (t) { if (t.at > 0) times.push(+t.at); });
+    });
+    times.sort(function (a, b) { return a - b; });
     Object.keys(s.exercises || {}).forEach(function (ex) {
       (s.exercises[ex] || []).forEach(function (t, i) {
+        var at = t.at > 0 ? +t.at : 0, k = at ? times.indexOf(at) : -1;
         log.push([day, s.workout, ex, muscles[ex] || '', i + 1,
-          t.kg != null ? t.kg : '', t.reps != null ? t.reps : '', t.secs != null ? t.secs : '', e1rm_(t.kg, t.reps)]);
+          t.kg != null ? t.kg : '', t.reps != null ? t.reps : '', t.secs != null ? t.secs : '', e1rm_(t.kg, t.reps),
+          at ? new Date(at) : '', k > 0 ? Math.round((at - times[k - 1]) / 1000) : '']);
       });
     });
   });
-  writeTable_('Log', ['Date', 'Workout', 'Exercise', 'Muscle', 'Set', 'kg', 'Reps', 'Secs', 'e1RM (kg)'], log, [1]);
+  writeTable_('Log', ['Date', 'Workout', 'Exercise', 'Muscle', 'Set', 'kg', 'Reps', 'Secs', 'e1RM (kg)', 'Logged at', 'Rest before (s)'],
+    log, [1], { 10: 'hh:mm:ss' });
 
   // Core: the per-day log once the app has it, plus days ticked on sessions (older app versions)
   var core = {};
@@ -183,4 +202,31 @@ function writeReadable_(data) {
     });
     writeTable_('Goals', ['Exercise', 'Start kg', 'Start date', 'Target kg', 'Target date', 'Status'], goals, [3, 5]);
   }
+}
+
+// ─── Coach tab ─────────────────────────────────────────────────
+// The app sends {asOf, blocks: [{title, note, header, rows}]} and decides what is in it, so its content can change
+// without redeploying this script. Written as plain text, so every value reads exactly as the app sent it and nothing
+// is taken for a date, number or formula. Blocks are stacked with a blank row between them.
+function writeCoach_(coach) {
+  var list = function (x) { return Array.isArray(x) ? x : []; };
+  var blocks = list(coach && coach.blocks);
+  var rows = [['Workout Tracker · coach summary'], ['Updated ' + (coach.asOf || '') + ' · written by the app at each sync; edits here are overwritten']];
+  var bold = [1];
+  blocks.forEach(function (b) {
+    if (!b || typeof b !== 'object') return;
+    rows.push([]);
+    rows.push([String(b.title || '')]); bold.push(rows.length);
+    if (b.note) rows.push([String(b.note)]);
+    rows.push(list(b.header).map(String)); bold.push(rows.length);
+    list(b.rows).forEach(function (r) { rows.push(list(r).map(function (v) { return v == null ? '' : String(v); })); });
+  });
+  var width = Math.max.apply(null, rows.map(function (r) { return r.length; }).concat(1));
+  rows = rows.map(function (r) { while (r.length < width) r.push(''); return r; });
+  var sh = sheet_('Coach');
+  sh.clear();
+  var rng = sh.getRange(1, 1, rows.length, width);
+  rng.setNumberFormat('@');
+  rng.setValues(rows);
+  bold.forEach(function (r) { sh.getRange(r, 1, 1, width).setFontWeight('bold'); });
 }

@@ -51,9 +51,11 @@ function csync(cb){
     // still in the old format should receive them once, along with the Sheet's muscle column
     var cs=dsig(c),l=gd(),m=mergeD(l,c);
     if(dsig(m)!==dsig(l)){localStorage.setItem('ironlog_data',JSON.stringify(m));ch=true;}
-    if(dsig(m)===cs)return;
-    // muscleMap only rides along for the Sheet's Muscle column; it is never stored on the device or merged
-    return fetch(u,{method:'POST',body:JSON.stringify(Object.assign({},m,{muscleMap:muscleMap(m)})),headers:{'Content-Type':'text/plain'}}).then(function(r){return r.json();}).then(function(r){if(!r||!r.success)throw new Error((r&&r.error)||'save rejected');});
+    // Nothing to save, unless the Coach tab hasn't been refreshed today ("this week", "not trained lately" move on)
+    if(dsig(m)===cs&&(typeof coachSummary!=='function'||coachDay()===lday(new Date())))return;
+    var x=sheetExtras(m);
+    return fetch(u,{method:'POST',body:JSON.stringify(Object.assign({},m,x)),headers:{'Content-Type':'text/plain'}}).then(function(r){return r.json();}).then(function(r){if(!r||!r.success)throw new Error((r&&r.error)||'save rejected');
+      if(x.coach)try{localStorage.setItem('ironlog_coach_day',x.coach.today);}catch(e){}});
   }).then(function(){
     syncBusy=false;
     setSt(true,'Synced '+new Date().toLocaleTimeString());if(ch)refreshView();if(cb)cb(true);
@@ -63,5 +65,10 @@ function csync(cb){
     if(syncQ){syncQ=false;cpush();}
   });
 }
+// What the Sheet's readable tabs need rides along on the POST only, never stored on the device or merged: muscleMap
+// for the Log's Muscle column, and coach for the Coach tab (js/coach.js). A summary that fails is left out rather
+// than failing the save.
+function sheetExtras(m){var o={muscleMap:muscleMap(m)};if(typeof coachSummary==='function'){try{o.coach=coachSummary(m);}catch(e){console.warn('coach summary',e);}}return o;}
+function coachDay(){try{return localStorage.getItem('ironlog_coach_day');}catch(e){return null;}}
 function refreshView(){if(CW!==null)return;var a=document.querySelector('.screen.active');if(!a)return;if(a.id==='s-home')rHome();else if(a.id==='s-hist')rHist();else if(a.id==='s-prog')rProg();else if(a.id==='s-goals')rGoals();}
 function msync(){if(!gSyncUrl()){toast('Set URL first','var(--orange)');return;}document.getElementById('sync-st').textContent='Syncing...';csync(function(ok){if(ok)toast('Synced!');else toast('Sync failed','var(--red)');});}
